@@ -27,6 +27,12 @@ canvas { display:block;margin:0 auto; }
 .goal { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#9aa9b2;margin:10px 0;text-align:center;line-height:1.8;max-width:320px; }
 .diary { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#ddd;line-height:2.1;max-width:340px;max-height:60vh;overflow:auto;margin-bottom:12px; }
 .diary b { color:#4fc3f7; }
+.namerow { display:flex;gap:6px;align-items:center;margin:6px 0 4px; }
+.namerow input { font-family:"Press Start 2P",monospace;font-size:9px;padding:8px;width:130px;background:#12202e;color:#fff;border:2px solid #4fc3f7;text-transform:uppercase; }
+.boardtitle { font-family:"Press Start 2P",monospace;font-size:7px;color:#888;margin-top:8px; }
+.board { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#bbb;width:100%;max-width:300px;margin:6px 0 4px; }
+.brow { display:flex;justify-content:space-between;padding:3px 4px;line-height:1.6; }
+.brow.mine { color:#ffd54f;background:rgba(255,213,79,0.12); }
 #continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;pointer-events:all; }
 #continueScreen h1 { font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;margin-bottom:22px;letter-spacing:2px; }
 #continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
@@ -108,6 +114,12 @@ canvas { display:block;margin:0 auto; }
     <div class="score bonus">Очки: <span id="finScore">0</span></div>
     <div class="score">В рюкзак: <span id="finWallet">0</span></div>
     <div class="goal" id="finGoal"></div>
+    <div class="namerow">
+      <input id="finName" maxlength="12" placeholder="ИМЯ" autocomplete="off">
+      <button class="btn small" id="saveNameBtn">ЗАПИСАТЬ</button>
+    </div>
+    <div class="boardtitle">Кто как прошёл этот день</div>
+    <div class="board" id="finBoard"></div>
     <div class="maprow">
       <button class="btn small" id="nextBtn">ДАЛЬШЕ</button>
       <button class="btn small ghost" id="againBtn">ЗАНОВО</button>
@@ -149,7 +161,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,signT:0,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -491,13 +503,13 @@ function screenXOf(t, wy){ return centerAt(wy) + t * widthAt(wy) / 2; }
 // Тверца — старый водный путь с деревнями, Медведица — извилистая и лесная,
 // Волга — большая вода. Множители превращают это в механику, а не в подпись.
 const RIVERS = [
-  { name:"ВОЛГА",     width:1.35, bend:0.55, rocks:0.8, speed:1.00,
+  { name:"ВОЛГА",     width:1.35, bend:0.55, rocks:0.8, speed:1.00, rapids:false,
     grass:"#4b9c48", water:"#0f6bc4", note:"Большая вода, много туристов" },
-  { name:"МЕДВЕДИЦА", width:0.85, bend:1.55, rocks:1.2, speed:1.10,
+  { name:"МЕДВЕДИЦА", width:0.85, bend:1.55, rocks:1.2, speed:1.10, rapids:true,
     grass:"#367f3c", water:"#125e9e", note:"Извилистая, лесная, топляк и мели" },
-  { name:"ТВЕРЦА",    width:1.00, bend:1.00, rocks:1.0, speed:1.05,
+  { name:"ТВЕРЦА",    width:1.00, bend:1.00, rocks:1.0, speed:1.05, rapids:true,
     grass:"#47973f", water:"#136fb8", note:"Старый водный путь на Торжок" },
-  { name:"ОСУГА",     width:0.72, bend:0.80, rocks:1.8, speed:1.20,
+  { name:"ОСУГА",     width:0.72, bend:0.80, rocks:1.8, speed:1.20, rapids:true,
     grass:"#3f8f43", water:"#1565c0", note:"Малая река, пороги и камни" }
 ];
 
@@ -617,6 +629,8 @@ function leanOf(vt){
 const BLEND = 200;
 
 function rapidBlend(w){
+  // На Волге порогов нет вовсе: большая река не сужается и не бурлит.
+  if (river() && river().rapids === false) return 0;
   const s = segAt(w);
   if (!g.segs.length) return 0;
   const inRapid = s.type === "rapid";
@@ -666,6 +680,13 @@ function hs(){startMusic();if(g.s=="continue"){resumeRun();return;}if(g.s=="star
 document.getElementById("startBtn").addEventListener("click",()=>{startMusic();showMap();});
 document.getElementById("restartBtn").addEventListener("click",()=>{startMusic();sg();});
 document.getElementById("contBtn").addEventListener("click",()=>{startMusic();resumeRun();});
+document.getElementById("saveNameBtn").addEventListener("click",()=>{
+  const nm = (document.getElementById("finName").value || "").trim().slice(0,12);
+  if (!nm) return;
+  save.name = nm; commitSave();
+  addResult(level().day, nm, g.pendingScore || 0);
+  renderBoard(level().day, g.pendingScore || 0);
+});
 document.getElementById("nextBtn").addEventListener("click",()=>{
   if(g.day>=LEVELS.length-1){showMap();return;}
   startDay(g.day+1);
@@ -922,7 +943,7 @@ const SAVE_KEY = "kayak_campaign";
 
 // Прогресс похода живёт отдельно от объекта g: g целиком сбрасывается
 // при старте дня, а поход должен переживать и это, и перезагрузку страницы.
-const SAVE_DEFAULT = { day:0, stars:{}, wallet:0, gear:[], diary:[], best:{} };
+const SAVE_DEFAULT = { day:0, stars:{}, wallet:0, gear:[], diary:[], best:{}, name:"", board:{} };
 let save = loadSave();
 
 function loadSave(){
@@ -941,6 +962,56 @@ function resetSave(){
   commitSave();
 }
 function starsOf(day){ return save.stars[day] || 0; }
+
+// Соперники по таблице. Настоящего сервера у игры нет, поэтому имена
+// генерируются один раз на день и дальше живут в сохранении — это соперники
+// из похода, а не результаты реальных игроков.
+const RIVAL_NAMES = ["Серёга","Ленка","Дядь Витя","Марина","Костя","Оля",
+                     "Палыч","Тёма","Наташа","Жека","Ирина","Дед Мороз"];
+
+function ensureBoard(dayNo){
+  if (save.board[dayNo]) return save.board[dayNo];
+  const L = LEVELS[dayNo-1] || LEVELS[0];
+  const base = L.len + 400 + dayNo*90;
+  const rows = [];
+  const used = [];
+  for (let i = 0; i < 7; i++){
+    let nm;
+    do { nm = RIVAL_NAMES[Math.floor(Math.random()*RIVAL_NAMES.length)]; }
+    while (used.indexOf(nm) >= 0);
+    used.push(nm);
+    rows.push({ name: nm, score: Math.round(base * (0.55 + Math.random()*0.85)), bot: true });
+  }
+  rows.sort((a,b) => b.score - a.score);
+  save.board[dayNo] = rows;
+  commitSave();
+  return rows;
+}
+
+function addResult(dayNo, name, score){
+  const rows = ensureBoard(dayNo);
+  const row = { name: name || "Без имени", score: score, mine: true, ts: Date.now() };
+  // свой прошлый результат за этот день заменяем, а не плодим строки
+  const idx = rows.findIndex(r => r.mine && r.name === row.name);
+  if (idx >= 0){ if (rows[idx].score >= score){ commitSave(); return rows; } rows.splice(idx,1); }
+  rows.push(row);
+  rows.sort((a,b) => b.score - a.score);
+  save.board[dayNo] = rows.slice(0, 12);
+  commitSave();
+  return save.board[dayNo];
+}
+
+function renderBoard(dayNo, highlightScore){
+  const rows = ensureBoard(dayNo);
+  const box = document.getElementById("finBoard");
+  box.innerHTML = "";
+  rows.slice(0, 8).forEach((r, i) => {
+    const el = document.createElement("div");
+    el.className = "brow" + (r.mine ? " mine" : "");
+    el.innerHTML = "<span>" + (i+1) + ". " + r.name + "</span><span>" + r.score + "</span>";
+    box.appendChild(el);
+  });
+}
 function totalStars(){
   let n = 0;
   for (const k in save.stars) n += save.stars[k];
@@ -1034,6 +1105,7 @@ function goalMet(){
 }
 
 function finishLevel(){
+  document.getElementById("pauseBtn").classList.add("hidden");
   const L = level();
   const total = Math.floor(g.dist) + g.bsc + g.sc;
   const stars = 1 + (g.livesLost === 0 ? 1 : 0) + (goalMet() ? 1 : 0);
@@ -1102,6 +1174,10 @@ function showFinish(L, stars, total){
     (g.livesLost === 0 ? "★ без потери попыток" : "☆ потеряно попыток: " + g.livesLost) + "<br>" +
     (goalMet() ? "★ " : "☆ ") + L.goalText;
   document.getElementById("nextBtn").textContent = (g.day >= LEVELS.length-1) ? "К МАРШРУТУ" : "ДАЛЬШЕ";
+  const inp = document.getElementById("finName");
+  inp.value = save.name || "";
+  g.pendingScore = total;
+  renderBoard(L.day, total);
   document.getElementById("finishScreen").classList.remove("hidden");
 }
 
@@ -1121,6 +1197,25 @@ function showDiary(){
     ? got.map(d => "<p>" + DIARY[d] + "</p>").join("")
     : "<p>Пока пусто. Записи появляются за пройденные дни.</p>";
   document.getElementById("diaryScreen").classList.remove("hidden");
+}
+
+function drwTape(){
+  if (g.tapeWy < 0) return;
+  const y = screenYOf(g.tapeWy);
+  if (y < -60 || y > H + 60) return;
+  const c = centerAt(g.tapeWy), hw = widthAt(g.tapeWy)/2;
+  cx.fillStyle = PAL.O;
+  cx.fillRect(c - hw - 10, y - 52, 10, 60);
+  cx.fillRect(c + hw,      y - 52, 10, 60);
+  // клетчатая лента через всю реку
+  const n = Math.ceil((hw*2)/14);
+  for (let i = 0; i < n; i++){
+    cx.fillStyle = (i % 2) ? "#ffffff" : "#141414";
+    cx.fillRect(c - hw + i*14, y - 40, 14, 14);
+  }
+  cx.fillStyle = "#ffd54f"; cx.font = "11px " + F; cx.textAlign = "center";
+  cx.fillText("ФИНИШ", c, y - 52);
+  cx.textAlign = "left";
 }
 
 function drwSign(){
@@ -1260,6 +1355,17 @@ function spBn(){
   if(bt===null)return;
   g.bns.push({t:bt,wy,type:ty,visHalf:bVis});
 }
+// Палаточный городок у финиша: несколько палаток, костёр и люди
+// на том берегу, к которому причаливаем.
+function spawnCamp(wy){
+  const sd = g.landSide;
+  const items = [["tent",0,34],["fire",70,30],["tent",140,40],
+                 ["person",40,26],["sitter",96,28],["tree",210,52],["tent",250,36]];
+  for (const [type, back, off] of items)
+    g.bev.push({ type, side:sd, wy: wy - back + 40, off,
+                 phase:Math.random()*6.28, mode:"sit", atCamp:true });
+}
+
 function spBev(){
   const ty=["bear","camp","fire","ducks","tower","fisher","bush","tree","tree"][Math.floor(Math.random()*9)];
   g.bev.push({type:ty,side:Math.random()<0.5?-1:1,wy:spawnWy(),
@@ -1429,7 +1535,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.signT=0;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
@@ -1495,7 +1601,32 @@ function resumeRun(){
   popText("ПОПЫТКА " + (4 - g.lives) + " ИЗ 3", "#ffd54f");
 }
 
+// Причаливание после ленты: управление отбирается, байдарка сама
+// подходит к берегу и тормозит, на берегу виден лагерь.
+function updArrive(){
+  g.frame++;
+  g.arriveT--;
+  const target = g.landSide * 0.70;
+  g.t += (target - g.t) * 0.035;
+  g.vt = 0;
+  g.sp *= 0.982;
+  g.scroll += g.sp * 0.55;
+  ensureSegments(g.scroll + H*2);
+  g.wake.push({ t:g.t, wy:g.scroll });
+  if (g.wake.length > 40) g.wake.shift();
+  for (let i=g.pts.length-1;i>=0;i--){
+    const pt=g.pts[i]; pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.15;
+    if(--pt.lf<=0) g.pts.splice(i,1);
+  }
+  for (let i=g.pops.length-1;i>=0;i--){
+    const pp=g.pops[i]; pp.y-=0.8;
+    if(--pp.life<=0) g.pops.splice(i,1);
+  }
+  if (g.arriveT <= 0) finishLevel();
+}
+
 function upd(){
+  if(g.s=="arrive"){ updArrive(); return; }
   if(g.s=="continue"){
     g.frame++;
     g.contT--;
@@ -1513,8 +1644,20 @@ function upd(){
   g.pa=Math.sin(g.frame*0.12);
 
   if (g.signT > 0) g.signT--;
-  // Финиш дня: дистанция уровня пройдена.
-  if (g.dist >= level().len){ finishLevel(); return; }
+
+  // Финишная лента выставляется за экран до конца дистанции, дальше она
+  // сама наплывает на игрока вместе с течением.
+  if (g.tapeWy < 0 && g.dist >= level().len - 30){
+    g.tapeWy = g.scroll + H - 120;
+    g.landSide = 1;                       // к какому берегу причалим
+    spawnCamp(g.tapeWy);
+  }
+  // Пересекли ленту — дальше игра ведёт байдарку сама.
+  if (g.tapeWy > 0 && g.scroll >= g.tapeWy){
+    g.s = "arrive"; g.arriveT = 210; g.obs.length = 0; g.bns.length = 0;
+    sfx("clean");
+    return;
+  }
 
   // Обгон соперников засчитывается: он ушёл за спину, значит обогнали.
   for (const o of g.obs)
@@ -1656,7 +1799,7 @@ function rndr(){
   for(const e of g.bev)drwBev(e);
   for(const o of g.obs)drwOb(o);
   for(const b of g.bns)drwBn(b);
-  drwWake();drwPt();drwKy();
+  drwWake();drwPt();drwKy();drwTape();
   cx.restore();
   drwSign();drwPops();drwHUD();
   if (g.whiskyT > 0){
@@ -1672,7 +1815,8 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX,
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   loadBest, saveBest, upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
-  startDay, showMap, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf };
+  startDay, showMap, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
+  ensureBoard, addResult };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
