@@ -42,6 +42,7 @@ canvas { display:block;margin:0 auto; }
     <p><span class="key">← →</span> или <span class="key">A D</span> — упр.</p>
     <p><span class="key">тач</span> — веди пальцем</p>
     <p>батон — сила, виски — кураж</p>
+    <p><span class="key">пробел</span> — удар веслом</p>
     <p><span class="key">M</span> — музыка вкл/выкл</p>
     <p>аптечка — прочность, топор — расчистка</p>
     <button class="btn" id="startBtn">> СТАРТ <</button>
@@ -81,7 +82,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,riverIdx:-1,signT:0,combo:0,comboT:0,passed:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,riverIdx:-1,signT:0,combo:0,comboT:0,passed:0,strikeT:0,taughtParry:false,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -353,6 +354,13 @@ function sfx(kind){
     [392, 330, 262].forEach((f, i) => tone(f, t + i*0.13, 0.24, "triangle", 0.10));
   } else if (kind === "over"){
     [523, 440, 349, 262, 196].forEach((f, i) => tone(f, t + i*0.18, 0.34, "square", 0.10));
+  } else if (kind === "swing"){
+    tone(180, t, 0.09, "sawtooth", 0.07);
+    tone(240, t + 0.07, 0.07, "square", 0.05);
+  } else if (kind === "parry"){
+    tone(1200, t, 0.05, "square", 0.10);
+    tone(1600, t + 0.04, 0.06, "square", 0.09);
+    tone(900,  t + 0.10, 0.16, "triangle", 0.08);
   } else if (kind === "clean"){
     [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i*0.09, 0.18, "square", 0.08));
   }
@@ -491,6 +499,32 @@ function segAt(w){
 const ACC = 0.0035, DAMP = 0.90, VMAX = 0.035, DRIFT = 0.0004, TMAX = 0.94;
 const KAYAK_R = 16;   // радиус столкновения байдарки
 
+// Драка вёслами. Агрессивный соперник заносит весло; поравнявшись с ним
+// борт о борт, ты получаешь замах. Последние PARRY_WINDOW кадров перед
+// ударом — окно парирования. Драка необязательна: агрессивного можно объехать.
+// Окно 20 кадров = треть секунды. 16 кадров (0.27 с) оказалось жёстко
+// для казуальной игры, при том что замах и так телеграфируется заранее.
+const SWING_FRAMES = 50, PARRY_WINDOW = 20, STRIKE_REACH = 100;
+
+function paddleStrike(){
+  if (g.s !== "playing") return;
+  g.strikeT = 12;
+  for (let i = g.obs.length - 1; i >= 0; i--){
+    const o = g.obs[i];
+    if (o.type !== "kayaker" || o.swingT < 0) continue;
+    if (o.swingT > PARRY_WINDOW) continue;          // рано, замах ещё идёт
+    const ox = screenXOf(o.t, o.wy), oy = screenYOf(o.wy);
+    spPt(ox, oy, "#ffd54f", 26);
+    g.obs.splice(i, 1);
+    g.bsc += 75; g.shake = 9; sfx("parry");
+    popText("ПАРИРОВАЛ +75", "#ffd54f");
+    // Перевернувшийся соперник роняет своё снаряжение.
+    const kind = ["bread","whisky","medkit","axe"][Math.floor(Math.random()*4)];
+    g.bns.push({ t:o.t, wy:o.wy, type:kind, visHalf:spriteSize(BN_SPRITE[kind]).w/2 });
+    return;
+  }
+}
+
 function flowMul(t){ return 1.18 - 0.34*t*t; }
 
 function stepLateral(input){
@@ -535,11 +569,27 @@ function widthAt(w){ return baseWidthAt(w) * (1 - 0.38*rapidBlend(w)); }
 function speedMulAt(w){ return 1 + 0.4*rapidBlend(w); }
 
 const keys={};let mt=null;
-addEventListener("keydown",e=>{keys[e.key]=true;if(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь")toggleMusic();if(e.key==" "||e.key=="Enter")hs();});
+addEventListener("keydown",e=>{
+  keys[e.key]=true;
+  if(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь")toggleMusic();
+  // Во время игры пробел и стрелка вверх — удар веслом; на экранах — старт.
+  if(g.s=="playing"){
+    if(e.key==" "||e.key=="ArrowUp"||e.key=="w"||e.key=="W"){e.preventDefault();paddleStrike();}
+  } else if(e.key==" "||e.key=="Enter")hs();
+});
 addEventListener("keyup",e=>{keys[e.key]=false;});
-c.addEventListener("touchstart",e=>{e.preventDefault();const r=c.getBoundingClientRect();mt=(e.touches[0].clientX-r.left)*(W/r.width);if(g.s=="start"||g.s=="over")hs();},{passive:false});
+let tapX=0,tapY=0,tapT=0;
+c.addEventListener("touchstart",e=>{e.preventDefault();const r=c.getBoundingClientRect();
+  mt=(e.touches[0].clientX-r.left)*(W/r.width);
+  tapX=e.touches[0].clientX;tapY=e.touches[0].clientY;tapT=Date.now();
+  if(g.s=="start"||g.s=="over"||g.s=="continue")hs();},{passive:false});
 c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();mt=(e.touches[0].clientX-r.left)*(W/r.width);},{passive:false});
-c.addEventListener("touchend",e=>{e.preventDefault();mt=null;},{passive:false});
+c.addEventListener("touchend",e=>{e.preventDefault();
+  // Короткий тап без ведения — удар веслом. Ведение пальцем занято рулением.
+  const t=e.changedTouches[0];
+  if(g.s=="playing"&&Date.now()-tapT<260&&
+     Math.abs(t.clientX-tapX)<12&&Math.abs(t.clientY-tapY)<12)paddleStrike();
+  mt=null;},{passive:false});
 for(const[id,k]of[["btnLeft","ArrowLeft"],["btnRight","ArrowRight"]]){
   const el=document.getElementById(id);
   el.addEventListener("touchstart",e=>{e.preventDefault();keys[k]=true;},{passive:false});
@@ -600,7 +650,14 @@ function drwKy(){
   const sz = spriteSize(name);
   drawShadow(x, y + sz.h/2 - 4, sz.w);
   drawSprite(name, x, y);
-  drwPaddle(x, y, g.frame * 6);
+  if (g.strikeT > 0){
+    cx.fillStyle = "#fff";
+    cx.fillRect(x - 34, y - 4, 68, 6);
+    cx.fillStyle = PAL.W;
+    cx.fillRect(x - 40, y - 8, 12, 14); cx.fillRect(x + 28, y - 8, 12, 14);
+  } else {
+    drwPaddle(x, y, g.frame * 6);
+  }
   if (g.sh){
     cx.strokeStyle = "rgba(79,195,247," + (0.35 + Math.sin(g.frame*0.1)*0.15) + ")";
     cx.lineWidth = 4;
@@ -627,7 +684,27 @@ function drwOb(o){
   const sz = spriteSize(name);
   drawShadow(x, y + sz.h/2 - 3, sz.w);
   drawSprite(name, x, y, o.variant);
-  if (o.type === "kayaker") drwPaddle(x, y, o.wy);
+  if (o.type === "kayaker"){
+    if (o.aggro){
+      // Весло занесено над головой — это и есть предупреждение.
+      const wind = o.swingT > PARRY_WINDOW ? 1 : (o.swingT >= 0 ? 0.35 : 1);
+      cx.fillStyle = PAL.n;
+      cx.fillRect(x - 2, y - 34*wind - 6, 4, 34*wind);
+      cx.fillStyle = PAL.W;
+      cx.fillRect(x - 6, y - 34*wind - 12, 12, 8);
+      if (o.swingT >= 0 && o.swingT <= PARRY_WINDOW){
+        // окно парирования — яркая вспышка вокруг соперника
+        cx.strokeStyle = (Math.floor(g.frame/3)%2) ? "#fff" : "#ffd54f";
+        cx.lineWidth = 3;
+        cx.strokeRect(x - 26, y - 30, 52, 60);
+      } else if (o.swingT > PARRY_WINDOW){
+        cx.fillStyle = "#ff5252";
+        cx.fillRect(x - 2, y - 52, 4, 10); cx.fillRect(x - 2, y - 38, 4, 4);
+      }
+    } else {
+      drwPaddle(x, y, o.wy);
+    }
+  }
   if (o.type === "rock"){
     // Пена там, где вода разбивается о камень.
     cx.fillStyle = PAL.f;
@@ -941,7 +1018,8 @@ function spOb(){
   if(ty=="kayaker"&&g.obs.some(o=>o.type=="kayaker"&&Math.abs(o.wy-wy)<300))return;
   g.obs.push({t,wy,type:ty,size:sz,halfPx,sprite,vt:0,
               visHalf,
-              variant:ty=="kayaker"?Math.floor(Math.random()*3):undefined});
+              variant:ty=="kayaker"?Math.floor(Math.random()*3):undefined,
+              aggro:ty=="kayaker"&&Math.random()<0.45, swingT:-1});
 }
 function spBn(){
   const wy=spawnWy();
@@ -1049,6 +1127,7 @@ function tickEffects(){
   if (g.breadT  > 0) g.breadT--;
   if (g.whiskyT > 0) g.whiskyT--;
   if (g.inv     > 0) g.inv--;
+  if (g.strikeT > 0) g.strikeT--;
   for (let i = g.pops.length-1; i >= 0; i--){
     const p = g.pops[i]; p.y -= 0.8;
     if (--p.life <= 0) g.pops.splice(i,1);
@@ -1093,7 +1172,7 @@ function sg(){
   document.getElementById("gameOverScreen").classList.add("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.riverIdx=-1;g.signT=0;g.combo=0;g.comboT=0;g.passed=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.riverIdx=-1;g.signT=0;g.combo=0;g.comboT=0;g.passed=0;g.strikeT=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
 }
@@ -1252,6 +1331,19 @@ function upd(){
     if(o.type=="kayaker"){
       // Соперник тоже сплавляется, но медленнее течения — мы его догоняем.
       o.wy+=g.sp*sm*0.4;
+      if(o.aggro){
+        const ahw=widthAt(o.wy)/2;
+        const lat=Math.abs(o.t-g.t)*ahw;
+        const alongside=Math.abs(o.wy-g.scroll)<75 && lat<STRIKE_REACH;
+        if(o.swingT<0 && alongside && g.inv<=0 && g.whiskyT<=0){
+          o.swingT=SWING_FRAMES; sfx("swing");
+          if(!g.taughtParry){ g.taughtParry=true; popText("ПРОБЕЛ — ВЕСЛОМ!","#ff5252"); }
+        }
+        if(o.swingT>=0){
+          o.swingT--;
+          if(o.swingT===0){ damage(); o.swingT=-1; o.aggro=false; }
+        }
+      }
       const hw=widthAt(o.wy)/2;
       let danger=0;
       for(const o2 of g.obs){
@@ -1318,7 +1410,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX,
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
-  loadBest, saveBest, upd, spOb, spBn, RIVERS, riverIndexAt, river };
+  loadBest, saveBest, upd, spOb, spBn, RIVERS, riverIndexAt, river, paddleStrike, SWING_FRAMES, PARRY_WINDOW };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
