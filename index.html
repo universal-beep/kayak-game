@@ -177,7 +177,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -285,6 +285,19 @@ const SPR = {
   sitter:{map:[".....kkkk.....","....kttttk....","....kttttk....","....kkttkk....",
     "...krrrrrrk...","..krrrrrrrrk..",".krrrrrrrrrrk.",".krrrrrrrrrrk.",
     "kZZZkrrrrkZZZk","kZZZZkkkkZZZZk","kOOZZZZZZZZOOk","kkkkkkkkkkkkkk"],noOutline:true},
+  snag:{map:["..kk..",".kOOk.",".kOOk.","kOnOk.","kOnOk.","kOnnOk","kOOnOk",
+    "kOOOOk",".kOOk.","..kk.."],noOutline:true},
+  barge:{map:[
+    "...kkkkkkkkkkkkkkkkkkkkkkkkkkkk...",
+    "..kIIIIIIIIIIIIIIIIIIIIIIIIIIIIk..",
+    ".kIWWWWWWWWWWWWWWWWWWWWWWWWWWWWIk.",
+    "kIWWkkkkWWWWkkkkWWWWkkkkWWWWkkWWIk",
+    "kIWWkWWkWWWWkWWkWWWWkWWkWWWWkWWWIk",
+    "kIWWkkkkWWWWkkkkWWWWkkkkWWWWkkWWIk",
+    "kIWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWIk",
+    "kIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIk",
+    ".kgggggggggggggggggggggggggggggk..",
+    "..kkkkkkkkkkkkkkkkkkkkkkkkkkkkk..."],noOutline:true},
   fish:{map:["..kkk..",".kWWWkk","kWWWWWk",".kWWWkk","..kkk.."],noOutline:true},
   fire:{map:["....kk....","...kuuk...","..kuyyuk..","..kyyyyk..",".kyyrryyk.",
     ".kyrrrryk.","kOOkkkkOOk",".kOOOOOOk.","..kkkkkk.."],noOutline:true},
@@ -326,7 +339,7 @@ SPR.kayak_left   = { map: shearMap(SPR.kayak_center.map, -1) };
 SPR.kayak_right  = { map: shearMap(SPR.kayak_center.map,  1) };
 
 // Часть спрайтов рисуется в меньшем масштабе, чтобы не подавлять остальные.
-const SPR_SCALE = { whisky:2, axe:2, medkit:2, slice:2, duck:2, fire:2 };
+const SPR_SCALE = { whisky:2, axe:2, medkit:2, slice:2, duck:2, fire:2, snag:2, barge:4 };
 function scaleOf(name){ return SPR_SCALE[name] || SCALE; }
 
 function spriteSize(name){
@@ -551,17 +564,17 @@ const RIVERS = [
 // третьей звезды — цели разные по сути, а не «то же самое, но дальше».
 const LEVELS = [
   { day:1, river:0, place:"ПАЛАТОЧНЫЙ ГОРОДОК", len: 800, goal:"bonuses",     need:5,
-    goalText:"Собрать 5 бонусов",            aggro:0.00 },
+    goalText:"Собрать 5 бонусов",            aggro:0.00, barges:true },
   { day:2, river:0, place:"СТАРИЦА",            len: 800, goal:"passed",      need:6,
-    goalText:"Обогнать 6 байдарочников",     aggro:0.00 },
+    goalText:"Обогнать 6 байдарочников",     aggro:0.00, barges:true },
   { day:3, river:1, place:"СТОЯНКА В ЛЕСУ",     len:1000, goal:"noshallows",  need:0,
-    goalText:"Не коснуться ни одной мели",   aggro:0.30 },
+    goalText:"Не коснуться ни одной мели",   aggro:0.30, forks:true, snags:true },
   { day:4, river:1, place:"ЛАГЕРЬ НА МЕДВЕДИЦЕ",len:1000, goal:"parries",     need:3,
-    goalText:"Парировать 3 удара веслом",    aggro:0.30 },
+    goalText:"Парировать 3 удара веслом",    aggro:0.30, forks:true, snags:true },
   { day:5, river:2, place:"ДЕРЕВНЯ",            len:1000, goal:"bridges",     need:4,
-    goalText:"Пройти 4 моста в пролёт",      aggro:0.45 },
+    goalText:"Пройти 4 моста в пролёт",      aggro:0.45, rain:0.55, bridges:true },
   { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:1,
-    goalText:"Дойти, сохранив сердце",       aggro:0.45 },
+    goalText:"Дойти, сохранив сердце",       aggro:0.45, rain:1.00, bridges:true },
   { day:7, river:3, place:"ПОРОГ ПЕРВЫЙ",       len:1200, goal:"cleanrapids", need:3,
     goalText:"Пройти 3 порога чисто",        aggro:0.60 },
   { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:12,
@@ -573,6 +586,46 @@ const LEVELS = [
 function level(){ return LEVELS[Math.min(g.day, LEVELS.length-1)]; }
 function river(){ return RIVERS[level().river]; }
 
+
+/* ===== 3c. Развилки русла ===== */
+// Река не раздваивается геометрически — посреди русла лежит остров,
+// и он оставляет два прохода. Так выбор есть, а всю геометрию русла
+// переписывать не приходится. Указатель на берегу виден заранее.
+const FORK_LEN = 900, FORK_GAP = 2600;
+
+function ensureForks(untilW){
+  if (!level().forks) return;
+  while (!g.forks.length || g.forks[g.forks.length-1].end < untilW){
+    const prev = g.forks.length ? g.forks[g.forks.length-1].end : 900;
+    const start = prev + FORK_GAP*(0.7 + Math.random()*0.6);
+    // Остров смещён от оси: один проход узкий и злой, другой широкий.
+    const narrowLeft = Math.random() < 0.5;
+    g.forks.push({ start, end: start + FORK_LEN,
+                   center: narrowLeft ? -0.10 : 0.10,
+                   half: 0.34, narrowLeft });
+  }
+  while (g.forks.length > 6) g.forks.shift();
+}
+function forkAt(w){
+  for (const f of g.forks) if (w >= f.start && w < f.end) return f;
+  return null;
+}
+// Плавный въезд и съезд с острова, чтобы он не появлялся стеной.
+function forkShape(w){
+  const f = forkAt(w);
+  if (!f) return null;
+  const din = Math.min(w - f.start, f.end - w);
+  const k = Math.max(0, Math.min(1, din/160));
+  return { c: f.center, h: f.half*k, f };
+}
+function inIsland(t, w){
+  const sh = forkShape(w);
+  return sh && sh.h > 0.02 && Math.abs(t - sh.c) < sh.h;
+}
+function nextFork(w){
+  for (const f of g.forks) if (f.start > w) return f;
+  return null;
+}
 
 /* ===== 4. Сегменты: плёс и порог ===== */
 const FIRST_RAPID_AT = 1200;
@@ -639,7 +692,9 @@ function flowMul(t){ return 1.18 - 0.34*t*t; }
 
 function stepLateral(input){
   const breadOn = g.breadT > 0;
-  g.vt += input * ACC * (breadOn ? 1.6 : 1) * (hasGear("paddle") ? 1.25 : 1);
+  // Под дождём грести тяжелее: вёсла скользят, руки мёрзнут.
+  const wet = 1 - 0.25*(level().rain || 0);
+  g.vt += input * ACC * (breadOn ? 1.6 : 1) * (hasGear("paddle") ? 1.25 : 1) * wet;
   // Центробежный снос: на повороте прижимает к внешнему берегу.
   // curvAt > 0 там, где ось выгибается вправо, — байдарку при этом уносит влево.
   g.vt -= curvAt(g.scroll) * DRIFT * (breadOn ? 0.5 : 1);
@@ -765,6 +820,18 @@ function drwBg(){
     cx.fillRect(L, y, 8, BAND);
     cx.fillRect(R - 8, y, 8, BAND);
 
+    const isl = forkShape(wy);
+    if (isl && isl.h > 0.02){
+      const ix = c + isl.c*hw, ih = isl.h*hw;
+      cx.fillStyle = "#d2b674";
+      cx.fillRect(ix - ih - 5, y, ih*2 + 10, BAND);
+      cx.fillStyle = g.rGrass || "#3f8f43";
+      cx.fillRect(ix - ih, y, ih*2, BAND);
+      if (Math.sin(wy*0.07) > 0.7){
+        cx.fillStyle = "#2f7434";
+        cx.fillRect(ix - ih + 4, y, ih*2 - 8, BAND);
+      }
+    }
     if (Math.sin(wy*0.055) > 0.62){
       cx.fillStyle = "rgba(255,255,255,0.10)";
       cx.fillRect(L + 12, y, R - L - 24, BAND);
@@ -777,7 +844,7 @@ function drwBg(){
   }
 }
 // Соответствие внутренних типов препятствий именам спрайтов.
-const OB_SPRITE = { log:"log", shallows:"shallows", seaweed:"seaweed", kayaker:"rower" };
+const OB_SPRITE = { log:"log", shallows:"shallows", seaweed:"seaweed", kayaker:"rower", snag:"snag", barge:"barge" };
 const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe" };
 
 function drwKy(){
@@ -1311,6 +1378,52 @@ function showDiary(){
   document.getElementById("diaryScreen").classList.remove("hidden");
 }
 
+// Мост: настил через реку и две опоры. Средний пролёт всегда свободен,
+// крайние иногда перекрыты — но пройти можно всегда.
+function ensureBridges(untilW){
+  if (!level().bridges) return;
+  while (!g.bridges_.length || g.bridges_[g.bridges_.length-1].wy < untilW){
+    const prev = g.bridges_.length ? g.bridges_[g.bridges_.length-1].wy : g.scroll + 600;
+    g.bridges_.push({ wy: prev + 1500 + Math.random()*700, passed:false });
+  }
+  while (g.bridges_.length > 5) g.bridges_.shift();
+}
+
+const PIER_T = 0.42, PIER_HALF_PX = 16;
+
+function drwBridge(b){
+  const y = screenYOf(b.wy);
+  if (y < -70 || y > H + 70) return;
+  const c = centerAt(b.wy), hw = widthAt(b.wy)/2;
+  // настил
+  cx.fillStyle = "#5d4634";
+  cx.fillRect(c - hw - 26, y - 20, hw*2 + 52, 16);
+  cx.fillStyle = "#7f5533";
+  for (let x = c - hw - 26; x < c + hw + 26; x += 12) cx.fillRect(x, y - 20, 6, 16);
+  cx.fillStyle = "#3e2a1c";
+  cx.fillRect(c - hw - 26, y - 6, hw*2 + 52, 5);
+  // опоры
+  for (const sgn of [-1, 1]){
+    const px = c + sgn*PIER_T*hw;
+    cx.fillStyle = "#8a99a3"; cx.fillRect(px - PIER_HALF_PX, y - 4, PIER_HALF_PX*2, 30);
+    cx.fillStyle = "#5e6d75"; cx.fillRect(px - PIER_HALF_PX + 4, y + 2, PIER_HALF_PX*2 - 8, 22);
+    cx.fillStyle = PAL.f;     cx.fillRect(px - PIER_HALF_PX, y + 26, PIER_HALF_PX*2, 4);
+  }
+}
+
+function chkBridges(){
+  for (const b of g.bridges_){
+    if (b.passed || g.scroll < b.wy) continue;
+    b.passed = true;
+    const hw = widthAt(b.wy)/2;
+    let hit = false;
+    for (const sgn of [-1, 1])
+      if (Math.abs((g.t - sgn*PIER_T)*hw) < PIER_HALF_PX + KAYAK_R) hit = true;
+    if (hit){ damage(); popText("В ОПОРУ!","#ff5252"); }
+    else { g.bridges++; g.sc += 40; popText("В ПРОЛЁТ +40","#7fd67f"); sfx("bonus"); }
+  }
+}
+
 function drwTape(){
   if (g.tapeWy < 0) return;
   const y = screenYOf(g.tapeWy);
@@ -1328,6 +1441,31 @@ function drwTape(){
   cx.fillStyle = "#ffd54f"; cx.font = "11px " + F; cx.textAlign = "center";
   cx.fillText("ФИНИШ", c, y - 52);
   cx.textAlign = "left";
+}
+
+function drwRain(){
+  const r = level().rain || 0;
+  if (!r) return;
+  cx.save();
+  cx.fillStyle = "rgba(20,32,48," + (0.16*r).toFixed(2) + ")";
+  cx.fillRect(0,0,W,H);
+  cx.strokeStyle = "rgba(200,225,255," + (0.35*r).toFixed(2) + ")";
+  cx.lineWidth = 1;
+  const n = Math.round(70*r);
+  for (let i = 0; i < n; i++){
+    const x = (i*137 + g.frame*7) % W;
+    const y = (i*211 + g.frame*23) % H;
+    cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x - 3, y + 12); cx.stroke();
+  }
+  // круги на воде
+  for (let i = 0; i < Math.round(10*r); i++){
+    const t = (g.frame*1.6 + i*37) % 60;
+    const x = (i*97 + Math.floor(g.frame/60)*53) % W;
+    const y = (i*151 + Math.floor(g.frame/60)*29) % H;
+    cx.strokeStyle = "rgba(255,255,255," + (0.25*(1-t/60)*r).toFixed(2) + ")";
+    cx.beginPath(); cx.arc(x, y, t*0.25, 0, Math.PI*2); cx.stroke();
+  }
+  cx.restore();
 }
 
 function drwSign(){
@@ -1363,6 +1501,8 @@ function drwPops(){
 // Полуширина препятствия в пикселях — нужна и для коллизий, и для проверки,
 // влезает ли оно в русло.
 function obHalfPx(ty,size){
+  if(ty=="snag")return 11;
+  if(ty=="barge")return 62;
   if(ty=="log")return size/2+9;
   if(ty=="shallows")return 34;
   if(ty=="seaweed")return 15;
@@ -1417,10 +1557,16 @@ function spaceFree(t, wy, visHalf){
 
 function spOb(){
   const wy=spawnWy(),rw=widthAt(wy),rb=rapidBlend(wy);
-  const types=["rock","log","shallows","seaweed","kayaker"];
-  const ws=rb>0.5?[0.50,0.10,0.14,0.13,0.13]:[0.30,0.20,0.18,0.17,0.15];
+  const L=level();
+  const types=["rock","log","shallows","seaweed","kayaker","snag","barge"];
+  let ws;
+  if (rb>0.5)              ws=[0.50,0.08,0.13,0.12,0.12,0.05,0.00];
+  else if (L.snags)        ws=[0.24,0.14,0.18,0.13,0.13,0.18,0.00];
+  else if (L.barges)       ws=[0.26,0.18,0.16,0.14,0.14,0.00,0.12];
+  else                     ws=[0.30,0.20,0.18,0.17,0.15,0.00,0.00];
   let r=Math.random(),c=0,ty="rock";
   for(let i=0;i<types.length;i++){c+=ws[i];if(r<c){ty=types[i];break;}}
+  if (ty=="barge" && g.obs.some(o=>o.type=="barge")) return;   // не больше одной сразу
   const sz=ty=="log"?36+Math.random()*24:14+Math.random()*8;
   // Камень бывает трёх форм: валун, клык и плита. Разные габариты дают
   // разные способы уворота, а плита ещё и не всегда влезает в русло.
@@ -1439,8 +1585,9 @@ function spOb(){
   const visName=sprite||OB_SPRITE[ty]||"boulder";
   const visHalf=spriteSize(visName).w/2;
   let t=null;
-  for(let a=0;a<8;a++){
+  for(let a=0;a<10;a++){
     const cand=(Math.random()*2-1)*lim;
+    if(inIsland(cand,wy))continue;
     if(spaceFree(cand,wy,visHalf)){t=cand;break;}
   }
   if(t===null)return;
@@ -1460,8 +1607,9 @@ function spBn(){
   for(let i=0;i<t.length;i++){c+=w[i];if(r<c){ty=t[i];break;}}
   const bVis=spriteSize(BN_SPRITE[ty]||"bread").w/2;
   let bt=null;
-  for(let a=0;a<8;a++){
+  for(let a=0;a<10;a++){
     const cand=(Math.random()*2-1)*0.75;
+    if(inIsland(cand,wy))continue;
     if(spaceFree(cand,wy,bVis)){bt=cand;break;}
   }
   if(bt===null)return;
@@ -1493,6 +1641,38 @@ function drwPt(){
   for(const p of g.pts){cx.globalAlpha=p.lf/p.ml;cx.fillStyle=p.cl;cx.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz);}
   cx.globalAlpha=1;
 }
+function chkIsland(){
+  const sh = forkShape(g.scroll);
+  if (!sh || sh.h <= 0.02) return;
+  const d = g.t - sh.c;
+  if (Math.abs(d) < sh.h + 0.03){
+    // Вынесло на остров — толкает обратно в ближайший проход и бьёт.
+    g.t = sh.c + (d >= 0 ? 1 : -1) * (sh.h + 0.06);
+    g.vt = 0;
+    damage();
+  }
+}
+
+function drwForkSign(){
+  const f = nextFork(g.scroll);
+  if (!f) return;
+  const d = f.start - g.scroll;
+  if (d > 520 || d < 0) return;
+  const wy = f.start;
+  const c = centerAt(wy), hw = widthAt(wy)/2, y = screenYOf(wy);
+  if (y < -60 || y > H) return;
+  const side = f.narrowLeft ? 1 : -1;
+  const bx = c + side*(hw + 40);
+  cx.save();
+  cx.fillStyle = "#2e4a2a"; cx.fillRect(bx-46, y-30, 92, 34);
+  cx.fillStyle = "#e8e2cf"; cx.fillRect(bx-42, y-26, 84, 26);
+  cx.fillStyle = "#2e4a2a"; cx.font = "6px " + F; cx.textAlign = "center";
+  cx.fillText(f.narrowLeft ? "ЛЕВО: УЖЕ" : "ПРАВО: УЖЕ", bx, y-16);
+  cx.fillText(f.narrowLeft ? "ПРАВО: ШИРЕ" : "ЛЕВО: ШИРЕ", bx, y-7);
+  cx.fillStyle = "#8f5d1e"; cx.fillRect(bx-3, y+4, 6, 22);
+  cx.restore(); cx.textAlign = "left";
+}
+
 function chkCl(){
   const kr=16;
   for(let i=g.obs.length-1;i>=0;i--){
@@ -1501,7 +1681,14 @@ function chkCl(){
     const dx=(g.t-o.t)*hw,dy=g.scroll-o.wy;
     if(Math.hypot(dx,dy)<kr+(o.halfPx||16)){
       const ox=screenXOf(o.t,o.wy),oy=screenYOf(o.wy);
-      if(o.type=="rock"||o.type=="log"||o.type=="kayaker"){
+      if(o.type=="barge"){
+        // Столкновение с баржей — не царапина: попытка кончается сразу.
+        g.obs.splice(i,1);
+        spPt(ox,oy,"#c9cfd3",26);
+        g.hp=1; damage();
+        return;
+      }
+      if(o.type=="rock"||o.type=="log"||o.type=="kayaker"||o.type=="snag"){
         if(g.whiskyT>0){                       // под виски всё разлетается в щепки
           spPt(ox,oy,"#e8a838",20);g.obs.splice(i,1);g.sc+=10;
         }else{
@@ -1650,7 +1837,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
@@ -1826,6 +2013,8 @@ function upd(){
     const o=g.obs[i];
     // Бревно плывёт по течению, но медленнее байдарок — мы его нагоняем.
     // Камни и мель неподвижны, поэтому их wy не меняется вовсе.
+    // Баржа идёт своим ходом, медленнее течения — мы её нагоняем.
+    if(o.type=="barge") o.wy+=g.sp*sm*0.30;
     if(o.type=="log"){
       o.wy+=g.sp*sm*0.22;
       o.t+=Math.sin(o.wy*0.02)*0.0006;          // лёгкое рыскание на воде
@@ -1894,6 +2083,10 @@ function upd(){
   for(let i=g.bns.length-1;i>=0;i--)if(offScreen(g.bns[i].wy))g.bns.splice(i,1);
   for(let i=g.bev.length-1;i>=0;i--)if(offScreen(g.bev[i].wy))g.bev.splice(i,1);
   for(let i=g.pts.length-1;i>=0;i--){const p=g.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.lf--;if(p.lf<=0)g.pts.splice(i,1);}
+  ensureForks(g.scroll + H*3);
+  ensureBridges(g.scroll + H*3);
+  chkIsland();
+  chkBridges();
   chkCl();
 }
 function drwWake(){
@@ -1912,11 +2105,12 @@ function rndr(){
   if (amp > 0.1) cx.translate((Math.random()-0.5)*amp, (Math.random()-0.5)*amp);
   drwBg();
   for(const e of g.bev)drwBev(e);
+  for(const b of g.bridges_)drwBridge(b);
   for(const o of g.obs)drwOb(o);
   for(const b of g.bns)drwBn(b);
   drwWake();drwPt();drwKy();drwTape();
   cx.restore();
-  drwSign();drwPops();drwHUD();
+  drwRain();drwForkSign();drwSign();drwPops();drwHUD();
   if (g.whiskyT > 0){
     cx.strokeStyle = "rgba(232,168,56," + (0.30 + Math.sin(g.frame*0.15)*0.08) + ")";
     cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
@@ -1931,7 +2125,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   loadBest, saveBest, upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
   startDay, showMap, showCamp, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
-  GEAR, hasGear,
+  GEAR, hasGear, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
