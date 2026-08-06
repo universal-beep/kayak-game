@@ -47,6 +47,8 @@ canvas { display:block;margin:0 auto; }
 #gameOverScreen .runs { font-family:"Press Start 2P",monospace;font-size:8px;color:#bbb;line-height:2;margin-top:6px; }
 #gameOverScreen .runs .top { color:#ffd54f; }
 .hidden { display:none !important; }
+#pauseBtn { position:absolute;top:10px;right:10px;width:40px;height:40px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
+#pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,10,20,0.92);pointer-events:all; }
 #mobileControls { position:absolute;bottom:16px;left:0;right:0;display:none;justify-content:space-between;padding:0 16px;pointer-events:none; }
 #mobileControls .ctrl { width:72px;height:72px;background:rgba(79,195,247,0.2);border:3px solid rgba(79,195,247,0.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#4fc3f7;pointer-events:all; }
 @media (max-width:768px),(hover:none) and (pointer:coarse) { #mobileControls { display:flex; } }
@@ -60,7 +62,7 @@ canvas { display:block;margin:0 auto; }
     <p><span class="key">тач</span> — веди пальцем</p>
     <p>батон — сила, виски — кураж</p>
     <p><span class="key">пробел</span> — удар веслом</p>
-    <p><span class="key">M</span> — музыка вкл/выкл</p>
+    <p><span class="key">M</span> — музыка &nbsp; <span class="key">Esc</span> — пауза</p>
     <p>аптечка — прочность, топор — расчистка</p>
     <button class="btn" id="startBtn">> СТАРТ <</button>
   </div>
@@ -79,6 +81,15 @@ canvas { display:block;margin:0 auto; }
     <button class="btn" id="restartBtn">> ЕЩЁ РАЗ <</button>
   </div>
 </div>
+  <div id="pauseScreen" class="hidden">
+    <h1 class="maph">ПАУЗА</h1>
+    <div class="place" id="pausePlace"></div>
+    <div class="goal" id="pauseGoal"></div>
+    <div class="maprow">
+      <button class="btn small" id="resumeBtn">ПРОДОЛЖИТЬ</button>
+      <button class="btn small ghost" id="pauseMapBtn">К МАРШРУТУ</button>
+    </div>
+  </div>
   <div id="mapScreen" class="hidden">
     <h1 class="maph">МАРШРУТ</h1>
     <div class="wallet">Рюкзак: <span id="mapWallet">0</span> &nbsp;|&nbsp; Звёзд: <span id="mapStars">0</span>/27</div>
@@ -129,6 +140,7 @@ canvas { display:block;margin:0 auto; }
   <div class="ctrl" id="btnLeft">◀</div>
   <div class="ctrl" id="btnRight">▶</div>
 </div>
+<div id="pauseBtn" class="hidden">II</div>
 <canvas id="game"></canvas>
 <script>
 const c=document.getElementById("game"),cx=c.getContext("2d");
@@ -624,6 +636,7 @@ const keys={};let mt=null;
 addEventListener("keydown",e=>{
   keys[e.key]=true;
   if(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь")toggleMusic();
+  if(e.key=="Escape"||e.key=="p"||e.key=="P"||e.key=="з"||e.key=="З"){e.preventDefault();togglePause();}
   // Во время игры пробел и стрелка вверх — удар веслом; на экранах — старт.
   if(g.s=="playing"){
     if(e.key==" "||e.key=="ArrowUp"||e.key=="w"||e.key=="W"){e.preventDefault();paddleStrike();}
@@ -663,6 +676,9 @@ document.getElementById("toMapBtn").addEventListener("click",showMap);
 document.getElementById("diaryBtn").addEventListener("click",showDiary);
 document.getElementById("diaryBack").addEventListener("click",showMap);
 document.getElementById("campBtn").addEventListener("click",showMap);
+document.getElementById("pauseBtn").addEventListener("click",togglePause);
+document.getElementById("resumeBtn").addEventListener("click",togglePause);
+document.getElementById("pauseMapBtn").addEventListener("click",()=>{g.s="map";showMap();});
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(confirm("Сбросить весь поход?")){resetSave();showMap();}
 });
@@ -1383,16 +1399,34 @@ function startDay(idx){
   sg();
 }
 
+function togglePause(){
+  if (g.s === "playing"){
+    g.s = "paused";
+    const L = level();
+    document.getElementById("pausePlace").textContent = "ДЕНЬ " + L.day + " · " + river().name;
+    document.getElementById("pauseGoal").innerHTML =
+      "до финиша: " + Math.max(0, Math.round(L.len - g.dist)) + " м<br>" +
+      "цель: " + L.goalText;
+    document.getElementById("pauseScreen").classList.remove("hidden");
+  } else if (g.s === "paused"){
+    document.getElementById("pauseScreen").classList.add("hidden");
+    g.s = "playing";
+  }
+}
+
 function hideAllScreens(){
-  for (const id of ["startScreen","gameOverScreen","continueScreen",
+  for (const id of ["startScreen","gameOverScreen","continueScreen","pauseScreen",
                     "mapScreen","finishScreen","failScreen","campScreen","diaryScreen"]){
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   }
+  document.getElementById("pauseScreen").classList.add("hidden");
+  document.getElementById("pauseBtn").classList.add("hidden");
 }
 
 function sg(){
   hideAllScreens();
+  document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.signT=0;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
@@ -1630,7 +1664,7 @@ function rndr(){
     cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
   }
 }
-function lp(){upd();rndr();requestAnimationFrame(lp);}
+function lp(){if(g.s!="paused")upd();rndr();requestAnimationFrame(lp);}
 
 /* ===== 13. Экспорт для тестов ===== */
 globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secondDiff,
