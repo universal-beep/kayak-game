@@ -20,6 +20,10 @@ canvas { display:block;margin:0 auto; }
 #gameOverScreen .score { font-family:"Press Start 2P",monospace;font-size:15px;color:#fff;margin:6px 0; }
 #gameOverScreen .bonus { color:#ffd54f; }
 #gameOverScreen .dist { color:#4fc3f7; }
+#gameOverScreen .verdict { font-family:"Press Start 2P",monospace;font-size:10px;margin:14px 0 6px; }
+#gameOverScreen .runs-title { font-family:"Press Start 2P",monospace;font-size:8px;color:#888;margin-top:10px; }
+#gameOverScreen .runs { font-family:"Press Start 2P",monospace;font-size:8px;color:#bbb;line-height:2;margin-top:6px; }
+#gameOverScreen .runs .top { color:#ffd54f; }
 .hidden { display:none !important; }
 #mobileControls { position:absolute;bottom:16px;left:0;right:0;display:none;justify-content:space-between;padding:0 16px;pointer-events:none; }
 #mobileControls .ctrl { width:72px;height:72px;background:rgba(79,195,247,0.2);border:3px solid rgba(79,195,247,0.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#4fc3f7;pointer-events:all; }
@@ -33,6 +37,7 @@ canvas { display:block;margin:0 auto; }
     <p><span class="key">← →</span> или <span class="key">A D</span> — упр.</p>
     <p><span class="key">тач</span> — веди пальцем</p>
     <p>батон — сила, виски — кураж</p>
+    <p><span class="key">M</span> — музыка вкл/выкл</p>
     <p>аптечка — прочность, топор — расчистка</p>
     <button class="btn" id="startBtn">> СТАРТ <</button>
   </div>
@@ -43,6 +48,10 @@ canvas { display:block;margin:0 auto; }
     <div class="score">Итого: <span id="finalScore">0</span></div>
     <div class="score">Рекорд: <span id="bestScore">0</span></div>
     <div class="score bonus hidden" id="newBest">НОВЫЙ РЕКОРД!</div>
+    <div class="verdict" id="verdict"></div>
+    <div class="runs-title">Лучший за сессию: <span id="sessionBest">0</span></div>
+    <div class="runs-title">Последние забеги</div>
+    <div class="runs" id="runs"></div>
     <button class="btn" id="restartBtn">> ЕЩЁ РАЗ <</button>
   </div>
 </div>
@@ -127,7 +136,9 @@ const SPR = {
     ".."+"k"+"pppxxxxxxxxxppp"+"k"+"..",".."+"k"+rep("p",15)+"k"+"..",
     "..."+"k"+rep("p",13)+"k"+"...","....."+"k"+rep("p",9)+"k"+".....",
     "......."+"kk"+"ppp"+"kk"+".......",rep(".",9)+"kkk"+rep(".",9)],
-    variants:[{},{z:"N",r:"u",p:"y",x:"Y"},{z:"r",r:"w",p:"v",x:"V"}]},
+    // Соперники — синий, зелёный и серый. Жёлтый корпус зарезервирован
+    // за игроком, чтобы своя байдарка узнавалась мгновенно.
+    variants:[{},{z:"N",p:"v",x:"V"},{r:"K",z:"g",p:"j",x:"g"}]},
   duck:{map:[".......kkk..","......kNNNk.","......kNNNk.","......kNNNNk",".....kwNNNuu",
     "..kkkaaaaak.",".kDaaaaaaak.","kDDaaaaaaak.","kDDDaaaaakk.",".kkkkkkkkk.."],noOutline:true},
   bear:{map:["...kkk......kkk...","..kBBBk....kBBBk..","..kBmBkkkkkkBmBk..",
@@ -143,12 +154,15 @@ const SPR = {
     rep(".",3)+"k"+"ZZZZZZ"+"k"+rep(".",5),rep(".",3)+"k"+"ZZ"+"kk"+"ZZ"+"k"+rep(".",5),
     rep(".",3)+"k"+"ZZ"+"kk"+"ZZ"+"k"+rep(".",5),rep(".",3)+"k"+"ZZ"+"kk"+"ZZ"+"k"+rep(".",5),
     ".."+"kk"+"OO"+"kk"+"OO"+"kk"+rep(".",4),".."+"kkkk"+"kk"+"kkkk"+rep(".",4)],noOutline:true},
-  tent:{map:[".........kk.........","........krrk........",".......krrrrk.......",
-    "......krrrrrrk......",".....krrrwwrrrk.....","....krrrrwwrrrrk....",
-    "...krrrrrwwrrrrrk...","..krrrrrrwwrrrrrrk..",".krrrrrrrwwrrrrrrrk.",
-    "kkkkkkkkkwwkkkkkkkkk","....................","........kyyk........",
-    ".......kyuuyk.......","......kyuurruyk.....",".....kOOkkkkOOk.....","......kkkkkkkk......"],
+  // Палатка широкая и низкая — узкий высокий треугольник читался как конус.
+  // Тёмная полоса по центру — вход, он и делает силуэт узнаваемым.
+  tent:{map:["...........kk...........","..........krrk..........",".........krrrrk.........",
+    "........krrKKrrk........",".......krrrKKrrrk.......","......krrrrKKrrrrk......",
+    ".....krrrrrKKrrrrrk.....","....krrrrrrKKrrrrrrk....","...krrrrrrrKKrrrrrrrk...",
+    "..krrrrrrrrKKrrrrrrrrk..",".krrrrrrrrrKKrrrrrrrrrk.","kkkkkkkkkkkKKkkkkkkkkkkk"],
     noOutline:true},
+  fire:{map:["....kk....","...kuuk...","..kuyyuk..","..kyyyyk..",".kyyrryyk.",
+    ".kyrrrryk.","kOOkkkkOOk",".kOOOOOOk.","..kkkkkk.."],noOutline:true},
   tower:{map:["....kkkk....","...kIIIIk...","..kIIIIIIk..",".kIIIIIIIIk.","kkkkkkkkkkkk",
     "kGwwwwwwwwGk","kGwwwwwwwwGk","kGGGGGGGGGGk","kkkkkkkkkkkk",
     "..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk",
@@ -178,18 +192,23 @@ function shearMap(map, dir){
     return row.slice(-sh) + rep(".", -sh);
   });
 }
-SPR.kayak_center = { map: swapPalette(SPR.rower.map, { z:"r", r:"w" }) };
+SPR.kayak_center = { map: swapPalette(SPR.rower.map, { r:"w", z:"r", p:"u", x:"Y" }) };
 SPR.kayak_left   = { map: shearMap(SPR.kayak_center.map, -1) };
 SPR.kayak_right  = { map: shearMap(SPR.kayak_center.map,  1) };
 
+// Часть спрайтов рисуется в меньшем масштабе, чтобы не подавлять остальные.
+const SPR_SCALE = { whisky:2, axe:2, medkit:2, slice:2, duck:2, fire:2 };
+function scaleOf(name){ return SPR_SCALE[name] || SCALE; }
+
 function spriteSize(name){
-  const m = SPR[name].map;
-  return { w: m[0].length * SCALE, h: m.length * SCALE };
+  const m = SPR[name].map, sc = scaleOf(name);
+  return { w: m[0].length * sc, h: m.length * sc };
 }
-function rasterize(map){
+function rasterize(map, sc){
+  sc = sc || SCALE;
   const cvs = document.createElement("canvas");
-  cvs.width = map[0].length * SCALE;
-  cvs.height = map.length * SCALE;
+  cvs.width = map[0].length * sc;
+  cvs.height = map.length * sc;
   const c2 = cvs.getContext("2d");
   c2.imageSmoothingEnabled = false;
   for (let r = 0; r < map.length; r++)
@@ -197,7 +216,7 @@ function rasterize(map){
       const ch = map[r][q];
       if (ch === ".") continue;
       c2.fillStyle = PAL[ch] || "#ff00ff";
-      c2.fillRect(q*SCALE, r*SCALE, SCALE, SCALE);
+      c2.fillRect(q*sc, r*sc, sc, sc);
     }
   return cvs;
 }
@@ -226,8 +245,9 @@ function rasterizeShallows(){
 function prerenderAll(){
   for (const name of Object.keys(SPR)){
     const spr = SPR[name];
-    spr.img = rasterize(spr.map);
-    if (spr.variants) spr.imgs = spr.variants.map(tb => rasterize(swapPalette(spr.map, tb)));
+    spr.img = rasterize(spr.map, scaleOf(name));
+    if (spr.variants)
+      spr.imgs = spr.variants.map(tb => rasterize(swapPalette(spr.map, tb), scaleOf(name)));
   }
   SPR.shallows = { map: new Array(15).fill(rep(".",34)), img: rasterizeShallows() };
 }
@@ -243,6 +263,52 @@ function drawShadow(x, y, w){
   cx.beginPath(); cx.ellipse(x, y, w*0.40, 5, 0, 0, Math.PI*2); cx.fill();
 }
 
+/* ===== 2b. Восьмибитная музыка ===== */
+// Мелодия синтезируется на месте: никаких файлов, игра остаётся одним HTML.
+// Квадратная волна — мелодия, треугольная — бас, как на старых приставках.
+let actx = null, musicOn = true, mStep = 0, mNext = 0;
+const NOTES = { A3:220, B3:246.94, C4:261.63, D4:293.66, E4:329.63, F4:349.23,
+                G4:392.00, A4:440.00, B4:493.88, C5:523.25, D5:587.33, E5:659.25 };
+const TUNE = ["E4","G4","A4","G4","E4","D4","E4",null,
+              "C4","E4","G4","E4","D4","C4","D4",null,
+              "E4","G4","A4","C5","B4","G4","A4",null,
+              "G4","E4","D4","E4","C4",null,"C4",null];
+const BASS = ["A3",null,"A3",null,"C4",null,"C4",null,
+              "F4",null,"F4",null,"G4",null,"G4",null];
+
+function tone(freq, at, dur, type, vol){
+  if (!freq) return;
+  const o = actx.createOscillator(), amp = actx.createGain();
+  o.type = type; o.frequency.value = freq;
+  amp.gain.setValueAtTime(0.0001, at);
+  amp.gain.exponentialRampToValueAtTime(vol, at + 0.012);
+  amp.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(amp); amp.connect(actx.destination);
+  o.start(at); o.stop(at + dur + 0.02);
+}
+
+function startMusic(){
+  if (actx || typeof AudioContext === "undefined") return;
+  actx = new AudioContext();
+  mNext = actx.currentTime + 0.05;
+  setInterval(musicTick, 90);
+}
+
+function musicTick(){
+  if (!actx || !musicOn) return;
+  const beat = 0.19;
+  while (mNext < actx.currentTime + 0.35){
+    tone(NOTES[TUNE[mStep % TUNE.length]], mNext, beat*0.85, "square", 0.045);
+    tone(NOTES[BASS[mStep % BASS.length]], mNext, beat*1.6, "triangle", 0.05);
+    mNext += beat; mStep++;
+  }
+}
+
+function toggleMusic(){
+  musicOn = !musicOn;
+  if (musicOn && actx) mNext = actx.currentTime + 0.05;
+}
+
 /* ===== 3. Геометрия русла ===== */
 const PY = H - 90;                 // экранная строка, на которой стоит байдарка
 
@@ -256,17 +322,21 @@ const PY = H - 90;                 // экранная строка, на кот
 // гасили друг друга в прямой участок. Теперь 84 из 107 приходится на одну
 // волну с периодом ~1850 px, и русло виляет непрерывно, а мелкие члены
 // лишь добавляют неровности, чтобы поворот не выглядел механическим.
+// Размах оси урезан со 107 до 88, потому что русло стало шире: полуширина
+// 120 плюс размах 88 = 208 при половине холста 210, берега ещё не срезаются.
 function centerAt(w){
   return W/2
-    + 84*Math.sin(w*0.0034)
-    + 16*Math.sin(w*0.0089 + 1.3)
-    + 7*Math.sin(w*0.0019 + 0.6);
+    + 70*Math.sin(w*0.0034)
+    + 12*Math.sin(w*0.0089 + 1.3)
+    + 6*Math.sin(w*0.0019 + 0.6);
 }
 
-// Размах ширины намеренно уменьшен с 110 до 60: раньше он перебивал поворот
-// и река читалась как «то сужается, то расширяется», а не как «поворачивает».
+// Ширина постоянная: колебания сбивали с толку и мешали читать поворот.
+// 240 px против прежних 135..195 — река стала заметно шире. Дальше её
+// сужают только пороги.
+const RIVER_WIDTH = 240;
 function baseWidthAt(w){
-  return 165 + 30*Math.sin(w*0.0022 + 2.1);
+  return RIVER_WIDTH;
 }
 
 function secondDiff(fn, w, h){
@@ -362,7 +432,7 @@ function widthAt(w){ return baseWidthAt(w) * (1 - 0.38*rapidBlend(w)); }
 function speedMulAt(w){ return 1 + 0.4*rapidBlend(w); }
 
 const keys={};let mt=null;
-addEventListener("keydown",e=>{keys[e.key]=true;if(e.key==" "||e.key=="Enter")hs();});
+addEventListener("keydown",e=>{keys[e.key]=true;if(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь")toggleMusic();if(e.key==" "||e.key=="Enter")hs();});
 addEventListener("keyup",e=>{keys[e.key]=false;});
 c.addEventListener("touchstart",e=>{e.preventDefault();const r=c.getBoundingClientRect();mt=(e.touches[0].clientX-r.left)*(W/r.width);if(g.s=="start"||g.s=="over")hs();},{passive:false});
 c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();mt=(e.touches[0].clientX-r.left)*(W/r.width);},{passive:false});
@@ -374,9 +444,9 @@ for(const[id,k]of[["btnLeft","ArrowLeft"],["btnRight","ArrowRight"]]){
   el.addEventListener("mousedown",()=>keys[k]=true);
   el.addEventListener("mouseup",()=>keys[k]=false);
 }
-function hs(){if(g.s=="start"||g.s=="over")sg();}
-document.getElementById("startBtn").addEventListener("click",sg);
-document.getElementById("restartBtn").addEventListener("click",sg);
+function hs(){startMusic();if(g.s=="start"||g.s=="over")sg();}
+document.getElementById("startBtn").addEventListener("click",()=>{startMusic();sg();});
+document.getElementById("restartBtn").addEventListener("click",()=>{startMusic();sg();});
 /* ===== 9. Рендер: русло и берега ===== */
 const BAND = 4;   // высота полосы построчного рендера
 
@@ -487,6 +557,9 @@ function drwBev(e){
 }
 
 const BEST_KEY = "kayak_best";
+// Результаты всех забегов текущей сессии. Живут вне объекта g, потому что
+// g целиком сбрасывается при старте новой игры.
+const sessionRuns = [];
 function loadBest(){ return Number(localStorage.getItem(BEST_KEY) || 0); }
 function saveBest(v){ if (v > loadBest()) localStorage.setItem(BEST_KEY, String(v)); }
 
@@ -552,6 +625,24 @@ function obHalfPx(ty,size){
   if(ty=="seaweed")return 15;
   return 24;
 }
+// Проверка, что рядом ещё не стоит другой объект. Без неё камни и бонусы
+// налезали друг на друга и превращались в неразборчивую кашу.
+// Зазор считается по ВИДИМЫМ размерам спрайтов, а не по радиусам
+// столкновений: у мели радиус втрое меньше картинки, и по нему объекты
+// вставали визуально внахлёст, оставаясь "свободными" по коллизии.
+function spaceFree(t, wy, visHalf){
+  const hw = widthAt(wy)/2;
+  for (const o of g.obs){
+    if (Math.abs(o.wy - wy) > 130) continue;
+    if (Math.abs(o.t - t)*hw < (o.visHalf || 24) + visHalf + 14) return false;
+  }
+  for (const b of g.bns){
+    if (Math.abs(b.wy - wy) > 130) continue;
+    if (Math.abs(b.t - t)*hw < (b.visHalf || 30) + visHalf + 14) return false;
+  }
+  return true;
+}
+
 function spOb(){
   const wy=spawnWy(),rw=widthAt(wy),rb=rapidBlend(wy);
   const types=["rock","log","shallows","seaweed","kayaker"];
@@ -572,7 +663,17 @@ function spOb(){
   // расклад — такой спавн просто отменяется.
   if(halfPx*2>rw*0.45)return;
   const lim=Math.max(0,0.92-2*halfPx/rw);
-  g.obs.push({t:(Math.random()*2-1)*lim,wy,type:ty,size:sz,halfPx,sprite,vt:0,
+  // Несколько попыток найти свободное место, иначе спавн пропускается.
+  const visName=sprite||OB_SPRITE[ty]||"boulder";
+  const visHalf=spriteSize(visName).w/2;
+  let t=null;
+  for(let a=0;a<8;a++){
+    const cand=(Math.random()*2-1)*lim;
+    if(spaceFree(cand,wy,visHalf)){t=cand;break;}
+  }
+  if(t===null)return;
+  g.obs.push({t,wy,type:ty,size:sz,halfPx,sprite,vt:0,
+              visHalf,
               variant:ty=="kayaker"?Math.floor(Math.random()*3):undefined});
 }
 function spBn(){
@@ -581,10 +682,17 @@ function spBn(){
   const t=["bread","whisky","medkit","axe"],w=bonusWeights();
   let r=Math.random(),c=0,ty="bread";
   for(let i=0;i<t.length;i++){c+=w[i];if(r<c){ty=t[i];break;}}
-  g.bns.push({t:(Math.random()*2-1)*0.75,wy,type:ty});
+  const bVis=spriteSize(BN_SPRITE[ty]||"bread").w/2;
+  let bt=null;
+  for(let a=0;a<8;a++){
+    const cand=(Math.random()*2-1)*0.75;
+    if(spaceFree(cand,wy,bVis)){bt=cand;break;}
+  }
+  if(bt===null)return;
+  g.bns.push({t:bt,wy,type:ty,visHalf:bVis});
 }
 function spBev(){
-  const ty=["bear","camp","ducks","tower","fisher","bush","tree","tree"][Math.floor(Math.random()*8)];
+  const ty=["bear","camp","fire","ducks","tower","fisher","bush","tree","tree"][Math.floor(Math.random()*9)];
   g.bev.push({type:ty,side:Math.random()<0.5?-1:1,wy:spawnWy(),
               off:ty=="ducks"?10:26+Math.random()*38});
   g.ned=g.dist+22+Math.random()*38;
@@ -639,11 +747,16 @@ function damage(){
   if (g.sh){ g.sh = false; g.shake = 8; popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
   g.hp -= 1;
   g.inv = INV_FRAMES;
-  g.shake = 10;
-  g.sp = Math.max(1.5, g.sp*0.6);
+  g.shake = 14;
   if (rapidBlend(g.scroll) > 0.5) g.cleanRun = false;
-  popText("-1","#ff5252");
-  if (g.hp <= 0) gmO();
+  if (g.hp <= 0){ gmO(); return; }
+  // Попытка продолжается с того же места: дистанция сохраняется, байдарка
+  // возвращается на ось русла, а ближайшие препятствия убираются — иначе
+  // игрок влетал бы в тот же камень сразу после респавна.
+  g.t = 0; g.vt = 0;
+  g.sp = Math.max(1.8, g.sp*0.55);
+  g.obs = g.obs.filter(o => Math.abs(o.wy - g.scroll) > 150);
+  popText("ПОПЫТКА " + (4 - g.hp) + " ИЗ 3", "#ff5252");
 }
 
 function popText(text, color){
@@ -697,14 +810,42 @@ function sg(){
 }
 function gmO(){
   const total = Math.floor(g.dist) + g.bsc;
-  const isBest = total > loadBest();
+  const prevBest = loadBest();
+  const isBest = total > prevBest;
   saveBest(total);
-  g.s="over";document.getElementById("gameOverScreen").classList.remove("hidden");
-  document.getElementById("finalDist").textContent=Math.floor(g.dist);
-  document.getElementById("finalBonus").textContent=g.bsc;
-  document.getElementById("finalScore").textContent=total;
-  document.getElementById("bestScore").textContent=loadBest();
+  sessionRuns.push(total);
+
+  g.s = "over";
+  document.getElementById("gameOverScreen").classList.remove("hidden");
+  document.getElementById("finalDist").textContent = Math.floor(g.dist);
+  document.getElementById("finalBonus").textContent = g.bsc;
+  document.getElementById("finalScore").textContent = total;
+  document.getElementById("bestScore").textContent = loadBest();
   document.getElementById("newBest").classList.toggle("hidden", !isBest);
+
+  const sessionBest = Math.max.apply(null, sessionRuns);
+  const verdict = document.getElementById("verdict");
+  if (isBest){
+    verdict.textContent = "РЕКОРД ПОБИТ! +" + (total - prevBest);
+    verdict.style.color = "#7fd67f";
+  } else {
+    verdict.textContent = "ДО РЕКОРДА НЕ ХВАТИЛО " + (prevBest - total);
+    verdict.style.color = "#ff8a65";
+  }
+
+  // Последние забеги этой сессии, лучший подсвечен.
+  document.getElementById("sessionBest").textContent =
+    sessionBest + "  (забегов: " + sessionRuns.length + ")";
+  const list = document.getElementById("runs");
+  list.innerHTML = "";
+  const shown = sessionRuns.slice(-6);
+  const offset = sessionRuns.length - shown.length;
+  shown.forEach((v, i) => {
+    const row = document.createElement("div");
+    row.className = "run" + (v === sessionBest ? " top" : "");
+    row.textContent = "#" + (offset + i + 1) + "  " + v + (v === sessionBest ? "  ЛУЧШИЙ" : "");
+    list.appendChild(row);
+  });
 }
 function upd(){
   if(g.s!="playing")return;g.frame++;
@@ -747,14 +888,35 @@ function upd(){
       const hw=widthAt(o.wy)/2;
       let danger=0;
       for(const o2 of g.obs){
-        if(o2===o||o2.type=="kayaker")continue;
+        if(o2===o)continue;
         const dy=o2.wy-o.wy;
-        if(dy>0&&dy<90){const dx=(o.t-o2.t)*hw;if(Math.abs(dx)<44)danger+=dx>=0?1:-1;}
+        // Впереди — уклоняется заранее; рядом — расталкивается, иначе
+        // соперник наезжал на камни и спрайты сливались в кашу.
+        if(dy>0&&dy<110){const dx=(o.t-o2.t)*hw;if(Math.abs(dx)<48)danger+=dx>=0?1:-1;}
+        else if(Math.abs(dy)<55){
+          const dx=(o.t-o2.t)*hw, need=(o2.halfPx||20)+24;
+          if(Math.abs(dx)<need)danger+=(dx>=0?1:-1)*2;
+        }
       }
       o.vt+=danger*0.0012+Math.sin(o.wy*0.004)*0.0004;
       o.vt*=0.9;
       o.vt=Math.max(-0.02,Math.min(0.02,o.vt));
       o.t+=o.vt;
+      // Жёсткое выталкивание: сил уклонения не хватает, когда соперник
+      // проплывает мимо неподвижного камня вплотную. Здесь пересечение
+      // просто устраняется сдвигом позиции.
+      for(const o2 of g.obs.concat(g.bns)){
+        if(o2===o||o2.type=="kayaker")continue;
+        if(Math.abs(o2.wy-o.wy)>70)continue;
+        // По видимым размерам, а не по радиусам столкновений: у мели
+        // радиус втрое меньше спрайта, и по нему выталкивание не срабатывало.
+        const need=((o2.visHalf||o2.halfPx||20)+(o.visHalf||32))*0.85;
+        const dx=(o.t-o2.t)*hw;
+        if(Math.abs(dx)<need){
+          o.t+=(need-Math.abs(dx))/hw*(dx>=0?1:-1);
+          o.vt=0;
+        }
+      }
       if(o.t>0.85){o.t=0.85;o.vt=0;}
       if(o.t<-0.85){o.t=-0.85;o.vt=0;}
     }
