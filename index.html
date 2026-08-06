@@ -32,7 +32,8 @@ canvas { display:block;margin:0 auto; }
     <h1>СПЛАВ</h1>
     <p><span class="key">← →</span> или <span class="key">A D</span> — упр.</p>
     <p><span class="key">тач</span> — веди пальцем</p>
-    <p>собирай бонусы и уворачивайся</p>
+    <p>батон — сила, виски — кураж</p>
+    <p>аптечка — прочность, топор — расчистка</p>
     <button class="btn" id="startBtn">> СТАРТ <</button>
   </div>
   <div id="gameOverScreen" class="hidden">
@@ -40,6 +41,8 @@ canvas { display:block;margin:0 auto; }
     <div class="score dist">Дистанция: <span id="finalDist">0</span> м</div>
     <div class="score bonus">+ Бонусы: <span id="finalBonus">0</span></div>
     <div class="score">Итого: <span id="finalScore">0</span></div>
+    <div class="score">Рекорд: <span id="bestScore">0</span></div>
+    <div class="score bonus hidden" id="newBest">НОВЫЙ РЕКОРД!</div>
     <button class="btn" id="restartBtn">> ЕЩЁ РАЗ <</button>
   </div>
 </div>
@@ -50,12 +53,195 @@ canvas { display:block;margin:0 auto; }
 <canvas id="game"></canvas>
 <script>
 const c=document.getElementById("game"),cx=c.getContext("2d");
+cx.imageSmoothingEnabled=false;
 const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:200,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
+
+/* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
+const SCALE = 3;
+const PAL = {
+  k:"#1c1008", K:"#101010", w:"#ffffff", W:"#c9cfd3",
+  G:"#9aa9b2", j:"#74858e", g:"#55646d",
+  L:"#eec27a", M:"#c9913f", D:"#8f5d1e", e:"#f7efd8",
+  q:"#c9821f", A:"#e8a838", Y:"#d8a520", y:"#e8b23a", u:"#f2c035",
+  r:"#d13a2e", R:"#8b1f18", f:"#dff0fa",
+  o:"#7f5533", O:"#4a3018", n:"#a87848",
+  i:"#c2ced6", I:"#7d8a93",
+  z:"#2f6fd0", Z:"#1c4a8f", t:"#f0c39a", T:"#c9926a",
+  p:"#e2551f", x:"#a33510", a:"#d8b57a", N:"#2f7a3a",
+  B:"#6f4527", b:"#472a15", m:"#bb8f60",
+  v:"#2f8a36", V:"#1c5c22", s:"#efd9a0", S:"#d2b674", d:"#a98d52",
+  c:"#7a4a28", C:"#55301a", h:"#a3703f"
+};
+const rep = (ch,n) => ch.repeat(n);
+
+const SPR = {
+  bread:{map:[".....kkkkkkkkkk.....","...kkLLLLLLLLLLkk...","..kLLLDLLLLDLLLLLk..",
+    ".kLLDLLLLDLLLLLLDLk.",".kLDLLLLDLLLLLLDLLk.",".kLLLLLDLLLLLLDLLLk.",
+    ".kLLLLLLLLLLLLLLLLk.",".kMMMMMMMMMMMMMMMMk.","..kMMMMMMMMMMMMMMk..",
+    "...kkMMMMMMMMMMkk...",".....kkkkkkkkkk....."]},
+  slice:{map:["kkkkkkkkkk","kMeeeeeeMk","kMeeeeeeMk","kMeeeeeeMk","kMMMMMMMMk",".kkkkkkkk."]},
+  whisky:{map:["....kkkkkk....","...kKKKKKKk...","...kKKKKKKk...","...kYYYYYYk...",
+    "...kqqqqqqk...","..kqqqqqqqqk..",".kqqqqqqqqqqk.","kqAqqqqqqqqqqk",
+    "kqAqqqqqqqqqqk","kKKKKKKKKKKKKk","kKwwwwwwwwwwKk","kKwKKwKwKKwwKk",
+    "kKwwwwwwwwwwKk","kKKKKKKKKKKKKk","kqAqqqqqqqqqqk","kqAqqqqqqqqqqk",
+    "kqqqqqqqqqqqqk",".kqqqqqqqqqqk.",".kkkkkkkkkkkk."]},
+  medkit:{map:["......kkkkkk......","......kWWWWk......",".kkkkkkkkkkkkkkkk.",
+    ".kwwwwwwwwwwwwwwk.",".kwwwwwwrrwwwwwwk.",".kwwwwwwrrwwwwwwk.",
+    ".kwwwrrrrrrrrwwwk.",".kwwwrrrrrrrrwwwk.",".kwwwwwwrrwwwwwwk.",
+    ".kwwwwwwrrwwwwwwk.",".kwwwwwwwwwwwwwwk.",".kkkkkkkYYkkkkkkk.",
+    ".kwwwwwwYYwwwwwwk.",".kwwwwwwwwwwwwwwk.",".kkkkkkkkkkkkkkkk."]},
+  axe:{map:["....kkkkkk......","..kkiiiiiik.....",".kiiiiiiiiik....","kiiiiiiiiiIkk...",
+    "kIiiiiiiiiIOOk..","kIIiiiiiiIIOOk..",".kIIiiiiIIkOOk..","..kkIIIIkk.OOk..",
+    "....kkkk...OOk..","..........kOOk..","..........kOnk..","..........kOnk..",
+    "..........kOnk..","..........kOnk..","..........kOnk..","..........kOOk..",
+    "..........kOOk..","..........kkkk.."]},
+  boulder:{map:[".....kkkkk......","...kkGGGGGkk....","..kGGGGGGGGGkk..",".kGGGGGGjjjjGGkk",
+    ".kGGGGjjjjjjjGk.","kGGGjjjjjjjjjGk.","kGGjjjjjjjjjjjGk","kGjjjjjggggjjjGk",
+    "kGjjjjggggggjjGk","kGjjjggggggggjGk","kGjjggggggggggGk",".kjjgggggggggGk.",
+    ".kkgggggggggGkk.","..kkgggggggkkk..","....kkkkkkkk...."]},
+  fang:{map:["......kk......",".....kGGk.....",".....kGGk.....","....kGGjjk....",
+    "....kGGjjk....","...kGGGjjjk...","...kGGGjjjk...","..kGGGGjjjjk..",
+    "..kGGGjjjjjk..",".kGGGGjjjjjjk.",".kGGGjjjjgggk.","kGGGjjjjgggggk",
+    "kGjjjjgggggggk","kGjjjggggggggk","kjjggggggggggk",".kkgggggggggk.","..kkkkkkkkkk.."]},
+  slab:{map:[".....kkkkkkkkkkkkk......","..kkkGGGGGGGGGGGGGkkk...",".kGGGGGGGGGGGGGGGGGGGkk.",
+    "kGGGGGjjjjjjjjjjjGGGGGGk","kGjjjjjjjjjjjjjjjjjjjjGk","kjjjjjjjjggggggjjjjjjjjk",
+    "kjjjjjggggggggggggjjjjjk","kjjggggggggggggggggggjjk",".kkgggggggggggggggggggk.",
+    "..kkgggggggggggggggkkk..","....kkkkkkkkkkkkkkk....."]},
+  log:{map:[rep(".",3)+rep("k",20)+rep(".",3),"..kk"+rep("o",18)+"kk..",".k"+rep("n",22)+"k.",
+    "k"+rep("n",24)+"k","k"+rep("o",24)+"k","k"+("oooOoo".repeat(4))+"k","k"+rep("o",24)+"k",
+    "k"+rep("O",24)+"k",".k"+rep("O",22)+"k.","..kk"+rep("O",18)+"kk..",
+    rep(".",3)+rep("k",20)+rep(".",3)]},
+  seaweed:{map:["...kk.....","..kVVk....","..kVVk.kk.","..kVVkkVVk",".kVVVkkVVk",".kVVVkkVVk",
+    ".kVVVkkVVk","kVVVVkkVVk","kVVVVkkVVk","kVVVVkkVVk","kVVVVkkVVk",".kVVVkkVVk",
+    ".kVVVkkVVk","..kVVkkVVk","..kVVkkVVk","..kVVk.kk.","..kkkk...."]},
+  rower:{map:[rep(".",9)+"kkk"+rep(".",9),rep(".",8)+"k"+"rrr"+"k"+rep(".",8),
+    rep(".",8)+"k"+"rrr"+"k"+rep(".",8),rep(".",8)+"k"+"ttt"+"k"+rep(".",8),
+    rep(".",7)+"kk"+"ttt"+"kk"+rep(".",7),rep(".",6)+"k"+"zzzzzzz"+"k"+rep(".",6),
+    rep(".",5)+"k"+"zzzzzzzzz"+"k"+rep(".",5),rep(".",5)+"k"+"zzwwwwwzz"+"k"+rep(".",5),
+    rep(".",5)+"k"+"zzzzzzzzz"+"k"+rep(".",5),".."+"k"+rep("p",15)+"k"+"..",
+    ".."+"k"+"pppxxxxxxxxxppp"+"k"+"..",".."+"k"+rep("p",15)+"k"+"..",
+    "..."+"k"+rep("p",13)+"k"+"...","....."+"k"+rep("p",9)+"k"+".....",
+    "......."+"kk"+"ppp"+"kk"+".......",rep(".",9)+"kkk"+rep(".",9)],
+    variants:[{},{z:"N",r:"u",p:"y",x:"Y"},{z:"r",r:"w",p:"v",x:"V"}]},
+  duck:{map:[".......kkk..","......kNNNk.","......kNNNk.","......kNNNNk",".....kwNNNuu",
+    "..kkkaaaaak.",".kDaaaaaaak.","kDDaaaaaaak.","kDDDaaaaakk.",".kkkkkkkkk.."],noOutline:true},
+  bear:{map:["...kkk......kkk...","..kBBBk....kBBBk..","..kBmBkkkkkkBmBk..",
+    "..kkBBBBBBBBBBkk..","..kBBBBBBBBBBBBk..","..kBBwwBBBBwwBBk..","..kBBwKBBBBKwBBk..",
+    "..kBBBBmmmmBBBBk..","..kBBBmmmmmmBBBk..","..kBBBmKKKKmBBBk..","...kBBmmmmmmBBk...",
+    "....kkBBBBBBkk....","..kkkBBBBBBBBkkk..",".kBBBBmmmmmmBBBBk.",".kBBBBmmmmmmBBBBk.",
+    ".kBBBBBBBBBBBBBBk.","..kkkkkkkkkkkkkk.."]},
+  fisher:{map:[rep(".",5)+"kkkk"+rep(".",7),rep(".",4)+"k"+"yyyy"+"k"+rep(".",6),
+    rep(".",3)+"kk"+"yyyyyy"+"kk"+rep(".",3),rep(".",5)+"k"+"tt"+"k"+rep(".",7),
+    rep(".",5)+"k"+"tt"+"k"+rep(".",7),rep(".",4)+"k"+"rrrr"+"k"+rep(".",6),
+    rep(".",3)+"k"+"rrrrrr"+"k"+rep(".",5),rep(".",3)+"k"+"rrrrrr"+"k"+rep(".",5),
+    rep(".",3)+"k"+"rrrrrr"+"k"+rep(".",5),rep(".",3)+"k"+"ZZZZZZ"+"k"+rep(".",5),
+    rep(".",3)+"k"+"ZZZZZZ"+"k"+rep(".",5),rep(".",3)+"k"+"ZZ"+"kk"+"ZZ"+"k"+rep(".",5),
+    rep(".",3)+"k"+"ZZ"+"kk"+"ZZ"+"k"+rep(".",5),rep(".",3)+"k"+"ZZ"+"kk"+"ZZ"+"k"+rep(".",5),
+    ".."+"kk"+"OO"+"kk"+"OO"+"kk"+rep(".",4),".."+"kkkk"+"kk"+"kkkk"+rep(".",4)],noOutline:true},
+  tent:{map:[".........kk.........","........krrk........",".......krrrrk.......",
+    "......krrrrrrk......",".....krrrwwrrrk.....","....krrrrwwrrrrk....",
+    "...krrrrrwwrrrrrk...","..krrrrrrwwrrrrrrk..",".krrrrrrrwwrrrrrrrk.",
+    "kkkkkkkkkwwkkkkkkkkk","....................","........kyyk........",
+    ".......kyuuyk.......","......kyuurruyk.....",".....kOOkkkkOOk.....","......kkkkkkkk......"],
+    noOutline:true},
+  tower:{map:["....kkkk....","...kIIIIk...","..kIIIIIIk..",".kIIIIIIIIk.","kkkkkkkkkkkk",
+    "kGwwwwwwwwGk","kGwwwwwwwwGk","kGGGGGGGGGGk","kkkkkkkkkkkk",
+    "..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk",
+    "..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk",
+    "..kOk....kOk","..kOk....kOk","..kOk....kOk","..kkk....kkk"],noOutline:true},
+  bush:{map:["...kkkk...","..kvvvvk..",".kvvvvvvk.","kvvvVvvvvk","kvvVvvvvVk",
+    ".kvvvvvvk.","..kVVVVk..","...kkkk..."]},
+  tree:{map:["......kk......",".....kvvk.....","....kvvvvk....","...kvvvvvvk...",
+    "..kvvvVvvvvk..",".kvvvvvvvvvvk.","kvvvvVvvvvvvvk",".kvvvvvvvvvvk.",
+    "..kvvvvvvvvk..","...kvvvvvvk...","....kvvvvk....",".....kvvk.....",
+    "......kOk.....","......kOk.....",".....kOOk.....",".....kOOk.....",
+    "....kOOOOk....","....kkkkkk...."],noOutline:true}
+};
+
+function swapPalette(map, table){
+  return map.map(row => row.split("").map(ch => (ch !== "." && table[ch]) ? table[ch] : ch).join(""));
+}
+// Байдарка игрока — та же карта, что у соперника, но в своей палитре, плюс
+// два скошенных варианта для крена. Скос дешевле трёх ручных карт и читается
+// как наклон корпуса при манёвре.
+function shearMap(map, dir){
+  const w = map[0].length, h = map.length;
+  return map.map((row, r) => {
+    const sh = Math.round((h/2 - r) / h * 4) * dir;
+    if (sh === 0) return row;
+    if (sh > 0) return rep(".", sh) + row.slice(0, w - sh);
+    return row.slice(-sh) + rep(".", -sh);
+  });
+}
+SPR.kayak_center = { map: swapPalette(SPR.rower.map, { z:"r", r:"w" }) };
+SPR.kayak_left   = { map: shearMap(SPR.kayak_center.map, -1) };
+SPR.kayak_right  = { map: shearMap(SPR.kayak_center.map,  1) };
+
+function spriteSize(name){
+  const m = SPR[name].map;
+  return { w: m[0].length * SCALE, h: m.length * SCALE };
+}
+function rasterize(map){
+  const cvs = document.createElement("canvas");
+  cvs.width = map[0].length * SCALE;
+  cvs.height = map.length * SCALE;
+  const c2 = cvs.getContext("2d");
+  c2.imageSmoothingEnabled = false;
+  for (let r = 0; r < map.length; r++)
+    for (let q = 0; q < map[r].length; q++){
+      const ch = map[r][q];
+      if (ch === ".") continue;
+      c2.fillStyle = PAL[ch] || "#ff00ff";
+      c2.fillRect(q*SCALE, r*SCALE, SCALE, SCALE);
+    }
+  return cvs;
+}
+// Мель рисуется формулой, но со снапом на ту же пиксельную сетку:
+// неровный контур, зернистый песок трёх оттенков и пенный ободок.
+function rasterizeShallows(){
+  const CW = 34, CH = 15;
+  const cvs = document.createElement("canvas");
+  cvs.width = CW*SCALE; cvs.height = CH*SCALE;
+  const c2 = cvs.getContext("2d");
+  for (let r = 0; r < CH; r++) for (let q = 0; q < CW; q++){
+    const nx = (q-(CW-1)/2)/((CW-1)/2), ny = (r-(CH-1)/2)/((CH-1)/2);
+    const ang = Math.atan2(ny, nx);
+    const wob = 1 + 0.11*Math.sin(ang*3+0.7) + 0.07*Math.sin(ang*5+2.1);
+    const dd = Math.sqrt(nx*nx+ny*ny)/wob;
+    const hh = ((q*73+r*151)%17)/17;
+    let col = null;
+    if (dd < 0.45) col = hh<0.18?PAL.S:PAL.s;
+    else if (dd < 0.72) col = hh<0.25?PAL.d:PAL.S;
+    else if (dd < 0.93) col = hh<0.35?PAL.S:PAL.d;
+    else if (dd < 1.04) col = PAL.f;
+    if (col){ c2.fillStyle = col; c2.fillRect(q*SCALE, r*SCALE, SCALE, SCALE); }
+  }
+  return cvs;
+}
+function prerenderAll(){
+  for (const name of Object.keys(SPR)){
+    const spr = SPR[name];
+    spr.img = rasterize(spr.map);
+    if (spr.variants) spr.imgs = spr.variants.map(tb => rasterize(swapPalette(spr.map, tb)));
+  }
+  SPR.shallows = { map: new Array(15).fill(rep(".",34)), img: rasterizeShallows() };
+}
+function drawSprite(name, x, y, variant){
+  const spr = SPR[name];
+  if (!spr) return;
+  const img = (variant != null && spr.imgs) ? spr.imgs[variant] : spr.img;
+  if (!img) return;
+  cx.drawImage(img, Math.round(x - img.width/2), Math.round(y - img.height/2));
+}
+function drawShadow(x, y, w){
+  cx.fillStyle = "rgba(0,0,0,0.25)";
+  cx.beginPath(); cx.ellipse(x, y, w*0.40, 5, 0, 0, Math.PI*2); cx.fill();
+}
 
 /* ===== 3. Геометрия русла ===== */
 const PY = H - 90;                 // экранная строка, на которой стоит байдарка
@@ -228,201 +414,143 @@ function drwBg(){
     }
   }
 }
+// Соответствие внутренних типов препятствий именам спрайтов.
+const OB_SPRITE = { log:"log", shallows:"shallows", seaweed:"seaweed", kayaker:"rower" };
+const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe" };
+
 function drwKy(){
-  const x=screenXOf(g.t,g.scroll),y=PY,bo=Math.sin(g.frame*0.06);
-  cx.fillStyle="rgba(0,0,0,0.08)";cx.fillRect(x-22,y+6,44,6);
-  cx.fillStyle="#d84315";cx.beginPath();cx.moveTo(x-24,y-3+bo);cx.quadraticCurveTo(x-28,y+1+bo,x-24,y+5+bo);cx.lineTo(x+24,y+5+bo);cx.quadraticCurveTo(x+28,y+1+bo,x+24,y-3+bo);cx.closePath();cx.fill();
-  cx.fillStyle="#bf360c";cx.fillRect(x-26,y+1+bo,52,3);
-  cx.fillStyle="#ff8a65";cx.fillRect(x-25,y-3+bo,50,2);
-  const hy=y-18+bo,by2=y-12+bo;
-  cx.fillStyle="#ff7043";cx.fillRect(x-6,by2-1,12,8);cx.fillRect(x-7,by2+1,14,4);
-  cx.fillStyle="#e64a19";cx.fillRect(x-5,by2+2,4,1);cx.fillRect(x+1,by2+2,4,1);
-  cx.fillStyle="#ffccbc";cx.fillRect(x-3,by2+1,6,5);
-  cx.fillStyle="#ffccbc";cx.beginPath();cx.arc(x,hy,6,0,Math.PI*2);cx.fill();
-  cx.fillStyle="#4e342e";cx.beginPath();cx.arc(x-2,hy-3,4,0,Math.PI*2);cx.fill();
-  cx.fillStyle="#333";cx.fillRect(x-4,hy-1,2,2);cx.fillRect(x+2,hy-1,2,2);
-  cx.fillStyle="#e53935";cx.fillRect(x-7,hy-8,14,4);cx.fillRect(x-5,hy-10,10,3);
-  cx.fillStyle="#fff";cx.fillRect(x+4,hy-9,4,3);
-  const ps=g.pa>0?1:-1;
-  cx.fillStyle="#ffccbc";cx.fillRect(x+ps*10,y-8+bo,8,3);cx.fillRect(x+ps*12,y-10+bo,3,8);
-  cx.strokeStyle="#a1887f";cx.lineWidth=3;cx.beginPath();cx.moveTo(x+ps*18,y-4+bo);cx.lineTo(x+ps*28,y+14+bo);cx.stroke();
-  cx.fillStyle="#8d6e63";cx.fillRect(x+ps*25-3,y+14+bo,6,12);cx.fillStyle="#6d4c41";cx.fillRect(x+ps*26-2,y+16+bo,4,6);
-  if(g.sh){
-    cx.strokeStyle=`rgba(79,195,247,${0.3+Math.sin(g.frame*0.1)*0.15})`;cx.lineWidth=4;cx.beginPath();cx.ellipse(x,y,30,22,0,0,Math.PI*2);cx.stroke();
-    cx.strokeStyle=`rgba(255,255,255,${0.15+Math.sin(g.frame*0.12)*0.1})`;cx.lineWidth=2;cx.beginPath();cx.ellipse(x,y,34,26,0,0,Math.PI*2);cx.stroke();
+  const x = screenXOf(g.t, g.scroll), y = PY;
+  // Мигание в кадрах неуязвимости после удара.
+  if (g.inv > 0 && Math.floor(g.frame/4) % 2 === 0) return;
+  const name = leanOf(g.vt);
+  const sz = spriteSize(name);
+  drawShadow(x, y + sz.h/2 - 4, sz.w);
+  drawSprite(name, x, y);
+  drwPaddle(x, y, g.frame * 6);
+  if (g.sh){
+    cx.strokeStyle = "rgba(79,195,247," + (0.35 + Math.sin(g.frame*0.1)*0.15) + ")";
+    cx.lineWidth = 4;
+    cx.beginPath(); cx.ellipse(x, y, 34, 28, 0, 0, Math.PI*2); cx.stroke();
   }
 }
+
+// Весло рисуется отдельно от корпуса, потому что оно анимируется:
+// гребок уходит то влево, то вправо.
+function drwPaddle(x, y, phase){
+  const dir = Math.sin(phase*0.05) > 0 ? 1 : -1;
+  for (let i = -9; i <= 9; i++){
+    const px = x + i*SCALE, py = y + Math.round(i*0.45*dir)*SCALE;
+    const blade = Math.abs(i) >= 7;
+    cx.fillStyle = blade ? PAL.W : PAL.n;
+    cx.fillRect(px, py, SCALE, blade ? SCALE*2 : SCALE);
+  }
+}
+
 function drwOb(o){
-  const x=screenXOf(o.t,o.wy),y=screenYOf(o.wy);
-  if(y<-90||y>H+90)return;
-  switch(o.type){
-    case "rock":{
-      const r=o.size||16;
-      cx.fillStyle="#90a4ae";cx.beginPath();cx.moveTo(x-r+4,y-r);cx.lineTo(x+r-4,y-r);cx.lineTo(x+r,y-r+4);cx.lineTo(x+r,y+r-4);cx.lineTo(x+r-4,y+r);cx.lineTo(x-r+4,y+r);cx.lineTo(x-r,y+r-4);cx.lineTo(x-r,y-r+4);cx.closePath();cx.fill();
-      cx.fillStyle="#78909c";cx.beginPath();cx.moveTo(x-r+8,y-r+4);cx.lineTo(x+r-8,y-r+4);cx.lineTo(x+r-4,y-r+8);cx.lineTo(x+r-4,y+r-8);cx.lineTo(x+r-8,y+r-4);cx.lineTo(x-r+8,y+r-4);cx.lineTo(x-r+4,y+r-8);cx.lineTo(x-r+4,y-r+8);cx.closePath();cx.fill();
-      cx.fillStyle="#607d8b";cx.beginPath();cx.moveTo(x-r+12,y-r+8);cx.lineTo(x+r-12,y-r+8);cx.lineTo(x+r-8,y-r+12);cx.lineTo(x+r-8,y+r-12);cx.lineTo(x+r-12,y+r-8);cx.lineTo(x-r+12,y+r-8);cx.lineTo(x-r+8,y+r-12);cx.lineTo(x-r+8,y-r+12);cx.closePath();cx.fill();
-      cx.fillStyle="#546e7a";cx.fillRect(x-4,y-4,8,8);
-      cx.fillStyle="rgba(255,255,255,0.08)";cx.fillRect(x-r+6,y-r+2,8,3);
-      break;
-    }
-    case "log":{
-      const lw=o.size||44;
-      cx.fillStyle="#6d4c41";cx.beginPath();cx.moveTo(x-lw/2,y-9);cx.lineTo(x+lw/2,y-9);cx.quadraticCurveTo(x+lw/2+4,y,x+lw/2,y+9);cx.lineTo(x-lw/2,y+9);cx.quadraticCurveTo(x-lw/2-4,y,x-lw/2,y-9);cx.closePath();cx.fill();
-      cx.fillStyle="#5d4037";cx.fillRect(x-lw/2+3,y-8,lw-6,4);
-      cx.fillStyle="#4e342e";
-      for(let i=0;i<5;i++)cx.fillRect(x-lw/2+4+i*10,y-3,6,2);
-      cx.fillStyle="#8d6e63";
-      cx.beginPath();cx.arc(x-lw/2,y,9,0,Math.PI*2);cx.fill();
-      cx.beginPath();cx.arc(x+lw/2,y,9,0,Math.PI*2);cx.fill();
-      cx.fillStyle="#6d4c41";
-      cx.beginPath();cx.arc(x-lw/2,y,4,0,Math.PI*2);cx.fill();
-      cx.beginPath();cx.arc(x+lw/2,y,4,0,Math.PI*2);cx.fill();
-      cx.fillStyle="#4e342e";
-      cx.beginPath();cx.arc(x-lw/2-2,y-2,3,0,Math.PI*2);cx.fill();
-      cx.beginPath();cx.arc(x+lw/2-2,y-2,3,0,Math.PI*2);cx.fill();
-      break;
-    }
-    case "shallows":{
-      const sr=20+Math.sin(g.frame*0.03)*3;
-      cx.fillStyle="rgba(255,213,79,0.2)";cx.beginPath();cx.ellipse(x,y-2,sr,sr*0.35,0,0,Math.PI*2);cx.fill();
-      cx.fillStyle="rgba(255,202,40,0.35)";cx.beginPath();cx.ellipse(x,y-2,sr*0.65,sr*0.28,0,0,Math.PI*2);cx.fill();
-      cx.fillStyle="rgba(255,236,179,0.15)";cx.beginPath();cx.ellipse(x,y-1,sr*0.45,sr*0.2,0,0,Math.PI*2);cx.fill();
-      break;
-    }
-    case "seaweed":{
-      for(let i=0;i<5;i++){const sw=Math.sin(g.frame*0.06+i*1.8)*5;cx.fillStyle=i%2==0?"#2e7d32":"#1b5e20";cx.fillRect(x+sw+i*4-3,y-24+i*6,5,24);}
-      break;
-    }
-    case "kayaker":{
-      const kb=Math.sin(g.frame*0.05)*2;
-      cx.fillStyle="#e65100";cx.beginPath();cx.moveTo(x-14,y-3+kb);cx.quadraticCurveTo(x-16,y+1+kb,x-14,y+4+kb);cx.lineTo(x+14,y+4+kb);cx.quadraticCurveTo(x+16,y+1+kb,x+14,y-3+kb);cx.closePath();cx.fill();
-      cx.fillStyle="#bf360c";cx.fillRect(x-15,y+1+kb,30,3);
-      cx.fillStyle="#ffccbc";cx.beginPath();cx.arc(x,y-13+kb,5,0,Math.PI*2);cx.fill();
-      cx.fillStyle="#e53935";cx.fillRect(x-5,y-18+kb,10,3);cx.fillRect(x-3,y-19+kb,6,2);
-      const ps2=Math.sin(g.frame*0.1)>0?1:-1;
-      cx.fillStyle="#ffccbc";cx.fillRect(x+ps2*8,y-8+kb,6,3);
-      cx.strokeStyle="#8d6e63";cx.lineWidth=2;cx.beginPath();cx.moveTo(x+ps2*12,y-2+kb);cx.lineTo(x+ps2*20,y+10+kb);cx.stroke();
-      cx.fillStyle="#8d6e63";cx.fillRect(x+ps2*18-2,y+10+kb,4,8);
-      cx.fillStyle="rgba(255,255,255,0.5)";cx.font="6px "+F;cx.fillText("K",x-2,y-6+kb);
-      break;
-    }
+  const x = screenXOf(o.t, o.wy), y = screenYOf(o.wy);
+  if (y < -90 || y > H + 90) return;
+  const name = o.sprite || OB_SPRITE[o.type] || "boulder";
+  const sz = spriteSize(name);
+  drawShadow(x, y + sz.h/2 - 3, sz.w);
+  drawSprite(name, x, y, o.variant);
+  if (o.type === "kayaker") drwPaddle(x, y, o.wy);
+  if (o.type === "rock"){
+    // Пена там, где вода разбивается о камень.
+    cx.fillStyle = PAL.f;
+    cx.fillRect(x - sz.w*0.32, y + sz.h/2 - 4, sz.w*0.26, 3);
+    cx.fillRect(x + sz.w*0.08, y + sz.h/2 - 4, sz.w*0.22, 3);
   }
 }
+
 function drwBn(b){
-  const x=screenXOf(b.t,b.wy),y=screenYOf(b.wy)+Math.sin(g.frame*0.08)*3;
-  if(y<-70||y>H+70)return;
-  switch(b.type){
-    case "cognac":{
-      cx.fillStyle="#2e7d32";cx.fillRect(x-7,y-10,14,18);
-      cx.fillStyle="#1b5e20";cx.fillRect(x-6,y-10,12,3);
-      cx.fillStyle="#2e7d32";cx.fillRect(x-4,y-16,8,7);
-      cx.fillStyle="#1b5e20";cx.fillRect(x-3,y-16,6,2);
-      cx.fillStyle="#4a148c";cx.fillRect(x-5,y-6,10,7);
-      cx.fillStyle="#fff";cx.fillRect(x-4,y-6,8,5);
-      cx.fillStyle="#4a148c";cx.fillRect(x-3,y-5,2,1);cx.fillRect(x+1,y-5,2,1);
-      cx.fillRect(x-4,y-3,8,1);
-      cx.fillStyle="#d4a017";cx.fillRect(x-3,y-7,6,1);cx.fillRect(x-3,y-1,6,1);
-      cx.fillStyle="#6d4c41";cx.fillRect(x-3,y-19,6,4);
-      cx.fillStyle="#5d4037";cx.fillRect(x-2,y-20,4,2);
-      break;
-    }
-case "snickers":{
-      cx.fillStyle="#5d4037";cx.fillRect(x-13,y-8,26,16);
-      cx.fillStyle="#3e2723";cx.fillRect(x-12,y-8,24,3);
-      cx.fillStyle="#fff";cx.fillRect(x-10,y-5,20,3);
-      cx.fillStyle="#1565c0";cx.fillRect(x-9,y-4,18,2);
-      cx.fillStyle="#d4a017";cx.fillRect(x-9,y-6,5,2);cx.fillRect(x+4,y-6,5,2);
-      cx.fillStyle="#fff";cx.fillRect(x-11,y+2,2,3);cx.fillRect(x+9,y+2,2,3);
-      cx.fillStyle="#e53935";cx.fillRect(x-8,y-1,2,2);cx.fillRect(x+6,y-1,2,2);
-      cx.fillStyle="#fff";cx.font="4px "+F;cx.fillText("SN",x-4,y-3);
-      break;
-    }
-case "medkit":{
-      cx.fillStyle="#fff";cx.fillRect(x-10,y-10,20,20);
-      cx.strokeStyle="#c62828";cx.lineWidth=2;cx.beginPath();cx.rect(x-10,y-10,20,20);cx.stroke();
-      cx.fillStyle="#e53935";cx.fillRect(x-4,y-6,8,12);cx.fillRect(x-6,y-4,12,8);
-      cx.fillStyle="#fff";cx.fillRect(x-3,y-2,2,2);cx.fillRect(x+1,y-2,2,2);
-      cx.fillRect(x-1,y-4,2,2);cx.fillRect(x-1,y+2,2,2);
-      cx.fillStyle="#c62828";cx.fillRect(x-4,y-12,8,3);
-      cx.fillRect(x-2,y-13,4,2);
-      break;
-    }
-case "matches":{
-      cx.fillStyle="#ef5350";cx.fillRect(x-7,y-9,14,12);
-      cx.fillStyle="#c62828";cx.fillRect(x-6,y-9,12,3);
-      cx.fillStyle="#fff";cx.fillRect(x-3,y-5,6,3);
-      cx.fillStyle="#8d6e63";for(let i=0;i<4;i++)cx.fillRect(x-2,y+2+i*4,4,5);
-      cx.fillStyle="#ff6f00";for(let i=0;i<4;i++)cx.fillRect(x-1,y+1+i*4,3,2);
-      cx.fillStyle="#ff9100";for(let i=0;i<4;i++)cx.fillRect(x-1,y+i*4,2,2);
-      break;
-    }
-  }
+  const x = screenXOf(b.t, b.wy);
+  const y = screenYOf(b.wy) + Math.sin(g.frame*0.08)*3;
+  if (y < -70 || y > H + 70) return;
+  const name = BN_SPRITE[b.type] || "bread";
+  const sz = spriteSize(name);
+  drawShadow(x, y + sz.h/2, sz.w);
+  drawSprite(name, x, y);
+  if (b.type === "bread") drawSprite("slice", x + 30, y + 18);
 }
+
 function drwBev(e){
-  const ax=centerAt(e.wy),hw=widthAt(e.wy)/2;
-  const bx=ax+e.side*(hw+e.off),by=screenYOf(e.wy);
-  if(by<-140||by>H+140||bx<-50||bx>W+50)return;
-  switch(e.type){
-    case "bear":{
-      const st=Math.sin(g.frame*0.04)*2;
-      cx.fillStyle="#5d4037";cx.fillRect(bx-11,by-26+st,22,16);cx.fillRect(bx-7,by-30+st,14,6);
-      cx.fillStyle="#4e342e";cx.fillRect(bx-11,by-26+st,22,4);cx.fillRect(bx-5,by-33+st,10,5);cx.fillRect(bx-2,by-36+st,4,7);
-      cx.fillStyle="#5d4037";cx.fillRect(bx-19,by-12+st,16,12);cx.fillRect(bx+3,by-12+st,16,12);
-      cx.fillStyle="#4e342e";cx.fillRect(bx-21,by-8+st,6,6);cx.fillRect(bx+15,by-8+st,6,6);
-      cx.fillStyle="#5d4037";
-      cx.beginPath();cx.arc(bx-16,by-14+st,5,0,Math.PI*2);cx.fill();
-      cx.beginPath();cx.arc(bx+16,by-14+st,5,0,Math.PI*2);cx.fill();
-      cx.fillStyle="#fff";cx.fillRect(bx-4,by-22+st,3,3);cx.fillRect(bx+1,by-22+st,3,3);
-      cx.fillStyle="#000";cx.fillRect(bx-3,by-21+st,2,2);cx.fillRect(bx+2,by-21+st,2,2);
-      cx.fillStyle="#3e2723";cx.fillRect(bx-3,by-14+st,6,3);
-      break;
-    }
-    case "camp":{
-      const sm=Math.sin(g.frame*0.05)*3;
-      cx.fillStyle="#e53935";cx.beginPath();cx.moveTo(bx,by-24);cx.lineTo(bx-18,by+2);cx.lineTo(bx+18,by+2);cx.fill();
-      cx.fillStyle="#fff3e0";cx.fillRect(bx-9,by+1,18,13);
-      cx.fillStyle="#ff8f00";cx.fillRect(bx-2,by+1,4,13);
-      cx.fillStyle="#e65100";cx.fillRect(bx-3,by-17,6,4);cx.fillRect(bx-6,by-15,2,7);cx.fillRect(bx+4,by-15,2,7);
-      cx.fillStyle="#795548";cx.fillRect(bx-18,by+15,5,9);cx.fillRect(bx+13,by+15,5,9);
-      cx.fillStyle="rgba(255,255,255,0.3)";cx.beginPath();cx.arc(bx+sm,by-30,5+Math.sin(g.frame*0.04)*2,0,Math.PI*2);cx.fill();
-      cx.beginPath();cx.arc(bx+sm-4,by-34,3,0,Math.PI*2);cx.fill();
-      break;
-    }
-    case "ducks":{
-      for(let i=0;i<5;i++){const dx=bx-16+i*8,dy=by+Math.sin(g.frame*0.06+i*1.2)*3;
-        cx.fillStyle=i==0?"#fff9c4":"#ffeb3b";cx.fillRect(dx,dy-6,8,7);
-        cx.fillStyle="#ff6f00";cx.fillRect(dx+6,dy-5,3,2);
-        cx.fillStyle="#795548";cx.fillRect(dx+1,dy+1,4,5);}
-      break;
-    }
-    case "tower":{
-      cx.fillStyle="#78909c";cx.fillRect(bx-6,by-36,12,44);
-      cx.fillStyle="#546e7a";cx.fillRect(bx-5,by-36,10,5);
-      cx.fillStyle="#ef5350";cx.fillRect(bx-3,by-38,6,4);cx.fillRect(bx-1,by-40,2,3);
-      cx.fillStyle="#4fc3f7";cx.fillRect(bx-12,by-32,24,4);cx.fillRect(bx-12,by-26,24,4);cx.fillRect(bx-12,by-20,24,4);cx.fillRect(bx-12,by-14,24,4);
-      cx.fillStyle="#fff";cx.fillRect(bx-3,by-32,6,4);cx.fillRect(bx-3,by-26,6,4);cx.fillRect(bx-3,by-20,6,4);cx.fillRect(bx-3,by-14,6,4);
-      cx.fillStyle="#444";cx.fillRect(bx-1,by-44,2,6);
-      cx.fillStyle="#ef5350";cx.fillRect(bx-2,by-46,4,2);
-      break;
-    }
+  const ax = centerAt(e.wy), hw = widthAt(e.wy)/2;
+  const bx = ax + e.side*(hw + e.off), by = screenYOf(e.wy);
+  if (by < -160 || by > H + 160 || bx < -60 || bx > W + 60) return;
+  if (e.type === "ducks"){
+    for (let i = 0; i < 3; i++)
+      drawSprite("duck", bx + i*16 - 16, by + Math.sin(g.frame*0.06 + i)*3);
+    return;
   }
+  const name = e.type === "camp" ? "tent" : e.type;
+  drawSprite(name, bx, by);
 }
+
+const BEST_KEY = "kayak_best";
+function loadBest(){ return Number(localStorage.getItem(BEST_KEY) || 0); }
+function saveBest(v){ if (v > loadBest()) localStorage.setItem(BEST_KEY, String(v)); }
+
 function drwHUD(){
-  cx.save();cx.font="11px "+F;
-  cx.fillStyle="#fff";cx.fillText("ДИСТ: "+Math.floor(g.dist)+"м",12,22);
-  cx.fillStyle="#ffd54f";cx.fillText("СЧЁТ: "+(g.sc+g.bsc),12,42);
-  if(g.sh){cx.fillStyle="#4fc3f7";cx.fillText("ЩИТ",W-72,22);}
-  if(g.sm){cx.fillStyle="#ffd54f";cx.font="8px "+F;cx.fillText("ЗАМЕДЛЕНИЕ",W-160,42);}
+  cx.save();
+  cx.font = "11px " + F;
+  cx.fillStyle = "#fff";
+  cx.fillText("ДИСТ: " + Math.floor(g.dist) + "м", 12, 22);
+  cx.fillStyle = "#ffd54f";
+  cx.fillText("СЧЁТ: " + (g.sc + g.bsc), 12, 42);
+  cx.font = "8px " + F;
+  cx.fillStyle = "#9aa9b2";
+  cx.fillText("РЕКОРД: " + loadBest(), 12, 60);
+
+  for (let i = 0; i < 3; i++){
+    cx.fillStyle = i < g.hp ? "#e53935" : "#4a2c2c";
+    cx.fillRect(W - 24 - i*26, 12, 18, 14);
+    cx.fillRect(W - 27 - i*26, 15, 24, 8);
+  }
+  if (g.sh){ cx.fillStyle = "#4fc3f7"; cx.fillRect(W - 104, 13, 14, 13); }
+
+  let ey = 78;
+  if (g.breadT  > 0){ drwEffBar("БАТОН", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
+  if (g.whiskyT > 0){ drwEffBar("ВИСКИ", g.whiskyT/WHISKY_FRAMES,"#e8a838", ey); ey += 16; }
+
+  const seg = segAt(g.scroll);
+  const next = g.segs.find(x => x.type === "rapid" && x.start > g.scroll);
+  if (next && next.start - g.scroll < 400 && Math.floor(g.frame/12) % 2 === 0){
+    cx.font = "12px " + F; cx.fillStyle = "#ff5252"; cx.textAlign = "center";
+    cx.fillText("ПОРОГ", W/2, 104); cx.textAlign = "left";
+  }
+  if (seg.type === "rapid"){
+    const pr = (g.scroll - seg.start) / (seg.end - seg.start);
+    cx.fillStyle = "rgba(0,0,0,0.45)"; cx.fillRect(W/2 - 60, 92, 120, 8);
+    cx.fillStyle = g.cleanRun ? "#4fc3f7" : "#ff5252";
+    cx.fillRect(W/2 - 60, 92, 120*Math.max(0, Math.min(1, pr)), 8);
+  }
   cx.restore();
 }
+
+function drwEffBar(label, frac, color, y){
+  cx.font = "7px " + F;
+  cx.fillStyle = color; cx.fillText(label, 12, y);
+  cx.fillStyle = "rgba(0,0,0,0.45)"; cx.fillRect(70, y - 7, 60, 6);
+  cx.fillStyle = color; cx.fillRect(70, y - 7, 60*frac, 6);
+}
+
+function drwPops(){
+  cx.save(); cx.font = "9px " + F; cx.textAlign = "center";
+  for (const p of g.pops){
+    cx.globalAlpha = Math.min(1, p.life/25);
+    cx.fillStyle = p.color;
+    cx.fillText(p.text, p.x, p.y);
+  }
+  cx.restore(); cx.globalAlpha = 1;
+}
+
 // Полуширина препятствия в пикселях — нужна и для коллизий, и для проверки,
 // влезает ли оно в русло.
 function obHalfPx(ty,size){
   if(ty=="log")return size/2+9;
-  if(ty=="rock")return size;
-  if(ty=="shallows")return 20;
-  if(ty=="seaweed")return 12;
-  return 16;
+  if(ty=="shallows")return 34;
+  if(ty=="seaweed")return 15;
+  return 24;
 }
 function spOb(){
   const wy=spawnWy(),rw=widthAt(wy),rb=rapidBlend(wy);
@@ -431,26 +559,35 @@ function spOb(){
   let r=Math.random(),c=0,ty="rock";
   for(let i=0;i<types.length;i++){c+=ws[i];if(r<c){ty=types[i];break;}}
   const sz=ty=="log"?36+Math.random()*24:14+Math.random()*8;
-  const halfPx=obHalfPx(ty,sz);
+  // Камень бывает трёх форм: валун, клык и плита. Разные габариты дают
+  // разные способы уворота, а плита ещё и не всегда влезает в русло.
+  let sprite=null, halfPx;
+  if(ty=="rock"){
+    sprite=["boulder","fang","slab"][Math.floor(Math.random()*3)];
+    halfPx=spriteSize(sprite).w/2*0.82;
+  } else {
+    halfPx=obHalfPx(ty,sz);
+  }
   // Правило проходимости: препятствие шире 45% русла создало бы безвыходный
   // расклад — такой спавн просто отменяется.
   if(halfPx*2>rw*0.45)return;
   const lim=Math.max(0,0.92-2*halfPx/rw);
-  g.obs.push({t:(Math.random()*2-1)*lim,wy,type:ty,size:sz,halfPx,vt:0});
+  g.obs.push({t:(Math.random()*2-1)*lim,wy,type:ty,size:sz,halfPx,sprite,vt:0,
+              variant:ty=="kayaker"?Math.floor(Math.random()*3):undefined});
 }
 function spBn(){
   const wy=spawnWy();
   if(rapidBlend(wy)>0.5)return;            // на порогах бонусов нет
-  const t=["cognac","snickers","medkit","matches"],w=[0.35,0.25,0.2,0.2];
-  let r=Math.random(),c=0,ty="cognac";
+  const t=["bread","whisky","medkit","axe"],w=bonusWeights();
+  let r=Math.random(),c=0,ty="bread";
   for(let i=0;i<t.length;i++){c+=w[i];if(r<c){ty=t[i];break;}}
   g.bns.push({t:(Math.random()*2-1)*0.75,wy,type:ty});
 }
 function spBev(){
-  const ty=["bear","camp","ducks","tower"][Math.floor(Math.random()*4)];
+  const ty=["bear","camp","ducks","tower","fisher","bush","tree","tree"][Math.floor(Math.random()*8)];
   g.bev.push({type:ty,side:Math.random()<0.5?-1:1,wy:spawnWy(),
               off:ty=="ducks"?10:26+Math.random()*38});
-  g.ned=g.dist+120+Math.random()*200;
+  g.ned=g.dist+22+Math.random()*38;
 }
 function spPt(x,y,cl,c){
   for(let i=0;i<c;i++){g.pts.push({x,y,vx:(Math.random()-0.5)*7,vy:(Math.random()-0.5)*7,lf:30+Math.random()*20,ml:50,cl,sz:2+Math.random()*3});}
@@ -468,8 +605,12 @@ function chkCl(){
     if(Math.hypot(dx,dy)<kr+(o.halfPx||16)){
       const ox=screenXOf(o.t,o.wy),oy=screenYOf(o.wy);
       if(o.type=="rock"||o.type=="log"||o.type=="kayaker"){
-        if(g.sh){g.sh=false;spPt(ox,oy,"#4fc3f7",12);g.obs.splice(i,1);}
-        else{gmO();return;}
+        if(g.whiskyT>0){                       // под виски всё разлетается в щепки
+          spPt(ox,oy,"#e8a838",20);g.obs.splice(i,1);g.sc+=10;
+        }else{
+          damage();g.obs.splice(i,1);spPt(ox,oy,"#8d6e63",16);
+          if(g.s!="playing")return;
+        }
       }else if(o.type=="shallows"){g.sp=Math.max(1.5,g.sp*0.65);spPt(ox,oy,"#ffd54f",6);g.obs.splice(i,1);
       }else if(o.type=="seaweed"){g.sp=Math.max(0.8,g.sp*0.45);spPt(ox,oy,"#2e7d32",6);g.obs.splice(i,1);}
     }
@@ -480,28 +621,90 @@ function chkCl(){
     if(Math.hypot(dx,dy)<kr+14){apBn(b);g.bns.splice(i,1);}
   }
 }
+/* ===== 6. Прочность и бонусы ===== */
+const INV_FRAMES = 90, BREAD_FRAMES = 480, WHISKY_FRAMES = 360, AXE_RANGE = 360;
+
+// Шанс аптечки удваивается при низкой прочности. Игрок этого не замечает,
+// но получает ощущение «на грани вытянул».
+function bonusWeights(){
+  const base = [0.40, 0.15, 0.25, 0.20];     // батон, виски, аптечка, топор
+  if (g.hp >= 3) return base;
+  const b = base.slice(); b[2] *= 2;
+  const sum = b.reduce((x,y)=>x+y,0);
+  return b.map(v => v/sum);
+}
+
+function damage(){
+  if (g.inv > 0 || g.whiskyT > 0) return;
+  if (g.sh){ g.sh = false; g.shake = 8; popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
+  g.hp -= 1;
+  g.inv = INV_FRAMES;
+  g.shake = 10;
+  g.sp = Math.max(1.5, g.sp*0.6);
+  if (rapidBlend(g.scroll) > 0.5) g.cleanRun = false;
+  popText("-1","#ff5252");
+  if (g.hp <= 0) gmO();
+}
+
+function popText(text, color){
+  g.pops.push({ text, color, x: screenXOf(g.t,g.scroll), y: PY - 34, life: 55 });
+}
+
+function tickEffects(){
+  if (g.breadT  > 0) g.breadT--;
+  if (g.whiskyT > 0) g.whiskyT--;
+  if (g.inv     > 0) g.inv--;
+  for (let i = g.pops.length-1; i >= 0; i--){
+    const p = g.pops[i]; p.y -= 0.8;
+    if (--p.life <= 0) g.pops.splice(i,1);
+  }
+}
+
 function apBn(b){
   spPt(screenXOf(b.t,b.wy),screenYOf(b.wy),"#ffd54f",15);
   switch(b.type){
-    case "cognac":g.bsc+=50;break;
-    case "snickers":g.sm=true;g.st=180;g.bsc+=20;break;
-    case "medkit":g.sh=true;g.bsc+=30;break;
-    case "matches":{let n=null,nd=Infinity;for(const o of g.obs){if(o.type=="log"){const d=o.wy-g.scroll;if(d>0&&d<nd){nd=d;n=o;}}}if(n){spPt(screenXOf(n.t,n.wy),screenYOf(n.wy),"#ff6f00",18);g.obs=g.obs.filter(o=>o!==n);}g.bsc+=25;break;}
+    case "bread":                       // сила гребка
+      g.breadT = BREAD_FRAMES; g.bsc += 20; popText("+20 СИЛА","#eec27a"); break;
+    case "whisky":                      // кураж: неуязвимость и двойные очки
+      g.whiskyT = WHISKY_FRAMES; g.bsc += 50; popText("+50 КУРАЖ","#e8a838"); break;
+    case "medkit":                      // прочность, при полной — щит
+      if (g.hp < 3){ g.hp += 1; popText("+1 ПРОЧНОСТЬ","#e53935"); }
+      else { g.sh = true; popText("ЩИТ","#4fc3f7"); }
+      g.bsc += 15; break;
+    case "axe": {                       // расчистка пути
+      let n = null, nd = Infinity;
+      for (const o of g.obs){
+        const d = o.wy - g.scroll;
+        if (d > 0 && d <= AXE_RANGE && d < nd){ nd = d; n = o; }
+      }
+      if (n){
+        spPt(screenXOf(n.t,n.wy), screenYOf(n.wy), "#a87848", 22);
+        g.obs = g.obs.filter(o => o !== n);
+        g.shake = 6;
+      }
+      g.bsc += 25; popText("+25 РУБИМ","#c2ced6"); break;
+    }
   }
 }
 function sg(){
   document.getElementById("startScreen").classList.add("hidden");
   document.getElementById("gameOverScreen").classList.add("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
-  g.sh=false;g.sm=false;g.st=0;g.ned=200;g.df=1;g.frame=0;
+  g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.inv=0;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
 }
 function gmO(){
+  const total = Math.floor(g.dist) + g.bsc;
+  const isBest = total > loadBest();
+  saveBest(total);
   g.s="over";document.getElementById("gameOverScreen").classList.remove("hidden");
   document.getElementById("finalDist").textContent=Math.floor(g.dist);
   document.getElementById("finalBonus").textContent=g.bsc;
-  document.getElementById("finalScore").textContent=Math.floor(g.dist)+g.bsc;
+  document.getElementById("finalScore").textContent=total;
+  document.getElementById("bestScore").textContent=loadBest();
+  document.getElementById("newBest").classList.toggle("hidden", !isBest);
 }
 function upd(){
   if(g.s!="playing")return;g.frame++;
@@ -512,6 +715,19 @@ function upd(){
   ensureSegments(g.scroll + H*2);
   while (g.segs.length > 40) g.segs.shift();
   g.pa=Math.sin(g.frame*0.12);
+  tickEffects();
+  g.shake *= 0.88; if (g.shake < 0.1) g.shake = 0;
+  // Чистый проход порога: вошёл — взводим флаг, вышел без удара — награда.
+  const inRapid = rapidBlend(g.scroll) > 0.5;
+  if (inRapid && !g.wasRapid) g.cleanRun = true;
+  if (!inRapid && g.wasRapid && g.cleanRun){ g.bsc += 150; popText("ЧИСТЫЙ ПРОХОД +150","#ffd54f"); }
+  g.wasRapid = inRapid;
+  // Кильватерный след за кормой.
+  g.wake.push({ t: g.t, wy: g.scroll });
+  if (g.wake.length > 40) g.wake.shift();
+  // Брызги от гребка.
+  if (g.frame % (g.breadT > 0 ? 9 : 14) === 0)
+    spPt(screenXOf(g.t,g.scroll) + (Math.sin(g.frame*0.3)>0?26:-26), PY + 6, "#dff0fa", 3);
   let input = 0;
   if (keys["ArrowLeft"] || keys["a"] || keys["A"]) input = -1;
   if (keys["ArrowRight"] || keys["d"] || keys["D"]) input = 1;
@@ -549,21 +765,41 @@ function upd(){
   for(let i=g.pts.length-1;i>=0;i--){const p=g.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.lf--;if(p.lf<=0)g.pts.splice(i,1);}
   chkCl();
 }
+function drwWake(){
+  for (let i = 0; i < g.wake.length; i++){
+    const p = g.wake[i], a = (i/g.wake.length)*0.30;
+    const y = screenYOf(p.wy);
+    if (y < -10 || y > H + 10) continue;
+    cx.fillStyle = "rgba(255,255,255," + a + ")";
+    cx.fillRect(screenXOf(p.t, p.wy) - 12, y, 24, 2);
+  }
+}
 function rndr(){
-  cx.clearRect(0,0,W,H);drwBg();
+  cx.clearRect(0,0,W,H);
+  cx.save();
+  const amp = g.shake + rapidBlend(g.scroll)*2;
+  if (amp > 0.1) cx.translate((Math.random()-0.5)*amp, (Math.random()-0.5)*amp);
+  drwBg();
   for(const e of g.bev)drwBev(e);
   for(const o of g.obs)drwOb(o);
   for(const b of g.bns)drwBn(b);
-  drwPt();drwKy();drwHUD();
-  if(g.sm){cx.fillStyle="rgba(255,213,79,0.05)";cx.fillRect(0,0,W,H);}
+  drwWake();drwPt();drwKy();
+  cx.restore();
+  drwPops();drwHUD();
+  if (g.whiskyT > 0){
+    cx.strokeStyle = "rgba(232,168,56," + (0.30 + Math.sin(g.frame*0.15)*0.08) + ")";
+    cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
+  }
 }
 function lp(){upd();rndr();requestAnimationFrame(lp);}
 
 /* ===== 13. Экспорт для тестов ===== */
 globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secondDiff,
-                         screenYOf, worldYOf, spawnWy, offScreen, screenXOf,
-                         ensureSegments, segAt, rapidBlend, speedMulAt,
-                         stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX };
+  screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
+  rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX,
+  SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
+  loadBest, saveBest, upd, spOb, spBn };
+prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
 </body>
