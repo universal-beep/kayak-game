@@ -33,6 +33,14 @@ canvas { display:block;margin:0 auto; }
 .board { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#bbb;width:100%;max-width:300px;margin:6px 0 4px; }
 .brow { display:flex;justify-content:space-between;padding:3px 4px;line-height:1.6; }
 .brow.mine { color:#ffd54f;background:rgba(255,213,79,0.12); }
+#campCanvas { image-rendering:pixelated;width:300px;height:120px;margin-bottom:10px;border-radius:6px; }
+.gear { display:flex;flex-direction:column;gap:5px;width:100%;max-width:340px;margin-bottom:10px; }
+.gitem { font-family:"Press Start 2P",monospace;font-size:7px;color:#ddd;background:rgba(255,255,255,0.06);padding:7px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px;line-height:1.7; }
+.gitem .gn { color:#fff;font-size:8px; }
+.gitem .gnote { color:#8b98a3;font-size:6.5px; }
+.gitem button { font-family:"Press Start 2P",monospace;font-size:7px;padding:6px 8px;background:#4fc3f7;color:#12202e;border:none;cursor:pointer;white-space:nowrap; }
+.gitem button:disabled { background:#2c3b47;color:#6b7a86;cursor:default; }
+.gitem.owned .gn { color:#7fd67f; }
 #continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;pointer-events:all; }
 #continueScreen h1 { font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;margin-bottom:22px;letter-spacing:2px; }
 #continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
@@ -95,6 +103,14 @@ canvas { display:block;margin:0 auto; }
       <button class="btn small" id="resumeBtn">ПРОДОЛЖИТЬ</button>
       <button class="btn small ghost" id="pauseMapBtn">К МАРШРУТУ</button>
     </div>
+  </div>
+  <div id="campScreen" class="hidden">
+    <h1 class="maph">ЛАГЕРЬ</h1>
+    <div class="place" id="campPlace"></div>
+    <canvas id="campCanvas" width="300" height="120"></canvas>
+    <div class="wallet">Рюкзак: <span id="campWallet">0</span></div>
+    <div class="gear" id="gearList"></div>
+    <button class="btn small" id="goBtn">В ПУТЬ</button>
   </div>
   <div id="mapScreen" class="hidden">
     <h1 class="maph">МАРШРУТ</h1>
@@ -389,6 +405,20 @@ const TUNE = ["E4","G4","A4","G4","E4","D4","E4",null,
 const BASS = ["A3",null,"A3",null,"C4",null,"C4",null,
               "F4",null,"F4",null,"G4",null,"G4",null];
 
+// Своя мелодия у костра: трёхдольный размер, переборный рисунок, минор.
+// Мелодия Митяева не воспроизводится — она под копирайтом.
+const TUNE_CAMP = ["A4",null,null,"C5","B4","A4","G4",null,null,"E4",null,null,
+                   "F4",null,null,"A4","G4","F4","E4",null,null,"D4",null,null,
+                   "E4",null,null,"G4","F4","E4","D4",null,null,"C4",null,null,
+                   "D4",null,null,"F4","E4","D4","C4",null,null,null,null,null];
+const BASS_CAMP = ["A3",null,null,"F4",null,null,"C4",null,null,"E4",null,null];
+let musicMode = "river";
+function setMusic(mode){
+  if (musicMode === mode) return;
+  musicMode = mode; mStep = 0;
+  if (actx) mNext = actx.currentTime + 0.05;
+}
+
 function tone(freq, at, dur, type, vol){
   if (!freq) return;
   const o = actx.createOscillator(), amp = actx.createGain();
@@ -409,10 +439,14 @@ function startMusic(){
 
 function musicTick(){
   if (!actx || !musicOn) return;
-  const beat = 0.19;
+  const camp = musicMode === "camp";
+  const beat = camp ? 0.26 : 0.19;
+  const mel = camp ? TUNE_CAMP : TUNE;
+  const bas = camp ? BASS_CAMP : BASS;
   while (mNext < actx.currentTime + 0.35){
-    tone(NOTES[TUNE[mStep % TUNE.length]], mNext, beat*0.85, "square", 0.045);
-    tone(NOTES[BASS[mStep % BASS.length]], mNext, beat*1.6, "triangle", 0.05);
+    tone(NOTES[mel[mStep % mel.length]], mNext, beat*(camp?1.5:0.85),
+         camp ? "triangle" : "square", camp ? 0.055 : 0.045);
+    tone(NOTES[bas[mStep % bas.length]], mNext, beat*(camp?2.4:1.6), "triangle", 0.05);
     mNext += beat; mStep++;
   }
 }
@@ -605,7 +639,7 @@ function flowMul(t){ return 1.18 - 0.34*t*t; }
 
 function stepLateral(input){
   const breadOn = g.breadT > 0;
-  g.vt += input * ACC * (breadOn ? 1.6 : 1);
+  g.vt += input * ACC * (breadOn ? 1.6 : 1) * (hasGear("paddle") ? 1.25 : 1);
   // Центробежный снос: на повороте прижимает к внешнему берегу.
   // curvAt > 0 там, где ось выгибается вправо, — байдарку при этом уносит влево.
   g.vt -= curvAt(g.scroll) * DRIFT * (breadOn ? 0.5 : 1);
@@ -689,14 +723,16 @@ document.getElementById("saveNameBtn").addEventListener("click",()=>{
 });
 document.getElementById("nextBtn").addEventListener("click",()=>{
   if(g.day>=LEVELS.length-1){showMap();return;}
-  startDay(g.day+1);
+  g.day++;
+  showCamp();
 });
+document.getElementById("goBtn").addEventListener("click",()=>{ leaveCamp(); startDay(g.day); });
 document.getElementById("againBtn").addEventListener("click",()=>startDay(g.day));
 document.getElementById("retryBtn").addEventListener("click",()=>startDay(g.day));
 document.getElementById("toMapBtn").addEventListener("click",showMap);
 document.getElementById("diaryBtn").addEventListener("click",showDiary);
 document.getElementById("diaryBack").addEventListener("click",showMap);
-document.getElementById("campBtn").addEventListener("click",showMap);
+document.getElementById("campBtn").addEventListener("click",showCamp);
 document.getElementById("pauseBtn").addEventListener("click",togglePause);
 document.getElementById("resumeBtn").addEventListener("click",togglePause);
 document.getElementById("pauseMapBtn").addEventListener("click",()=>{g.s="map";showMap();});
@@ -961,6 +997,14 @@ function resetSave(){
   save = JSON.parse(JSON.stringify(SAVE_DEFAULT));
   commitSave();
 }
+const GEAR = [
+  { id:"helmet", name:"КАСКА",           price:300, note:"Щит на старте дня — гасит первый удар" },
+  { id:"paddle", name:"ЗАПАСНОЕ ВЕСЛО",  price:450, note:"Гребок мощнее на четверть" },
+  { id:"drybag", name:"ГЕРМОМЕШОК",      price:400, note:"Удар не сбивает батон и виски" },
+  { id:"ration", name:"СУХПАЁК",         price:500, note:"Четвёртое сердце на старте" }
+];
+function hasGear(id){ return save.gear.indexOf(id) >= 0; }
+
 function starsOf(day){ return save.stars[day] || 0; }
 
 // Соперники по таблице. Настоящего сервера у игры нет, поэтому имена
@@ -1187,6 +1231,74 @@ function showFail(L, total){
   document.getElementById("failDist").textContent = Math.floor(g.dist);
   document.getElementById("failWallet").textContent = Math.floor(total/3);
   document.getElementById("failScreen").classList.remove("hidden");
+}
+
+function drwCampArt(){
+  const cv = document.getElementById("campCanvas");
+  const k = cv.getContext("2d");
+  k.imageSmoothingEnabled = false;
+  k.fillStyle = "#0e1c2a"; k.fillRect(0,0,300,120);
+  // звёзды
+  for (let i=0;i<26;i++){
+    const sx=(i*47)%292, sy=(i*29)%50;
+    k.fillStyle = (Math.floor(campFrame/12+i)%7) ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)";
+    k.fillRect(sx,sy,2,2);
+  }
+  k.fillStyle = "#1d3324"; k.fillRect(0,84,300,36);
+  const put = (name,x,y,sc) => {
+    const spr = SPR[name]; if (!spr || !spr.img) return;
+    const w = spr.img.width*sc, h = spr.img.height*sc;
+    k.drawImage(spr.img, Math.round(x-w/2), Math.round(y-h), w, h);
+  };
+  put("tent", 70, 96, 0.55);
+  put("tent", 232, 94, 0.45);
+  const fl = 0.85 + Math.sin(campFrame*0.35)*0.12;
+  k.save(); k.translate(150,96); k.scale(1,fl); k.translate(-150,-96);
+  put("fire", 150, 96, 0.9); k.restore();
+  put("sitter", 118, 98, 0.7);
+  put("person", 182, 98, 0.7);
+  for (let i=0;i<3;i++){
+    const t=(campFrame*1.1+i*40)%70;
+    k.fillStyle = "rgba(255,"+(150+i*30)+",60,"+(1-t/70).toFixed(2)+")";
+    k.fillRect(148+Math.sin(t*0.2+i)*8, 84-t*0.8, 3, 3);
+  }
+}
+
+let campFrame = 0, campTimer = null;
+
+function showCamp(){
+  hideAllScreens();
+  g.s = "camp";
+  setMusic("camp");
+  const L = LEVELS[Math.min(g.day, LEVELS.length-1)];
+  document.getElementById("campPlace").textContent = L.place;
+  document.getElementById("campWallet").textContent = save.wallet;
+  const box = document.getElementById("gearList");
+  box.innerHTML = "";
+  for (const it of GEAR){
+    const owned = hasGear(it.id);
+    const el = document.createElement("div");
+    el.className = "gitem" + (owned ? " owned" : "");
+    el.innerHTML = "<div><div class='gn'>" + it.name + "</div><div class='gnote'>" + it.note + "</div></div>";
+    const b = document.createElement("button");
+    b.textContent = owned ? "ЕСТЬ" : it.price;
+    b.disabled = owned || save.wallet < it.price;
+    b.onclick = () => {
+      if (hasGear(it.id) || save.wallet < it.price) return;
+      save.wallet -= it.price; save.gear.push(it.id); commitSave();
+      sfx("bonus"); showCamp();
+    };
+    el.appendChild(b);
+    box.appendChild(el);
+  }
+  document.getElementById("campScreen").classList.remove("hidden");
+  if (campTimer) clearInterval(campTimer);
+  campTimer = setInterval(() => { campFrame++; drwCampArt(); }, 50);
+}
+
+function leaveCamp(){
+  if (campTimer){ clearInterval(campTimer); campTimer = null; }
+  setMusic("river");
 }
 
 function showDiary(){
@@ -1432,6 +1544,8 @@ function damage(){
   g.inv = INV_FRAMES;
   g.shake = 14;
   g.combo = 0; g.comboT = 0;
+  // Без гермомешка удар сбивает активные эффекты.
+  if (!hasGear("drybag")){ g.breadT = 0; g.whiskyT = 0; }
   if (rapidBlend(g.scroll) > 0.5) g.cleanRun = false;
   g.t = 0; g.vt = 0;
   g.sp = Math.max(1.8, g.sp*0.55);
@@ -1521,6 +1635,7 @@ function togglePause(){
 }
 
 function hideAllScreens(){
+  if (typeof campTimer !== "undefined" && campTimer){ clearInterval(campTimer); campTimer = null; }
   for (const id of ["startScreen","gameOverScreen","continueScreen","pauseScreen",
                     "mapScreen","finishScreen","failScreen","campScreen","diaryScreen"]){
     const el = document.getElementById(id);
@@ -1815,7 +1930,8 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX,
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   loadBest, saveBest, upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
-  startDay, showMap, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
+  startDay, showMap, showCamp, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
+  GEAR, hasGear,
   ensureBoard, addResult };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
