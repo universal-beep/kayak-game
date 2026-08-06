@@ -123,6 +123,31 @@ function segAt(w){
   return g.segs.length ? g.segs[g.segs.length-1] : { type:"calm", start:0, end:Infinity };
 }
 
+/* ===== 7. Физика байдарки ===== */
+const ACC = 0.0006, DAMP = 0.985, VMAX = 0.035, DRIFT = 0.00004, TMAX = 0.94;
+
+function flowMul(t){ return 1.18 - 0.34*t*t; }
+
+function stepLateral(input){
+  const breadOn = g.breadT > 0;
+  g.vt += input * ACC * (breadOn ? 1.6 : 1);
+  // Центробежный снос: на повороте прижимает к внешнему берегу.
+  // curvAt > 0 там, где ось выгибается вправо, — байдарку при этом уносит влево.
+  g.vt -= curvAt(g.scroll) * DRIFT * (breadOn ? 0.5 : 1);
+  g.vt *= DAMP;
+  if (g.vt >  VMAX) g.vt =  VMAX;
+  if (g.vt < -VMAX) g.vt = -VMAX;
+  g.t += g.vt;
+  if (g.t >  TMAX){ g.t =  TMAX; if (g.vt > 0) g.vt = 0; }
+  if (g.t < -TMAX){ g.t = -TMAX; if (g.vt < 0) g.vt = 0; }
+}
+
+function leanOf(vt){
+  if (vt >  0.012) return "kayak_right";
+  if (vt < -0.012) return "kayak_left";
+  return "kayak_center";
+}
+
 const BLEND = 200;
 
 function rapidBlend(w){
@@ -457,15 +482,22 @@ function upd(){
   g.df=1+g.dist/1000;const tgt=Math.min(6.5,2.5+g.dist/700);g.sp+=(tgt-g.sp)*0.004;
   g.rb=Math.sin(g.frame*0.002)*42+Math.sin(g.frame*0.005+1.2)*20+Math.sin(g.frame*0.001+0.7)*10;
   const sm=g.sm?0.35:1;g.ro+=g.sp*sm;g.dist+=g.sp*0.04*sm;
-  g.scroll += g.sp * sm * speedMulAt(g.scroll);
+  g.scroll += g.sp * sm * speedMulAt(g.scroll) * flowMul(g.t);
   ensureSegments(g.scroll + H*2);
   while (g.segs.length > 40) g.segs.shift();
   g.pa=Math.sin(g.frame*0.12);
-  const ms=4.5;let mx=0;
-  if(keys["ArrowLeft"]||keys["a"]||keys["A"])mx=-ms;
-  if(keys["ArrowRight"]||keys["d"]||keys["D"])mx=ms;
-  if(mt!==null&&Math.abs(mt-g.kx)>4)mx=Math.sign(mt-g.kx)*ms;
-  g.kx+=mx;const L=rl(),R=rr();g.kx=Math.max(L+24,Math.min(R-24,g.kx));
+  let input = 0;
+  if (keys["ArrowLeft"] || keys["a"] || keys["A"]) input = -1;
+  if (keys["ArrowRight"] || keys["d"] || keys["D"]) input = 1;
+  if (mt !== null){
+    const px = screenXOf(g.t, g.scroll);
+    if (Math.abs(mt - px) > 4) input = Math.sign(mt - px);
+  }
+  stepLateral(input);
+  // Мост для старого кода: препятствия и столкновения ещё считают в экранных
+  // координатах. Уберётся в следующей задаче, когда они переедут на t.
+  g.kx = screenXOf(g.t, g.scroll);
+  g.ky = PY;
   const sr=0.018+g.df*0.007;if(Math.random()<sr)spOb();
   if(Math.random()<0.003)spBn();
   if(g.dist>=g.ned)spBev();
@@ -511,7 +543,8 @@ function lp(){upd();rndr();requestAnimationFrame(lp);}
 /* ===== 13. Экспорт для тестов ===== */
 globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secondDiff,
                          screenYOf, worldYOf, spawnWy, offScreen, screenXOf,
-                         ensureSegments, segAt, rapidBlend, speedMulAt };
+                         ensureSegments, segAt, rapidBlend, speedMulAt,
+                         stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX };
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
 </body>
