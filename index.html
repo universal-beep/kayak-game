@@ -86,9 +86,6 @@ function spawnWy(){ return g.scroll + PY + 60; }
 function offScreen(wy){ return screenYOf(wy) > H + 60; }
 function screenXOf(t, wy){ return centerAt(wy) + t * widthAt(wy) / 2; }
 
-// временная заглушка: сегменты реки и сужение на порогах появятся в Task 5
-function widthAt(w){ return baseWidthAt(w); }
-
 /* ===== 4. Сегменты: плёс и порог ===== */
 const FIRST_RAPID_AT = 1200;
 const CALM_MIN = 1400, CALM_MAX = 2400;
@@ -113,6 +110,24 @@ function segAt(w){
     if (w >= g.segs[i].start && w < g.segs[i].end) return g.segs[i];
   return g.segs.length ? g.segs[g.segs.length-1] : { type:"calm", start:0, end:Infinity };
 }
+
+const BLEND = 200;
+
+function rapidBlend(w){
+  const s = segAt(w);
+  if (!g.segs.length) return 0;
+  const inRapid = s.type === "rapid";
+  // Слева от самого первого сегмента соседа нет — там граница не настоящая,
+  // иначе игра начиналась бы с наполовину суженным руслом.
+  const dLeft  = s.start > 0 ? w - s.start : Infinity;
+  const dRight = s.end - w;
+  const dIn = Math.min(dLeft, dRight);
+  const k = Math.max(0, Math.min(1, dIn / BLEND));
+  return inRapid ? 0.5 + 0.5*k : 0.5 - 0.5*k;
+}
+
+function widthAt(w){ return baseWidthAt(w) * (1 - 0.38*rapidBlend(w)); }
+function speedMulAt(w){ return 1 + 0.4*rapidBlend(w); }
 
 const RLB=W*0.10,RRB=W*0.90;
 function rl(){return RLB+g.rb}
@@ -468,7 +483,7 @@ function lp(){upd();rndr();requestAnimationFrame(lp);}
 /* ===== 13. Экспорт для тестов ===== */
 globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secondDiff,
                          screenYOf, worldYOf, spawnWy, offScreen, screenXOf,
-                         ensureSegments, segAt };
+                         ensureSegments, segAt, rapidBlend, speedMulAt };
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
 </body>
