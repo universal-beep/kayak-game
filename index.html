@@ -50,6 +50,7 @@ canvas { display:block;margin:0 auto; }
     <h1>ПЕРЕВЕРНУЛИ!</h1>
     <div class="score dist">Дистанция: <span id="finalDist">0</span> м</div>
     <div class="score bonus">+ Бонусы: <span id="finalBonus">0</span></div>
+    <div class="score bonus">Обгонов: <span id="finalPassed">0</span></div>
     <div class="score">Итого: <span id="finalScore">0</span></div>
     <div class="score">Рекорд: <span id="bestScore">0</span></div>
     <div class="score bonus hidden" id="newBest">НОВЫЙ РЕКОРД!</div>
@@ -80,7 +81,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,riverIdx:-1,signT:0,combo:0,comboT:0,passed:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -378,8 +379,11 @@ const PY = H - 90;                 // экранная строка, на кот
 // Размах оси урезан со 107 до 88, потому что русло стало шире: полуширина
 // 120 плюс размах 88 = 208 при половине холста 210, берега ещё не срезаются.
 function centerAt(w){
+  const b = g.rBend || 1;
+  const amp = 70*b, lim = 210 - RIVER_WIDTH*(g.rWidth||1)/2 - 4;
+  const a1 = Math.min(amp, Math.max(0, lim - 18));
   return W/2
-    + 70*Math.sin(w*0.0034)
+    + a1*Math.sin(w*0.0034)
     + 12*Math.sin(w*0.0089 + 1.3)
     + 6*Math.sin(w*0.0019 + 0.6);
 }
@@ -389,7 +393,7 @@ function centerAt(w){
 // сужают только пороги.
 const RIVER_WIDTH = 240;
 function baseWidthAt(w){
-  return RIVER_WIDTH;
+  return RIVER_WIDTH * (g.rWidth || 1);
 }
 
 function secondDiff(fn, w, h){
@@ -406,6 +410,51 @@ function worldYOf(y){ return g.scroll + PY - y; }
 function spawnWy(){ return g.scroll + PY + 60; }
 function offScreen(wy){ return screenYOf(wy) > H + 60; }
 function screenXOf(t, wy){ return centerAt(wy) + t * widthAt(wy) / 2; }
+
+/* ===== 3b. Реки ===== */
+// Характер каждой реки взят из настоящей: Осуга — малая и каменистая,
+// Тверца — старый водный путь с деревнями, Медведица — извилистая и лесная,
+// Волга — большая вода. Множители превращают это в механику, а не в подпись.
+const RIVERS = [
+  { name:"ОСУГА",     len: 900, width:0.78, bend:0.75, rocks:1.7, speed:1.00,
+    grass:"#3f8f43", water:"#1565c0",
+    note:"Малая река, каменистые перекаты" },
+  { name:"ТВЕРЦА",    len:1100, width:1.00, bend:1.00, rocks:1.0, speed:1.05,
+    grass:"#47973f", water:"#136fb8",
+    note:"Старый водный путь на Торжок" },
+  { name:"МЕДВЕДИЦА", len:1000, width:0.90, bend:1.55, rocks:1.2, speed:1.10,
+    grass:"#367f3c", water:"#125e9e",
+    note:"Извилистая, лесная, много топляка" },
+  { name:"ВОЛГА",     len:1400, width:1.28, bend:0.70, rocks:0.9, speed:1.18,
+    grass:"#4b9c48", water:"#0f6bc4",
+    note:"Большая вода" }
+];
+// Длина участка реки в метрах дистанции; ниже пересчитывается в мировые пиксели.
+const M_PER_PX = 0.04;
+
+function riverIndexAt(distM){
+  let acc = 0;
+  for (let i = 0; i < RIVERS.length; i++){
+    acc += RIVERS[i].len;
+    if (distM < acc) return i;
+  }
+  // дальше реки повторяются по кругу
+  let rest = distM;
+  const total = RIVERS.reduce((a,r)=>a+r.len,0);
+  rest = rest % total;
+  acc = 0;
+  for (let i = 0; i < RIVERS.length; i++){
+    acc += RIVERS[i].len;
+    if (rest < acc) return i;
+  }
+  return RIVERS.length - 1;
+}
+function river(){ return RIVERS[g.riverIdx] || RIVERS[0]; }
+function riverStartM(idx){
+  let acc = 0;
+  for (let i = 0; i < idx; i++) acc += RIVERS[i].len;
+  return acc;
+}
 
 /* ===== 4. Сегменты: плёс и порог ===== */
 const FIRST_RAPID_AT = 1200;
@@ -440,6 +489,7 @@ function segAt(w){
 // коэффициент снижен вчетверо, с 0.0016 до 0.0004 — иначе снос перебивает
 // гребок и на повороте байдарку невозможно удержать.
 const ACC = 0.0035, DAMP = 0.90, VMAX = 0.035, DRIFT = 0.0004, TMAX = 0.94;
+const KAYAK_R = 16;   // радиус столкновения байдарки
 
 function flowMul(t){ return 1.18 - 0.34*t*t; }
 
@@ -512,7 +562,7 @@ function drwBg(){
     const L = c - hw, R = c + hw;
     const rb = rapidBlend(wy);
 
-    cx.fillStyle = "#3f8f43";
+    cx.fillStyle = g.rGrass || "#3f8f43";
     cx.fillRect(0, y, Math.max(0, L), BAND);
     cx.fillRect(Math.min(W, R), y, W - R, BAND);
 
@@ -520,7 +570,7 @@ function drwBg(){
     cx.fillRect(L - 6, y, 6, BAND);
     cx.fillRect(R, y, 6, BAND);
 
-    cx.fillStyle = "#1565c0";
+    cx.fillStyle = g.rWater || "#1565c0";
     cx.fillRect(L, y, R - L, BAND);
 
     cx.fillStyle = "#0d47a1";
@@ -726,6 +776,17 @@ function drwHUD(){
   cx.font = "8px " + F;
   cx.fillStyle = "#9aa9b2";
   cx.fillText("РЕКОРД: " + loadBest(), 12, 60);
+  cx.fillStyle = "#cfe8f5";
+  cx.fillText(river().name, 12, H - 14);
+  if (g.combo > 1){
+    cx.font = "12px " + F;
+    cx.fillStyle = "#ffd54f";
+    cx.textAlign = "center";
+    cx.fillText("x" + g.combo, W/2, 42);
+    cx.fillStyle = "rgba(255,213,79,0.30)";
+    cx.fillRect(W/2 - 30, 48, 60*(g.comboT/150), 4);
+    cx.textAlign = "left";
+  }
 
   for (let i = 0; i < 3; i++){
     cx.fillStyle = i < g.hp ? "#e53935" : "#4a2c2c";
@@ -758,6 +819,27 @@ function drwEffBar(label, frac, color, y){
   cx.fillStyle = color; cx.fillText(label, 12, y);
   cx.fillStyle = "rgba(0,0,0,0.45)"; cx.fillRect(70, y - 7, 60, 6);
   cx.fillStyle = color; cx.fillRect(70, y - 7, 60*frac, 6);
+}
+
+// Щит с названием реки на берегу — как дорожный указатель.
+function drwSign(){
+  if (g.signT <= 0) return;
+  const r = river();
+  const a = Math.min(1, g.signT/60);
+  const y = 150;
+  cx.save();
+  cx.globalAlpha = a;
+  const wdt = 250, x = W/2 - wdt/2;
+  cx.fillStyle = "#2e4a2a"; cx.fillRect(x - 4, y - 4, wdt + 8, 62);
+  cx.fillStyle = "#e8e2cf"; cx.fillRect(x, y, wdt, 54);
+  cx.fillStyle = "#2e4a2a"; cx.fillRect(x + 6, y + 6, wdt - 12, 42);
+  cx.fillStyle = "#8f5d1e"; cx.fillRect(W/2 - 5, y + 54, 10, 26);
+  cx.fillStyle = "#fff"; cx.font = "14px " + F; cx.textAlign = "center";
+  cx.fillText(r.name, W/2, y + 26);
+  cx.fillStyle = "#cfd8c5"; cx.font = "6px " + F;
+  cx.fillText(r.note, W/2, y + 42);
+  cx.restore();
+  cx.textAlign = "left";
 }
 
 function drwPops(){
@@ -941,6 +1023,7 @@ function damage(){
   g.hp -= 1;
   g.inv = INV_FRAMES;
   g.shake = 14;
+  g.combo = 0; g.comboT = 0;
   if (rapidBlend(g.scroll) > 0.5) g.cleanRun = false;
   g.t = 0; g.vt = 0;
   g.sp = Math.max(1.8, g.sp*0.55);
@@ -1010,7 +1093,7 @@ function sg(){
   document.getElementById("gameOverScreen").classList.add("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.riverIdx=-1;g.signT=0;g.combo=0;g.comboT=0;g.passed=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
 }
@@ -1026,6 +1109,7 @@ function gmO(){
   document.getElementById("finalDist").textContent = Math.floor(g.dist);
   document.getElementById("finalBonus").textContent = g.bsc;
   document.getElementById("finalScore").textContent = total;
+  document.getElementById("finalPassed").textContent = g.passed;
   document.getElementById("bestScore").textContent = loadBest();
   document.getElementById("newBest").classList.toggle("hidden", !isBest);
 
@@ -1079,6 +1163,43 @@ function upd(){
   ensureSegments(g.scroll + H*2);
   while (g.segs.length > 40) g.segs.shift();
   g.pa=Math.sin(g.frame*0.12);
+
+  // Смена реки: параметры русла и палитра меняются, на берегу встаёт щит
+  // с названием. Характер реки — это множители, а не только подпись.
+  const ri = riverIndexAt(g.dist);
+  if (ri !== g.riverIdx){
+    g.riverIdx = ri;
+    const r = river();
+    g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks;
+    g.rGrass = r.grass; g.rWater = r.water;
+    g.signT = 260;
+    sfx("clean");
+  }
+  if (g.signT > 0) g.signT--;
+
+  // Обгон соперников засчитывается: он ушёл за спину, значит обогнали.
+  for (const o of g.obs)
+    if (o.type === "kayaker" && !o.passed && o.wy < g.scroll - 30){
+      o.passed = true; g.passed++; g.sc += 15;
+      popText("ОБГОН +15", "#7fd67f");
+    }
+
+  // Комбо: проход впритирку мимо препятствия без удара наращивает множитель.
+  for (const o of g.obs){
+    if (o.grazed) continue;
+    if (o.wy > g.scroll - 10) continue;              // ещё не поравнялись
+    const hw = widthAt(o.wy)/2;
+    const gap = Math.abs(o.t - g.t)*hw - (o.halfPx || 20) - KAYAK_R;
+    o.grazed = true;
+    if (gap < 26 && gap > -2){
+      g.combo++;
+      g.comboT = 150;
+      const add = 5 * Math.min(10, g.combo);
+      g.sc += add;
+      if (g.combo % 3 === 0) popText("ВПРИТИРКУ x" + g.combo + "  +" + add, "#ffd54f");
+    }
+  }
+  if (g.comboT > 0){ g.comboT--; if (g.comboT === 0) g.combo = 0; }
   tickEffects();
   g.shake *= 0.88; if (g.shake < 0.1) g.shake = 0;
   // Чистый проход порога: вошёл — взводим флаг, вышел без удара — награда.
@@ -1100,7 +1221,7 @@ function upd(){
     if (Math.abs(mt - px) > 4) input = Math.sign(mt - px);
   }
   stepLateral(input);
-  const sr=0.018+g.df*0.007;if(Math.random()<sr)spOb();
+  const sr=(0.018+g.df*0.007)*(g.rRocks||1);if(Math.random()<sr)spOb();
   if(Math.random()<0.003)spBn();
   if(g.dist>=g.ned)spBev();
   for(let i=g.obs.length-1;i>=0;i--){
@@ -1184,7 +1305,7 @@ function rndr(){
   for(const b of g.bns)drwBn(b);
   drwWake();drwPt();drwKy();
   cx.restore();
-  drwPops();drwHUD();
+  drwSign();drwPops();drwHUD();
   if (g.whiskyT > 0){
     cx.strokeStyle = "rgba(232,168,56," + (0.30 + Math.sin(g.frame*0.15)*0.08) + ")";
     cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
@@ -1197,7 +1318,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX,
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
-  loadBest, saveBest, upd, spOb, spBn };
+  loadBest, saveBest, upd, spOb, spBn, RIVERS, riverIndexAt, river };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
