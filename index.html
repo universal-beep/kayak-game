@@ -55,6 +55,30 @@ function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.w
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
 const g={s:"start",kx:W/2,ky:H-80,sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ro:0,rb:0,ned:200,frame:0,df:1,pa:0};
+
+/* ===== 3. Геометрия русла ===== */
+const PY = H - 90;                 // экранная строка, на которой стоит байдарка
+
+function centerAt(w){
+  return W/2
+    + 46*Math.sin(w*0.0016)
+    + 26*Math.sin(w*0.0041 + 1.3)
+    + 14*Math.sin(w*0.00087 + 0.6);
+}
+
+function baseWidthAt(w){
+  return 190 + 55*Math.sin(w*0.0022 + 2.1);
+}
+
+function secondDiff(fn, w, h){
+  const s = h || 40;
+  return fn(w + s) - 2*fn(w) + fn(w - s);
+}
+
+function curvAt(w){
+  return secondDiff(centerAt, w, 40);
+}
+
 const RLB=W*0.10,RRB=W*0.90;
 function rl(){return RLB+g.rb}
 function rr(){return RRB+g.rb}
@@ -406,7 +430,7 @@ function rndr(){
 function lp(){upd();rndr();requestAnimationFrame(lp);}
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g };
+globalThis.__KAYAK__ = { G: g, centerAt, baseWidthAt, curvAt, secondDiff };
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
 </body>
