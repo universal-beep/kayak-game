@@ -177,7 +177,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -298,6 +298,43 @@ const SPR = {
     "kIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIk",
     ".kgggggggggggggggggggggggggggggk..",
     "..kkkkkkkkkkkkkkkkkkkkkkkkkkkkk..."],noOutline:true},
+  car:{map:[
+    "..........kkkkkkkk..........",
+    ".........kzzzzzzzzk.........",
+    "........kzWWWWWWWWzk........",
+    ".kkkkkkkzzWWWWWWWWzzkkkkkkk.",
+    "kzzzzzzzzzzzzzzzzzzzzzzzzzzk",
+    "kzZZZZZZZZZZZZZZZZZZZZZZZZzk",
+    "kzzzzzzzzzzzzzzzzzzzzzzzzzzk",
+    ".kkkkkkKKkkkkkkkkkkKKkkkkkk.",
+    "......kKKKk......kKKKk......",
+    "......kKgKk......kKgKk......",
+    ".......kKk........kKk......."]},
+  train:{map:[
+    "...kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...",
+    "..kGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGk..",
+    ".kGrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrGk.",
+    "kGrrWWWWrrrWWWWrrrWWWWrrrWWWWrrrWWWWrrGk",
+    "kGrrWWWWrrrWWWWrrrWWWWrrrWWWWrrrWWWWrrGk",
+    "kGrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrGk",
+    "kGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGk",
+    ".kkkKKkkkkkkKKkkkkkkKKkkkkkkKKkkkkKKkkk.",
+    "....kKKk....kKKk....kKKk....kKKk.kKKk...",
+    ".....kk......kk......kk......kk...kk...."]},
+  station:{map:[
+    "......kkkkkkkkkkkkkkkk......",
+    ".....kGGGGGGGGGGGGGGGGk.....",
+    "....kGGGGGGGGGGGGGGGGGGk....",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "kWWWWWWWWWWWWWWWWWWWWWWWWWWk",
+    "kWWkkkkWWWWkkkkWWWWkkkkWWWWk",
+    "kWWkzzkWWWWkzzkWWWWkzzkWWWWk",
+    "kWWkkkkWWWWkkkkWWWWkkkkWWWWk",
+    "kWWWWWWWWWWWWWWWWWWWWWWWWWWk",
+    "kWWWWWWWWkkkkkkWWWWWWWWWWWWk",
+    "kWWWWWWWWkOOOOkWWWWWWWWWWWWk",
+    "kWWWWWWWWkOOOOkWWWWWWWWWWWWk",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkk"]},
   fish:{map:["..kkk..",".kWWWkk","kWWWWWk",".kWWWkk","..kkk.."],noOutline:true},
   fire:{map:["....kk....","...kuuk...","..kuyyuk..","..kyyyyk..",".kyyrryyk.",
     ".kyrrrryk.","kOOkkkkOOk",".kOOOOOOk.","..kkkkkk.."],noOutline:true},
@@ -339,7 +376,8 @@ SPR.kayak_left   = { map: shearMap(SPR.kayak_center.map, -1) };
 SPR.kayak_right  = { map: shearMap(SPR.kayak_center.map,  1) };
 
 // Часть спрайтов рисуется в меньшем масштабе, чтобы не подавлять остальные.
-const SPR_SCALE = { whisky:2, axe:2, medkit:2, slice:2, duck:2, fire:2, snag:2, barge:4 };
+const SPR_SCALE = { whisky:2, axe:2, medkit:2, slice:2, duck:2, fire:2, snag:2, barge:4,
+                    car:3, train:3, station:3 };
 function scaleOf(name){ return SPR_SCALE[name] || SCALE; }
 
 function spriteSize(name){
@@ -545,6 +583,119 @@ function spawnWy(){ return g.scroll + PY + 60; }
 function offScreen(wy){ return screenYOf(wy) > H + 60; }
 function screenXOf(t, wy){ return centerAt(wy) + t * widthAt(wy) / 2; }
 
+/* ===== 3a. Микромульты ===== */
+// Сцена — список актёров, у каждого своя дорожка позиций во времени.
+// Никакого нового движка: только интерполяция координат и альфы.
+// Длительность сцены — пять секунд при 60 кадрах.
+const CUT_LEN = 300;
+
+function lerp(a, b, k){ return a + (b - a) * Math.max(0, Math.min(1, k)); }
+
+// Каждый актёр: спрайт, ключевые кадры [доляВремени, x, y, масштаб, альфа]
+const CUTS = {
+  night: { sky:"night", ground:"#1d3324", caption:"Ночёвка на берегу",
+    actors:[
+      { spr:"tent",   keys:[[0,120,300,1,1],[1,120,300,1,1]] },
+      { spr:"tent",   keys:[[0,300,290,0.8,1],[1,300,290,0.8,1]] },
+      { spr:"fire",   keys:[[0,210,300,0.6,0],[0.25,210,300,1.1,1],[1,210,300,1.2,1]] },
+      { spr:"sitter", keys:[[0,160,306,0.9,0],[0.4,160,306,0.9,1],[1,160,306,0.9,1]] },
+      { spr:"person", keys:[[0,-40,300,0.9,1],[0.45,258,300,0.9,1],[1,258,300,0.9,1]] }
+    ] },
+  morning: { sky:"morning", ground:"#2c4a2f", caption:"Утро. Идём дальше",
+    actors:[
+      { spr:"tent",   keys:[[0,300,290,0.8,1],[0.6,300,290,0.8,1],[1,300,290,0.8,0]] },
+      { spr:"person", keys:[[0,150,300,0.9,1],[1,240,300,0.9,1]] },
+      { spr:"kayak_center", keys:[[0,120,330,1,1],[1,300,352,1,1]] }
+    ] },
+  drive: { sky:"day", ground:"#3f6b33", caption:"Байдарки на прицеп — и на другую реку",
+    actors:[
+      { spr:"tree",  keys:[[0,470,300,1,1],[1,-90,300,1,1]] },
+      { spr:"tree",  keys:[[0,700,306,1.2,1],[1,140,306,1.2,1]] },
+      { spr:"car",   keys:[[0,-90,300,1,1],[0.5,210,300,1,1],[1,210,300,1,1]] },
+      { spr:"kayak_center", keys:[[0,-190,286,0.7,1],[0.5,110,286,0.7,1],[1,110,286,0.7,1]] }
+    ] },
+  finale: { sky:"evening", ground:"#3a3f45", caption:"Вокзал в Твери. Домой, в Москву",
+    actors:[
+      { spr:"station", keys:[[0,210,250,1,1],[1,210,250,1,1]] },
+      { spr:"person",  keys:[[0,80,330,1,1],[0.35,190,330,1,1],[0.55,190,330,1,1],[0.6,190,330,1,0]] },
+      { spr:"train",   keys:[[0,-260,330,1,1],[0.4,210,330,1,1],[0.62,210,330,1,1],[1,760,330,1,1]] }
+    ] }
+};
+
+const CUT_SKY = {
+  night:   ["#0b1524","#16283f"],
+  morning: ["#f6c78a","#8fc2e0"],
+  day:     ["#7ec8e3","#a8d8ea"],
+  evening: ["#3a2a4a","#c2704f"]
+};
+
+function playCut(name, then){
+  g.cut = { name, t: 0, then };
+  g.s = "cutscene";
+  hideAllScreens();
+  setMusic(name === "night" ? "camp" : "river");
+}
+
+function updCut(){
+  if (!g.cut){ g.s = "map"; return; }
+  g.frame++;
+  g.cut.t++;
+  if (g.cut.t >= CUT_LEN) endCut();
+}
+function endCut(){
+  if (!g.cut) return;
+  const then = g.cut.then;
+  g.cut = null;
+  // Состояние обязано смениться, иначе цикл продолжит звать updCut
+  // с пустой сценой. Колбэк при желании переопределит.
+  g.s = "map";
+  if (then) then();
+}
+
+function drwCut(){
+  const sc = CUTS[g.cut.name];
+  const k = g.cut.t / CUT_LEN;
+  const sky = CUT_SKY[sc.sky];
+  const gr = cx.createLinearGradient(0,0,0,H);
+  gr.addColorStop(0, sky[0]); gr.addColorStop(1, sky[1]);
+  cx.fillStyle = gr; cx.fillRect(0,0,W,H);
+  if (sc.sky === "night"){
+    for (let i=0;i<40;i++){
+      const sx=(i*97)%W, sy=(i*53)%220;
+      cx.fillStyle = (Math.floor(g.frame/14+i)%6) ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)";
+      cx.fillRect(sx,sy,2,2);
+    }
+  }
+  cx.fillStyle = sc.ground; cx.fillRect(0, 320, W, H-320);
+  if (sc.sky === "evening"){                 // перрон
+    cx.fillStyle = "#5a5f66"; cx.fillRect(0, 344, W, 10);
+    cx.fillStyle = "#2b2f34"; cx.fillRect(0, 354, W, 8);
+  }
+  for (const a of sc.actors){
+    const ks = a.keys;
+    let i = 0;
+    while (i < ks.length-2 && k > ks[i+1][0]) i++;
+    const k0 = ks[i], k1 = ks[Math.min(i+1, ks.length-1)];
+    const span = Math.max(1e-6, k1[0]-k0[0]);
+    const u = (k - k0[0]) / span;
+    const x = lerp(k0[1],k1[1],u), y = lerp(k0[2],k1[2],u);
+    const scl = lerp(k0[3],k1[3],u), al = lerp(k0[4],k1[4],u);
+    const spr = SPR[a.spr];
+    if (!spr || !spr.img || al <= 0.01) continue;
+    cx.save(); cx.globalAlpha = al;
+    const w = spr.img.width*scl, h = spr.img.height*scl;
+    cx.drawImage(spr.img, Math.round(x-w/2), Math.round(y-h), w, h);
+    cx.restore();
+  }
+  // подпись и подсказка
+  cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(0, H-70, W, 44);
+  cx.fillStyle = "#fff"; cx.font = "9px " + F; cx.textAlign = "center";
+  cx.fillText(sc.caption, W/2, H-44);
+  cx.fillStyle = "rgba(255,255,255,0.45)"; cx.font = "6px " + F;
+  cx.fillText("нажми, чтобы пропустить", W/2, H-30);
+  cx.textAlign = "left";
+}
+
 /* ===== 3b. Реки ===== */
 // Характер каждой реки взят из настоящей: Осуга — малая и каменистая,
 // Тверца — старый водный путь с деревнями, Медведица — извилистая и лесная,
@@ -739,6 +890,7 @@ const keys={};let mt=null;
 addEventListener("keydown",e=>{
   keys[e.key]=true;
   if(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь")toggleMusic();
+  if(g.s=="cutscene"){ e.preventDefault(); endCut(); return; }
   if(e.key=="Escape"||e.key=="p"||e.key=="P"||e.key=="з"||e.key=="З"){e.preventDefault();togglePause();}
   // Во время игры пробел и стрелка вверх — удар веслом; на экранах — старт.
   if(g.s=="playing"){
@@ -750,6 +902,7 @@ let tapX=0,tapY=0,tapT=0;
 c.addEventListener("touchstart",e=>{e.preventDefault();const r=c.getBoundingClientRect();
   mt=(e.touches[0].clientX-r.left)*(W/r.width);
   tapX=e.touches[0].clientX;tapY=e.touches[0].clientY;tapT=Date.now();
+  if(g.s=="cutscene"){endCut();return;}
   if(g.s=="start"||g.s=="over"||g.s=="continue")hs();},{passive:false});
 c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();mt=(e.touches[0].clientX-r.left)*(W/r.width);},{passive:false});
 c.addEventListener("touchend",e=>{e.preventDefault();
@@ -777,11 +930,16 @@ document.getElementById("saveNameBtn").addEventListener("click",()=>{
   renderBoard(level().day, g.pendingScore || 0);
 });
 document.getElementById("nextBtn").addEventListener("click",()=>{
-  if(g.day>=LEVELS.length-1){showMap();return;}
+  // После последнего дня — финал с вокзалом и электричкой.
+  if(g.day>=LEVELS.length-1){ playCut("finale", showMap); return; }
+  const wasRiver = LEVELS[g.day].river;
   g.day++;
-  showCamp();
+  const nowRiver = LEVELS[g.day].river;
+  // Ночёвка внутри реки, переезд — когда река меняется.
+  if (nowRiver !== wasRiver) playCut("drive", showCamp);
+  else playCut("night", showCamp);
 });
-document.getElementById("goBtn").addEventListener("click",()=>{ leaveCamp(); startDay(g.day); });
+document.getElementById("goBtn").addEventListener("click",()=>{ leaveCamp(); playCut("morning", ()=>startDay(g.day)); });
 document.getElementById("againBtn").addEventListener("click",()=>startDay(g.day));
 document.getElementById("retryBtn").addEventListener("click",()=>startDay(g.day));
 document.getElementById("toMapBtn").addEventListener("click",showMap);
@@ -1928,6 +2086,7 @@ function updArrive(){
 }
 
 function upd(){
+  if(g.s=="cutscene"){ updCut(); return; }
   if(g.s=="arrive"){ updArrive(); return; }
   if(g.s=="continue"){
     g.frame++;
@@ -2100,6 +2259,7 @@ function drwWake(){
 }
 function rndr(){
   cx.clearRect(0,0,W,H);
+  if (g.s == "cutscene" && g.cut){ drwCut(); return; }
   cx.save();
   const amp = g.shake + rapidBlend(g.scroll)*2;
   if (amp > 0.1) cx.translate((Math.random()-0.5)*amp, (Math.random()-0.5)*amp);
@@ -2125,7 +2285,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   loadBest, saveBest, upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
   startDay, showMap, showCamp, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
-  GEAR, hasGear, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
+  GEAR, hasGear, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
