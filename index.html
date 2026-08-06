@@ -10,6 +10,23 @@
 html,body { width:100%;height:100%;background:#1a1a2e;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none; }
 canvas { display:block;margin:0 auto; }
 #ui { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none; }
+#mapScreen,#finishScreen,#failScreen,#diaryScreen,#campScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px; }
+.maph { font-family:"Press Start 2P",monospace;font-size:16px;color:#4fc3f7;margin-bottom:10px;letter-spacing:3px; }
+.finh { font-family:"Press Start 2P",monospace;font-size:20px;color:#7fd67f;margin-bottom:6px; }
+.wallet { font-family:"Press Start 2P",monospace;font-size:8px;color:#ffd54f;margin-bottom:12px; }
+.days { display:flex;flex-direction:column;gap:4px;width:100%;max-width:360px;margin-bottom:14px; }
+.dayrow { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#ddd;background:rgba(255,255,255,0.06);border:2px solid transparent;padding:7px 8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer; }
+.dayrow.locked { color:#555;cursor:default; }
+.dayrow.cur { border-color:#4fc3f7;color:#fff; }
+.dayrow .st { color:#ffd54f;letter-spacing:1px; }
+.maprow { display:flex;gap:8px;flex-wrap:wrap;justify-content:center; }
+.btn.small { font-size:9px;padding:9px 14px;margin-top:8px; }
+.btn.ghost { background:transparent;color:#4fc3f7;border:2px solid #4fc3f7; }
+.place { font-family:"Press Start 2P",monospace;font-size:11px;color:#4fc3f7;margin-bottom:10px;text-align:center; }
+.stars { font-size:30px;letter-spacing:6px;margin-bottom:10px; }
+.goal { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#9aa9b2;margin:10px 0;text-align:center;line-height:1.8;max-width:320px; }
+.diary { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#ddd;line-height:2.1;max-width:340px;max-height:60vh;overflow:auto;margin-bottom:12px; }
+.diary b { color:#4fc3f7; }
 #continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;pointer-events:all; }
 #continueScreen h1 { font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;margin-bottom:22px;letter-spacing:2px; }
 #continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
@@ -62,6 +79,44 @@ canvas { display:block;margin:0 auto; }
     <button class="btn" id="restartBtn">> ЕЩЁ РАЗ <</button>
   </div>
 </div>
+  <div id="mapScreen" class="hidden">
+    <h1 class="maph">МАРШРУТ</h1>
+    <div class="wallet">Рюкзак: <span id="mapWallet">0</span> &nbsp;|&nbsp; Звёзд: <span id="mapStars">0</span>/27</div>
+    <div class="days" id="mapDays"></div>
+    <div class="maprow">
+      <button class="btn small" id="campBtn">ЛАГЕРЬ</button>
+      <button class="btn small" id="diaryBtn">ДНЕВНИК</button>
+      <button class="btn small ghost" id="resetBtn">СБРОС</button>
+    </div>
+  </div>
+  <div id="finishScreen" class="hidden">
+    <h1 class="finh">ДОШЛИ!</h1>
+    <div class="place" id="finPlace"></div>
+    <div class="stars" id="finStars"></div>
+    <div class="score dist">Дистанция: <span id="finDist">0</span> м</div>
+    <div class="score bonus">Очки: <span id="finScore">0</span></div>
+    <div class="score">В рюкзак: <span id="finWallet">0</span></div>
+    <div class="goal" id="finGoal"></div>
+    <div class="maprow">
+      <button class="btn small" id="nextBtn">ДАЛЬШЕ</button>
+      <button class="btn small ghost" id="againBtn">ЗАНОВО</button>
+    </div>
+  </div>
+  <div id="failScreen" class="hidden">
+    <h1>НЕ ДОШЛИ</h1>
+    <div class="place" id="failPlace"></div>
+    <div class="score dist">Прошли: <span id="failDist">0</span> м</div>
+    <div class="score">В рюкзак: <span id="failWallet">0</span></div>
+    <div class="maprow">
+      <button class="btn small" id="retryBtn">ЗАНОВО</button>
+      <button class="btn small ghost" id="toMapBtn">К МАРШРУТУ</button>
+    </div>
+  </div>
+  <div id="diaryScreen" class="hidden">
+    <h1 class="maph">ДНЕВНИК СПЛАВА</h1>
+    <div class="diary" id="diaryText"></div>
+    <button class="btn small" id="diaryBack">НАЗАД</button>
+  </div>
   <div id="continueScreen" class="hidden">
     <h1>ПРОДОЛЖИТЬ?</h1>
     <div class="count" id="contCount">10</div>
@@ -82,7 +137,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,riverIdx:-1,signT:0,combo:0,comboT:0,passed:0,strikeT:0,taughtParry:false,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,signT:0,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -424,45 +479,42 @@ function screenXOf(t, wy){ return centerAt(wy) + t * widthAt(wy) / 2; }
 // Тверца — старый водный путь с деревнями, Медведица — извилистая и лесная,
 // Волга — большая вода. Множители превращают это в механику, а не в подпись.
 const RIVERS = [
-  { name:"ОСУГА",     len: 900, width:0.78, bend:0.75, rocks:1.7, speed:1.00,
-    grass:"#3f8f43", water:"#1565c0",
-    note:"Малая река, каменистые перекаты" },
-  { name:"ТВЕРЦА",    len:1100, width:1.00, bend:1.00, rocks:1.0, speed:1.05,
-    grass:"#47973f", water:"#136fb8",
-    note:"Старый водный путь на Торжок" },
-  { name:"МЕДВЕДИЦА", len:1000, width:0.90, bend:1.55, rocks:1.2, speed:1.10,
-    grass:"#367f3c", water:"#125e9e",
-    note:"Извилистая, лесная, много топляка" },
-  { name:"ВОЛГА",     len:1400, width:1.28, bend:0.70, rocks:0.9, speed:1.18,
-    grass:"#4b9c48", water:"#0f6bc4",
-    note:"Большая вода" }
+  { name:"ВОЛГА",     width:1.35, bend:0.55, rocks:0.8, speed:1.00,
+    grass:"#4b9c48", water:"#0f6bc4", note:"Большая вода, много туристов" },
+  { name:"МЕДВЕДИЦА", width:0.85, bend:1.55, rocks:1.2, speed:1.10,
+    grass:"#367f3c", water:"#125e9e", note:"Извилистая, лесная, топляк и мели" },
+  { name:"ТВЕРЦА",    width:1.00, bend:1.00, rocks:1.0, speed:1.05,
+    grass:"#47973f", water:"#136fb8", note:"Старый водный путь на Торжок" },
+  { name:"ОСУГА",     width:0.72, bend:0.80, rocks:1.8, speed:1.20,
+    grass:"#3f8f43", water:"#1565c0", note:"Малая река, пороги и камни" }
 ];
-// Длина участка реки в метрах дистанции; ниже пересчитывается в мировые пиксели.
-const M_PER_PX = 0.04;
 
-function riverIndexAt(distM){
-  let acc = 0;
-  for (let i = 0; i < RIVERS.length; i++){
-    acc += RIVERS[i].len;
-    if (distM < acc) return i;
-  }
-  // дальше реки повторяются по кругу
-  let rest = distM;
-  const total = RIVERS.reduce((a,r)=>a+r.len,0);
-  rest = rest % total;
-  acc = 0;
-  for (let i = 0; i < RIVERS.length; i++){
-    acc += RIVERS[i].len;
-    if (rest < acc) return i;
-  }
-  return RIVERS.length - 1;
-}
-function river(){ return RIVERS[g.riverIdx] || RIVERS[0]; }
-function riverStartM(idx){
-  let acc = 0;
-  for (let i = 0; i < idx; i++) acc += RIVERS[i].len;
-  return acc;
-}
+// Девять дней похода. У каждого своя река, конечная длина и своя цель
+// третьей звезды — цели разные по сути, а не «то же самое, но дальше».
+const LEVELS = [
+  { day:1, river:0, place:"ПАЛАТОЧНЫЙ ГОРОДОК", len: 800, goal:"bonuses",     need:5,
+    goalText:"Собрать 5 бонусов",            aggro:0.00 },
+  { day:2, river:0, place:"СТАРИЦА",            len: 800, goal:"passed",      need:6,
+    goalText:"Обогнать 6 байдарочников",     aggro:0.00 },
+  { day:3, river:1, place:"СТОЯНКА В ЛЕСУ",     len:1000, goal:"noshallows",  need:0,
+    goalText:"Не коснуться ни одной мели",   aggro:0.30 },
+  { day:4, river:1, place:"ЛАГЕРЬ НА МЕДВЕДИЦЕ",len:1000, goal:"parries",     need:3,
+    goalText:"Парировать 3 удара веслом",    aggro:0.30 },
+  { day:5, river:2, place:"ДЕРЕВНЯ",            len:1000, goal:"bridges",     need:4,
+    goalText:"Пройти 4 моста в пролёт",      aggro:0.45 },
+  { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:1,
+    goalText:"Дойти, сохранив сердце",       aggro:0.45 },
+  { day:7, river:3, place:"ПОРОГ ПЕРВЫЙ",       len:1200, goal:"cleanrapids", need:3,
+    goalText:"Пройти 3 порога чисто",        aggro:0.60 },
+  { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:12,
+    goalText:"Набрать комбо 12",             aggro:0.60 },
+  { day:9, river:3, place:"УСТЬЕ ОСУГИ",        len:1200, goal:"nolives",     need:0,
+    goalText:"Пройти без потери попыток",    aggro:0.60 }
+];
+
+function level(){ return LEVELS[Math.min(g.day, LEVELS.length-1)]; }
+function river(){ return RIVERS[level().river]; }
+
 
 /* ===== 4. Сегменты: плёс и порог ===== */
 const FIRST_RAPID_AT = 1200;
@@ -516,7 +568,7 @@ function paddleStrike(){
     const ox = screenXOf(o.t, o.wy), oy = screenYOf(o.wy);
     spPt(ox, oy, "#ffd54f", 26);
     g.obs.splice(i, 1);
-    g.bsc += 75; g.shake = 9; sfx("parry");
+    g.bsc += 75; g.shake = 9; g.parries++; sfx("parry");
     popText("ПАРИРОВАЛ +75", "#ffd54f");
     // Перевернувшийся соперник роняет своё снаряжение.
     const kind = ["bread","whisky","medkit","axe"][Math.floor(Math.random()*4)];
@@ -597,10 +649,23 @@ for(const[id,k]of[["btnLeft","ArrowLeft"],["btnRight","ArrowRight"]]){
   el.addEventListener("mousedown",()=>keys[k]=true);
   el.addEventListener("mouseup",()=>keys[k]=false);
 }
-function hs(){startMusic();if(g.s=="continue"){resumeRun();return;}if(g.s=="start"||g.s=="over")sg();}
-document.getElementById("startBtn").addEventListener("click",()=>{startMusic();sg();});
+function hs(){startMusic();if(g.s=="continue"){resumeRun();return;}if(g.s=="start")showMap();}
+document.getElementById("startBtn").addEventListener("click",()=>{startMusic();showMap();});
 document.getElementById("restartBtn").addEventListener("click",()=>{startMusic();sg();});
 document.getElementById("contBtn").addEventListener("click",()=>{startMusic();resumeRun();});
+document.getElementById("nextBtn").addEventListener("click",()=>{
+  if(g.day>=LEVELS.length-1){showMap();return;}
+  startDay(g.day+1);
+});
+document.getElementById("againBtn").addEventListener("click",()=>startDay(g.day));
+document.getElementById("retryBtn").addEventListener("click",()=>startDay(g.day));
+document.getElementById("toMapBtn").addEventListener("click",showMap);
+document.getElementById("diaryBtn").addEventListener("click",showDiary);
+document.getElementById("diaryBack").addEventListener("click",showMap);
+document.getElementById("campBtn").addEventListener("click",showMap);
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  if(confirm("Сбросить весь поход?")){resetSave();showMap();}
+});
 /* ===== 9. Рендер: русло и берега ===== */
 const BAND = 4;   // высота полосы построчного рендера
 
@@ -837,6 +902,35 @@ function drwBev(e){
 }
 
 const BEST_KEY = "kayak_best";
+const SAVE_KEY = "kayak_campaign";
+
+// Прогресс похода живёт отдельно от объекта g: g целиком сбрасывается
+// при старте дня, а поход должен переживать и это, и перезагрузку страницы.
+const SAVE_DEFAULT = { day:0, stars:{}, wallet:0, gear:[], diary:[], best:{} };
+let save = loadSave();
+
+function loadSave(){
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(SAVE_DEFAULT));
+    const v = JSON.parse(raw);
+    return Object.assign(JSON.parse(JSON.stringify(SAVE_DEFAULT)), v);
+  } catch(e){ return JSON.parse(JSON.stringify(SAVE_DEFAULT)); }
+}
+function commitSave(){
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e){}
+}
+function resetSave(){
+  save = JSON.parse(JSON.stringify(SAVE_DEFAULT));
+  commitSave();
+}
+function starsOf(day){ return save.stars[day] || 0; }
+function totalStars(){
+  let n = 0;
+  for (const k in save.stars) n += save.stars[k];
+  return n;
+}
+function dayUnlocked(idx){ return idx <= save.day; }
 // Результаты всех забегов текущей сессии. Живут вне объекта g, потому что
 // g целиком сбрасывается при старте новой игры.
 const sessionRuns = [];
@@ -854,7 +948,13 @@ function drwHUD(){
   cx.fillStyle = "#9aa9b2";
   cx.fillText("РЕКОРД: " + loadBest(), 12, 60);
   cx.fillStyle = "#cfe8f5";
-  cx.fillText(river().name, 12, H - 14);
+  cx.fillText("ДЕНЬ " + level().day + " · " + river().name, 12, H - 26);
+  cx.fillStyle = "#9aa9b2";
+  cx.fillText(level().goalText, 12, H - 14);
+  // полоса пути до финиша
+  const pr = Math.max(0, Math.min(1, g.dist / level().len));
+  cx.fillStyle = "rgba(0,0,0,0.45)"; cx.fillRect(W-18, 70, 8, H-140);
+  cx.fillStyle = "#7fd67f"; cx.fillRect(W-18, 70+(H-140)*(1-pr), 8, (H-140)*pr);
   if (g.combo > 1){
     cx.font = "12px " + F;
     cx.fillStyle = "#ffd54f";
@@ -899,6 +999,114 @@ function drwEffBar(label, frac, color, y){
 }
 
 // Щит с названием реки на берегу — как дорожный указатель.
+// Проверка цели третьей звезды. У каждого дня своя, поэтому одна функция
+// со switch, а не флаг в состоянии — так видно все условия разом.
+function goalMet(){
+  const L = level();
+  switch (L.goal){
+    case "bonuses":     return g.bonuses    >= L.need;
+    case "passed":      return g.passed     >= L.need;
+    case "noshallows":  return g.shallowsHit === 0;
+    case "parries":     return g.parries    >= L.need;
+    case "bridges":     return g.bridges    >= L.need;
+    case "hearts":      return g.hp         >= L.need;
+    case "cleanrapids": return g.cleanRapids>= L.need;
+    case "combo":       return g.maxCombo   >= L.need;
+    case "nolives":     return g.livesLost  === 0;
+  }
+  return false;
+}
+
+function finishLevel(){
+  const L = level();
+  const total = Math.floor(g.dist) + g.bsc + g.sc;
+  const stars = 1 + (g.livesLost === 0 ? 1 : 0) + (goalMet() ? 1 : 0);
+
+  if (stars > starsOf(L.day)) save.stars[L.day] = stars;
+  if (total > (save.best[L.day] || 0)) save.best[L.day] = total;
+  save.wallet += Math.floor(total / 3);
+  if (save.diary.indexOf(L.day) < 0) save.diary.push(L.day);
+  if (g.day + 1 > save.day) save.day = Math.min(g.day + 1, LEVELS.length - 1);
+  commitSave();
+
+  g.s = "finish";
+  sfx("clean");
+  showFinish(L, stars, total);
+}
+
+function failLevel(){
+  const L = level();
+  const total = Math.floor(g.dist) + g.bsc + g.sc;
+  save.wallet += Math.floor(total / 3);      // неудачный день тоже что-то даёт
+  commitSave();
+  g.s = "fail";
+  showFail(L, total);
+}
+
+const DIARY = {
+  1:"<b>Волга.</b> Главная река России и наш старт. Здесь она уже широкая: течение спокойное, а ветер поднимает волну не хуже порога.",
+  2:"<b>Старица.</b> Городок на высоком берегу Волги, известен с XIII века. Свято-Успенский монастырь виден с воды задолго до пристани.",
+  3:"<b>Медведица.</b> Левый приток Волги. Сильно петляет, русло узкое, на поворотах намывает песчаные мели.",
+  4:"<b>Топляк.</b> Затонувшие деревья, торчащие из воды. На Медведице их особенно много — лес подступает к самой воде.",
+  5:"<b>Тверца.</b> Приток Волги и часть старинного водного пути из Волги в Балтику. По ней веками шли барки на Петербург.",
+  6:"<b>Торжок.</b> Один из старейших городов на Тверце. Отсюда начинался волок, давший имя всей Вышневолоцкой системе.",
+  7:"<b>Осуга.</b> Приток Тверцы, малая река с каменистым руслом. На перекатах вода идёт через камни — это и есть пороги.",
+  8:"<b>Каньон.</b> Участок, где Осуга режет известняк. Берега поднимаются, русло сужается вдвое.",
+  9:"<b>Устье.</b> Осуга впадает в Тверцу. Здесь поход кончается: байдарки на прицеп, вокзал в Твери, электричка домой."
+};
+
+function showMap(){
+  hideAllScreens();
+  g.s = "map";
+  document.getElementById("mapWallet").textContent = save.wallet;
+  document.getElementById("mapStars").textContent = totalStars();
+  const box = document.getElementById("mapDays");
+  box.innerHTML = "";
+  LEVELS.forEach((L, i) => {
+    const row = document.createElement("div");
+    const open = dayUnlocked(i);
+    row.className = "dayrow" + (open ? "" : " locked") + (i === save.day ? " cur" : "");
+    const st = starsOf(L.day);
+    row.innerHTML = "<span>" + (open ? "ДЕНЬ " + L.day + " · " + RIVERS[L.river].name : "ДЕНЬ " + L.day + " · ЗАКРЫТ") +
+                    "</span><span class='st'>" + (open ? "★".repeat(st) + "☆".repeat(3-st) : "") + "</span>";
+    if (open) row.onclick = () => { startMusic(); startDay(i); };
+    box.appendChild(row);
+  });
+  document.getElementById("mapScreen").classList.remove("hidden");
+}
+
+function showFinish(L, stars, total){
+  hideAllScreens();
+  document.getElementById("finPlace").textContent = L.place;
+  document.getElementById("finStars").textContent = "★".repeat(stars) + "☆".repeat(3-stars);
+  document.getElementById("finDist").textContent = Math.floor(g.dist);
+  document.getElementById("finScore").textContent = total;
+  document.getElementById("finWallet").textContent = Math.floor(total/3);
+  document.getElementById("finGoal").innerHTML =
+    (g.livesLost === 0 ? "★ без потери попыток" : "☆ потеряно попыток: " + g.livesLost) + "<br>" +
+    (goalMet() ? "★ " : "☆ ") + L.goalText;
+  document.getElementById("nextBtn").textContent = (g.day >= LEVELS.length-1) ? "К МАРШРУТУ" : "ДАЛЬШЕ";
+  document.getElementById("finishScreen").classList.remove("hidden");
+}
+
+function showFail(L, total){
+  hideAllScreens();
+  document.getElementById("failPlace").textContent = "не дошли до: " + L.place;
+  document.getElementById("failDist").textContent = Math.floor(g.dist);
+  document.getElementById("failWallet").textContent = Math.floor(total/3);
+  document.getElementById("failScreen").classList.remove("hidden");
+}
+
+function showDiary(){
+  hideAllScreens();
+  const box = document.getElementById("diaryText");
+  const got = save.diary.slice().sort((a,b)=>a-b);
+  box.innerHTML = got.length
+    ? got.map(d => "<p>" + DIARY[d] + "</p>").join("")
+    : "<p>Пока пусто. Записи появляются за пройденные дни.</p>";
+  document.getElementById("diaryScreen").classList.remove("hidden");
+}
+
 function drwSign(){
   if (g.signT <= 0) return;
   const r = river();
@@ -1019,7 +1227,7 @@ function spOb(){
   g.obs.push({t,wy,type:ty,size:sz,halfPx,sprite,vt:0,
               visHalf,
               variant:ty=="kayaker"?Math.floor(Math.random()*3):undefined,
-              aggro:ty=="kayaker"&&Math.random()<0.45, swingT:-1});
+              aggro:ty=="kayaker"&&Math.random()<level().aggro, swingT:-1});
 }
 function spBn(){
   const wy=spawnWy();
@@ -1070,7 +1278,7 @@ function chkCl(){
           damage();
           return;
         }
-      }else if(o.type=="shallows"){g.sp=Math.max(1.5,g.sp*0.65);spPt(ox,oy,"#ffd54f",6);g.obs.splice(i,1);
+      }else if(o.type=="shallows"){g.sp=Math.max(1.5,g.sp*0.65);g.shallowsHit++;spPt(ox,oy,"#ffd54f",6);g.obs.splice(i,1);
       }else if(o.type=="seaweed"){g.sp=Math.max(0.8,g.sp*0.45);spPt(ox,oy,"#2e7d32",6);g.obs.splice(i,1);}
     }
   }
@@ -1110,6 +1318,7 @@ function damage(){
   // Сердца кончились — тратится попытка. Дальше экран «Продолжить»
   // с обратным отсчётом, как на приставках: не нажал вовремя — конец игры.
   g.lives -= 1;
+  g.livesLost++;
   if (g.lives <= 0){ sfx("over"); gmO(); return; }
   sfx("life");
   g.s = "continue";
@@ -1137,6 +1346,7 @@ function tickEffects(){
 function apBn(b){
   spPt(screenXOf(b.t,b.wy),screenYOf(b.wy),"#ffd54f",15);
   sfx("bonus");
+  g.bonuses++;
   switch(b.type){
     case "bread":                       // сила гребка
       g.breadT = BREAD_FRAMES; g.bsc += 20; popText("+20 СИЛА","#eec27a"); break;
@@ -1167,16 +1377,41 @@ function apBn(b){
     }
   }
 }
+function startDay(idx){
+  g.day = Math.max(0, Math.min(idx, LEVELS.length - 1));
+  hideAllScreens();
+  sg();
+}
+
+function hideAllScreens(){
+  for (const id of ["startScreen","gameOverScreen","continueScreen",
+                    "mapScreen","finishScreen","failScreen","campScreen","diaryScreen"]){
+    const el = document.getElementById(id);
+    if (el) el.classList.add("hidden");
+  }
+}
+
 function sg(){
-  document.getElementById("startScreen").classList.add("hidden");
-  document.getElementById("gameOverScreen").classList.add("hidden");
+  hideAllScreens();
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.riverIdx=-1;g.signT=0;g.combo=0;g.comboT=0;g.passed=0;g.strikeT=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.signT=0;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
+  const r = river();
+  g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks;
+  g.rGrass = r.grass; g.rWater = r.water;
+  g.signT = 260;
+  // Снаряжение действует весь день.
+  if (save.gear.indexOf("helmet") >= 0) g.sh = true;
+  if (save.gear.indexOf("ration") >= 0) g.hp = 4;
 }
 function gmO(){
+  failLevel();
+  return;
+}
+
+function gmO_old(){
   const total = Math.floor(g.dist) + g.bsc;
   const prevBest = loadBest();
   const isBest = total > prevBest;
@@ -1243,18 +1478,9 @@ function upd(){
   while (g.segs.length > 40) g.segs.shift();
   g.pa=Math.sin(g.frame*0.12);
 
-  // Смена реки: параметры русла и палитра меняются, на берегу встаёт щит
-  // с названием. Характер реки — это множители, а не только подпись.
-  const ri = riverIndexAt(g.dist);
-  if (ri !== g.riverIdx){
-    g.riverIdx = ri;
-    const r = river();
-    g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks;
-    g.rGrass = r.grass; g.rWater = r.water;
-    g.signT = 260;
-    sfx("clean");
-  }
   if (g.signT > 0) g.signT--;
+  // Финиш дня: дистанция уровня пройдена.
+  if (g.dist >= level().len){ finishLevel(); return; }
 
   // Обгон соперников засчитывается: он ушёл за спину, значит обогнали.
   for (const o of g.obs)
@@ -1272,6 +1498,7 @@ function upd(){
     o.grazed = true;
     if (gap < 26 && gap > -2){
       g.combo++;
+      if (g.combo > g.maxCombo) g.maxCombo = g.combo;
       g.comboT = 150;
       const add = 5 * Math.min(10, g.combo);
       g.sc += add;
@@ -1284,7 +1511,7 @@ function upd(){
   // Чистый проход порога: вошёл — взводим флаг, вышел без удара — награда.
   const inRapid = rapidBlend(g.scroll) > 0.5;
   if (inRapid && !g.wasRapid) g.cleanRun = true;
-  if (!inRapid && g.wasRapid && g.cleanRun){ g.bsc += 150; sfx("clean"); popText("ЧИСТЫЙ ПРОХОД +150","#ffd54f"); }
+  if (!inRapid && g.wasRapid && g.cleanRun){ g.bsc += 150; g.cleanRapids++; sfx("clean"); popText("ЧИСТЫЙ ПРОХОД +150","#ffd54f"); }
   g.wasRapid = inRapid;
   // Кильватерный след за кормой.
   g.wake.push({ t: g.t, wy: g.scroll });
@@ -1410,7 +1637,8 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX,
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
-  loadBest, saveBest, upd, spOb, spBn, RIVERS, riverIndexAt, river, paddleStrike, SWING_FRAMES, PARRY_WINDOW };
+  loadBest, saveBest, upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
+  startDay, showMap, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
