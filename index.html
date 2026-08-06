@@ -89,6 +89,31 @@ function screenXOf(t, wy){ return centerAt(wy) + t * widthAt(wy) / 2; }
 // временная заглушка: сегменты реки и сужение на порогах появятся в Task 5
 function widthAt(w){ return baseWidthAt(w); }
 
+/* ===== 4. Сегменты: плёс и порог ===== */
+const FIRST_RAPID_AT = 1200;
+const CALM_MIN = 1400, CALM_MAX = 2400;
+const RAPID_MIN = 700, RAPID_MAX = 1100;
+
+function ensureSegments(untilW){
+  if (g.segs.length === 0)
+    g.segs.push({ type:"calm", start:0,
+                  end: Math.max(FIRST_RAPID_AT, CALM_MIN + Math.random()*(CALM_MAX-CALM_MIN)) });
+  while (g.segs[g.segs.length-1].end < untilW){
+    const prev = g.segs[g.segs.length-1];
+    const type = prev.type === "calm" ? "rapid" : "calm";
+    const len = type === "calm"
+      ? CALM_MIN + Math.random()*(CALM_MAX-CALM_MIN)
+      : RAPID_MIN + Math.random()*(RAPID_MAX-RAPID_MIN);
+    g.segs.push({ type, start: prev.end, end: prev.end + len });
+  }
+}
+
+function segAt(w){
+  for (let i = 0; i < g.segs.length; i++)
+    if (w >= g.segs[i].start && w < g.segs[i].end) return g.segs[i];
+  return g.segs.length ? g.segs[g.segs.length-1] : { type:"calm", start:0, end:Infinity };
+}
+
 const RLB=W*0.10,RRB=W*0.90;
 function rl(){return RLB+g.rb}
 function rr(){return RRB+g.rb}
@@ -442,7 +467,8 @@ function lp(){upd();rndr();requestAnimationFrame(lp);}
 
 /* ===== 13. Экспорт для тестов ===== */
 globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secondDiff,
-                         screenYOf, worldYOf, spawnWy, offScreen, screenXOf };
+                         screenYOf, worldYOf, spawnWy, offScreen, screenXOf,
+                         ensureSegments, segAt };
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
 </body>
