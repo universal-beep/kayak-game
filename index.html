@@ -10,6 +10,11 @@
 html,body { width:100%;height:100%;background:#1a1a2e;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none; }
 canvas { display:block;margin:0 auto; }
 #ui { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none; }
+#continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;pointer-events:all; }
+#continueScreen h1 { font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;margin-bottom:22px;letter-spacing:2px; }
+#continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
+#continueScreen .score { font-family:"Press Start 2P",monospace;font-size:11px;color:#fff;margin:4px 0; }
+#continueScreen .dist { color:#4fc3f7;font-size:9px; }
 #startScreen,#gameOverScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);pointer-events:all; }
 #startScreen h1 { font-family:"Press Start 2P",monospace;font-size:26px;color:#4fc3f7;margin-bottom:20px;text-shadow:4px 4px 0 #0d47a1;letter-spacing:4px; }
 #startScreen p { font-family:"Press Start 2P",monospace;font-size:9px;color:#bbb;margin:5px 0;line-height:2; }
@@ -55,6 +60,14 @@ canvas { display:block;margin:0 auto; }
     <button class="btn" id="restartBtn">> ЕЩЁ РАЗ <</button>
   </div>
 </div>
+  <div id="continueScreen" class="hidden">
+    <h1>ПРОДОЛЖИТЬ?</h1>
+    <div class="count" id="contCount">10</div>
+    <div class="score">Попыток осталось: <span id="contLives">2</span></div>
+    <div class="score dist">Дистанция сохраняется</div>
+    <button class="btn" id="contBtn">&gt; ПРОДОЛЖИТЬ &lt;</button>
+  </div>
+</div>
 <div id="mobileControls">
   <div class="ctrl" id="btnLeft">◀</div>
   <div class="ctrl" id="btnRight">▶</div>
@@ -67,7 +80,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -89,11 +102,12 @@ const PAL = {
 const rep = (ch,n) => ch.repeat(n);
 
 const SPR = {
-  bread:{map:[".....kkkkkkkkkk.....","...kkLLLLLLLLLLkk...","..kLLLDLLLLDLLLLLk..",
-    ".kLLDLLLLDLLLLLLDLk.",".kLDLLLLDLLLLLLDLLk.",".kLLLLLDLLLLLLDLLLk.",
-    ".kLLLLLLLLLLLLLLLLk.",".kMMMMMMMMMMMMMMMMk.","..kMMMMMMMMMMMMMMk..",
-    "...kkMMMMMMMMMMkk...",".....kkkkkkkkkk....."]},
-  slice:{map:["kkkkkkkkkk","kMeeeeeeMk","kMeeeeeeMk","kMeeeeeeMk","kMMMMMMMMk",".kkkkkkkk."]},
+  bread:{map:[".....kkkkkkkkkk.....","...kkLLLLLLLLLLkk...",
+    "..kLLLDLLLLDLLLLLk..",".kLLDLLLLDLLLLLLDLk.",
+    ".kLDLLLLDLLLLLLDLLk.",".kLLLLLDLLLLLLDLLLk.",
+    ".kLLLLLLLLLLLLLLLLk.",".kMMMMMMMMMMMMMMMMk.",
+    "..kMMMMMMMMMMMMMMk..","...kkMMMMMMMMMMkk...",
+    ".....kkkkkkkkkk....."]},
   whisky:{map:["....kkkkkk....","...kKKKKKKk...","...kKKKKKKk...","...kYYYYYYk...",
     "...kqqqqqqk...","..kqqqqqqqqk..",".kqqqqqqqqqqk.","kqAqqqqqqqqqqk",
     "kqAqqqqqqqqqqk","kKKKKKKKKKKKKk","kKwwwwwwwwwwKk","kKwKKwKwKKwwKk",
@@ -117,10 +131,10 @@ const SPR = {
     "....kGGjjk....","...kGGGjjjk...","...kGGGjjjk...","..kGGGGjjjjk..",
     "..kGGGjjjjjk..",".kGGGGjjjjjjk.",".kGGGjjjjgggk.","kGGGjjjjgggggk",
     "kGjjjjgggggggk","kGjjjggggggggk","kjjggggggggggk",".kkgggggggggk.","..kkkkkkkkkk.."]},
-  slab:{map:[".....kkkkkkkkkkkkk......","..kkkGGGGGGGGGGGGGkkk...",".kGGGGGGGGGGGGGGGGGGGkk.",
-    "kGGGGGjjjjjjjjjjjGGGGGGk","kGjjjjjjjjjjjjjjjjjjjjGk","kjjjjjjjjggggggjjjjjjjjk",
-    "kjjjjjggggggggggggjjjjjk","kjjggggggggggggggggggjjk",".kkgggggggggggggggggggk.",
-    "..kkgggggggggggggggkkk..","....kkkkkkkkkkkkkkk....."]},
+  slab:{map:["......kkkkkk............","...kkkGGGGGGkkkk........","..kGGGGGGGGGGGGGkkkkk...",
+    ".kGGGGGGjjjjjjGGGGGGGGk.","kGGGGjjjjjjjjjjjjGGGGGGk","kGjjjjjjjjjjjjjjjjjjjjGk",
+    "kjjjjjjjggggggggjjjjjjjk","kjjjjggggggggggggggjjjjk","kjjggggggggggggggggggjjk",
+    ".kkggggggggggggggggggkk.","...kkgggggggggggggkkk...","......kkkkkkkkkkk......."]},
   log:{map:[rep(".",3)+rep("k",20)+rep(".",3),"..kk"+rep("o",18)+"kk..",".k"+rep("n",22)+"k.",
     "k"+rep("n",24)+"k","k"+rep("o",24)+"k","k"+("oooOoo".repeat(4))+"k","k"+rep("o",24)+"k",
     "k"+rep("O",24)+"k",".k"+rep("O",22)+"k.","..kk"+rep("O",18)+"kk..",
@@ -156,18 +170,36 @@ const SPR = {
     ".."+"kk"+"OO"+"kk"+"OO"+"kk"+rep(".",4),".."+"kkkk"+"kk"+"kkkk"+rep(".",4)],noOutline:true},
   // Палатка широкая и низкая — узкий высокий треугольник читался как конус.
   // Тёмная полоса по центру — вход, он и делает силуэт узнаваемым.
-  tent:{map:["...........kk...........","..........krrk..........",".........krrrrk.........",
-    "........krrKKrrk........",".......krrrKKrrrk.......","......krrrrKKrrrrk......",
-    ".....krrrrrKKrrrrrk.....","....krrrrrrKKrrrrrrk....","...krrrrrrrKKrrrrrrrk...",
-    "..krrrrrrrrKKrrrrrrrrk..",".krrrrrrrrrKKrrrrrrrrrk.","kkkkkkkkkkkKKkkkkkkkkkkk"],
-    noOutline:true},
+  // Палатка: конёк по гребню, откинутый полог с тёмным нутром,
+  // оттяжки к колышкам по бокам — без них силуэт читался как конус.
+  tent:{map:["............kk............",".....k.....kOk.....k......",
+    "....k.....krrrk.....k.....","...k.....krrrrrk.....k....",
+    "..k.....krrrKKrrk.....k...",".k.....krrrKKKKrrk.....k..",
+    "k.....krrrrKKKKrrrk.....k.","k....krrrrrKKKKrrrrk....k.",
+    ".k..krrrrrrKKKKrrrrrk..k..","..k.krrrrrrrKKrrrrrrk.k...",
+    "...krrrrrrrrKKrrrrrrrrk...","..krrrrrrrrrKKrrrrrrrrrk..",
+    ".krrrrrrrrrrKKrrrrrrrrrrk.","kkkkkkkkkkkkKKkkkkkkkkkkkk",
+    "..k.....................k."],noOutline:true},
+  person:{map:["....kkkk....","...kttttk...","...kttttk...","...kkttkk...",
+    "..krrrrrrk..",".krrrrrrrrk.","krrrrrrrrrrk","krrrrrrrrrrk",
+    ".krrrrrrrrk.","..kZZZZZZk..","..kZZZZZZk..","..kZZkkZZk..",
+    "..kZZkkZZk..","..kZZkkZZk..",".kOOkkkkOOk.",".kkkkkkkkkk."],
+    variants:[{},{r:"N",Z:"q"}],noOutline:true},
+  sitter:{map:[".....kkkk.....","....kttttk....","....kttttk....","....kkttkk....",
+    "...krrrrrrk...","..krrrrrrrrk..",".krrrrrrrrrrk.",".krrrrrrrrrrk.",
+    "kZZZkrrrrkZZZk","kZZZZkkkkZZZZk","kOOZZZZZZZZOOk","kkkkkkkkkkkkkk"],noOutline:true},
+  fish:{map:["..kkk..",".kWWWkk","kWWWWWk",".kWWWkk","..kkk.."],noOutline:true},
   fire:{map:["....kk....","...kuuk...","..kuyyuk..","..kyyyyk..",".kyyrryyk.",
     ".kyrrrryk.","kOOkkkkOOk",".kOOOOOOk.","..kkkkkk.."],noOutline:true},
-  tower:{map:["....kkkk....","...kIIIIk...","..kIIIIIIk..",".kIIIIIIIIk.","kkkkkkkkkkkk",
-    "kGwwwwwwwwGk","kGwwwwwwwwGk","kGGGGGGGGGGk","kkkkkkkkkkkk",
-    "..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk",
-    "..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk","..kOk....kOk",
-    "..kOk....kOk","..kOk....kOk","..kOk....kOk","..kkk....kkk"],noOutline:true},
+  tower:{map:[".......kk.......","......kIIk......",".....kIIIIk.....","....kIIIIIIk....",
+    "...kIIIIIIIIk...","..kIIIIIIIIIIk..",".kIIIIIIIIIIIIk.","kkkkkkkkkkkkkkkk",
+    "kOwwwwwwwwwwwwOk","kOwkkwwkkwwkkwOk","kOwwwwwwwwwwwwOk","kOOOOOOOOOOOOOOk",
+    "kkkkkkkkkkkkkkkk","kOk.kOk..kOk.kOk","kkkkkkkkkkkkkkkk",
+    "..kOk......kOk..","..kOk......kOk..","..kOkkkkkkkkOk..",
+    "..kOk......kOk..","..kOk.kkkk.kOk..","..kOk......kOk..",
+    "..kOkkkkkkkkOk..","..kOk......kOk..","..kOk.kkkk.kOk..",
+    "..kOk......kOk..",".kOOk......kOOk.",".kOOk......kOOk.",
+    "kOOOk......kOOOk","kkkkk......kkkkk"],noOutline:true},
   bush:{map:["...kkkk...","..kvvvvk..",".kvvvvvvk.","kvvvVvvvvk","kvvVvvvvVk",
     ".kvvvvvvk.","..kVVVVk..","...kkkk..."]},
   tree:{map:["......kk......",".....kvvk.....","....kvvvvk....","...kvvvvvvk...",
@@ -301,6 +333,27 @@ function musicTick(){
     tone(NOTES[TUNE[mStep % TUNE.length]], mNext, beat*0.85, "square", 0.045);
     tone(NOTES[BASS[mStep % BASS.length]], mNext, beat*1.6, "triangle", 0.05);
     mNext += beat; mStep++;
+  }
+}
+
+// Короткие звуковые сигналы на том же контексте, что и музыка.
+// Не зависят от выключения музыки: это обратная связь, а не фон.
+function sfx(kind){
+  if (!actx) return;
+  const t = actx.currentTime;
+  if (kind === "hit"){
+    tone(300, t, 0.10, "sawtooth", 0.10);
+    tone(150, t + 0.06, 0.22, "square", 0.09);
+  } else if (kind === "bonus"){
+    tone(660, t, 0.07, "square", 0.08);
+    tone(880, t + 0.06, 0.08, "square", 0.08);
+    tone(1320, t + 0.13, 0.14, "square", 0.07);
+  } else if (kind === "life"){
+    [392, 330, 262].forEach((f, i) => tone(f, t + i*0.13, 0.24, "triangle", 0.10));
+  } else if (kind === "over"){
+    [523, 440, 349, 262, 196].forEach((f, i) => tone(f, t + i*0.18, 0.34, "square", 0.10));
+  } else if (kind === "clean"){
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i*0.09, 0.18, "square", 0.08));
   }
 }
 
@@ -444,9 +497,10 @@ for(const[id,k]of[["btnLeft","ArrowLeft"],["btnRight","ArrowRight"]]){
   el.addEventListener("mousedown",()=>keys[k]=true);
   el.addEventListener("mouseup",()=>keys[k]=false);
 }
-function hs(){startMusic();if(g.s=="start"||g.s=="over")sg();}
+function hs(){startMusic();if(g.s=="continue"){resumeRun();return;}if(g.s=="start"||g.s=="over")sg();}
 document.getElementById("startBtn").addEventListener("click",()=>{startMusic();sg();});
 document.getElementById("restartBtn").addEventListener("click",()=>{startMusic();sg();});
+document.getElementById("contBtn").addEventListener("click",()=>{startMusic();resumeRun();});
 /* ===== 9. Рендер: русло и берега ===== */
 const BAND = 4;   // высота полосы построчного рендера
 
@@ -540,20 +594,119 @@ function drwBn(b){
   const sz = spriteSize(name);
   drawShadow(x, y + sz.h/2, sz.w);
   drawSprite(name, x, y);
-  if (b.type === "bread") drawSprite("slice", x + 30, y + 18);
 }
 
 function drwBev(e){
   const ax = centerAt(e.wy), hw = widthAt(e.wy)/2;
-  const bx = ax + e.side*(hw + e.off), by = screenYOf(e.wy);
-  if (by < -160 || by > H + 160 || bx < -60 || bx > W + 60) return;
+  const by = screenYOf(e.wy);
+  if (by < -160 || by > H + 160) return;
+  const ph = e.phase || 0;
+
+  // Утки: либо плывут по воде у самой кромки, либо сидят на песке.
+  // По траве они не ходят — это выглядело неправильно.
   if (e.type === "ducks"){
-    for (let i = 0; i < 3; i++)
-      drawSprite("duck", bx + i*16 - 16, by + Math.sin(g.frame*0.06 + i)*3);
+    const inWater = e.mode === "swim";
+    const bx = ax + e.side*(inWater ? hw - 30 : hw + 6);
+    if (bx < -60 || bx > W + 60) return;
+    const swim = inWater ? Math.sin(g.frame*0.02 + ph)*10 : 0;
+    for (let i = 0; i < 3; i++){
+      const dx = bx + (i - 1)*17 + swim*(inWater ? 1 : 0);
+      const dy = by + Math.sin(g.frame*0.06 + i + ph)*(inWater ? 2.5 : 0.8);
+      if (inWater){                       // след на воде за уткой
+        cx.fillStyle = "rgba(255,255,255,0.22)";
+        cx.fillRect(dx - 10, dy + 12, 20, 2);
+      }
+      drawSprite("duck", dx, dy);
+    }
     return;
   }
-  const name = e.type === "camp" ? "tent" : e.type;
-  drawSprite(name, bx, by);
+
+  // Медведь бродит вдоль берега.
+  if (e.type === "bear"){
+    const walk = Math.sin(g.frame*0.012 + ph)*22;
+    const bx = ax + e.side*(hw + e.off + 14 + walk);
+    if (bx < -60 || bx > W + 60) return;
+    drawSprite("bear", bx, by + Math.abs(Math.sin(g.frame*0.05 + ph))*2);
+    return;
+  }
+
+  // Рыбак: удочка ходит вверх-вниз, леска уходит в воду, иногда клюёт
+  // и рыба выпрыгивает.
+  if (e.type === "fisher"){
+    const bx = ax + e.side*(hw + e.off);
+    if (bx < -60 || bx > W + 60) return;
+    const cast = Math.sin(g.frame*0.03 + ph);
+    drawSprite("fisher", bx, by);
+    const rodX = bx - e.side*4, rodY = by - 14;
+    const tipX = rodX - e.side*(26 + cast*8), tipY = rodY - 22 - cast*10;
+    cx.strokeStyle = PAL.n; cx.lineWidth = 3;
+    cx.beginPath(); cx.moveTo(rodX, rodY); cx.lineTo(tipX, tipY); cx.stroke();
+    const hookY = by + 26 + Math.sin(g.frame*0.07 + ph)*4;
+    const hookX = ax + e.side*(hw - 18);
+    cx.strokeStyle = "rgba(255,255,255,0.55)"; cx.lineWidth = 1;
+    cx.beginPath(); cx.moveTo(tipX, tipY); cx.lineTo(hookX, hookY); cx.stroke();
+    // клёв раз в несколько секунд
+    const bite = (g.frame + ph*40) % 260;
+    if (bite < 34) drawSprite("fish", hookX, hookY - 16 - Math.sin(bite/34*Math.PI)*22);
+    return;
+  }
+
+  const bx = ax + e.side*(hw + e.off);
+  if (bx < -60 || bx > W + 60) return;
+
+  // Костёр: пламя живёт своей жизнью, рядом сидит турист и греется.
+  if (e.type === "fire"){
+    const flick = 0.85 + Math.sin(g.frame*0.35 + ph)*0.10 + Math.sin(g.frame*0.71 + ph*2)*0.05;
+    cx.save();
+    cx.translate(bx, by + 10);
+    cx.scale(1, flick);                       // пламя пляшет по высоте
+    drawSprite("fire", 0, -10);
+    cx.restore();
+    // искры над костром
+    for (let i = 0; i < 3; i++){
+      const t = (g.frame*0.9 + i*37 + ph*20) % 60;
+      cx.fillStyle = "rgba(255," + (150 + i*30) + ",60," + (1 - t/60).toFixed(2) + ")";
+      cx.fillRect(bx - 6 + Math.sin(t*0.2 + i)*7, by - 12 - t*0.8, 3, 3);
+    }
+    // турист сидит с той стороны костра, что ближе к берегу
+    drawSprite("sitter", bx + e.side*24, by + 4 + Math.sin(g.frame*0.04 + ph)*1.2);
+    return;
+  }
+
+  // Палатка: пара подходит, заходит внутрь, дальше палатку потряхивает.
+  if (e.type === "camp"){
+    const cyc = (g.frame*0.6 + ph*120) % 900;
+    if (cyc < 300){                            // подходят к палатке
+      const k = cyc/300;
+      const fromX = bx + e.side*70;
+      drawSprite("person", fromX + (bx - fromX)*k - 12, by + 4, 0);
+      drawSprite("person", fromX + (bx - fromX)*k + 12, by + 4, 1);
+      drawSprite("tent", bx, by);
+    } else if (cyc < 360){                     // заходят внутрь
+      drawSprite("tent", bx, by);
+    } else {                                   // палатку потряхивает
+      const sh = Math.sin(g.frame*0.55 + ph)*0.055;
+      cx.save();
+      cx.translate(bx, by + 16);
+      cx.rotate(sh);
+      cx.translate(0, -16);
+      drawSprite("tent", 0, 0);
+      cx.restore();
+      // сердечки над палаткой
+      for (let i = 0; i < 3; i++){
+        const t = (g.frame*0.7 + i*45 + ph*30) % 130;
+        if (t > 100) continue;
+        const a = (1 - t/100).toFixed(2);
+        const hx = bx - 10 + Math.sin(t*0.09 + i)*9, hy = by - 24 - t*0.55;
+        cx.fillStyle = "rgba(229,57,53," + a + ")";
+        cx.fillRect(hx, hy + 2, 3, 3); cx.fillRect(hx + 4, hy + 2, 3, 3);
+        cx.fillRect(hx + 1, hy + 5, 5, 3); cx.fillRect(hx + 2, hy + 8, 3, 2);
+      }
+    }
+    return;
+  }
+
+  drawSprite(e.type, bx, by);
 }
 
 const BEST_KEY = "kayak_best";
@@ -630,6 +783,35 @@ function obHalfPx(ty,size){
 // Зазор считается по ВИДИМЫМ размерам спрайтов, а не по радиусам
 // столкновений: у мели радиус втрое меньше картинки, и по нему объекты
 // вставали визуально внахлёст, оставаясь "свободными" по коллизии.
+// Жёсткое расталкивание подвижных объектов: брёвна плывут, соперники гребут,
+// и оба могут наехать на неподвижный камень. Считается по ВИДИМЫМ размерам —
+// у мели радиус столкновения втрое меньше картинки.
+function separate(o){
+  const hw = widthAt(o.wy)/2, lim = 0.88;
+  for (const o2 of g.obs.concat(g.bns)){
+    if (o2 === o) continue;
+    if (Math.abs(o2.wy - o.wy) > 75) continue;
+    const need = ((o2.visHalf || o2.halfPx || 20) + (o.visHalf || 32)) * 0.85;
+    const dx = (o.t - o2.t) * hw;
+    if (Math.abs(dx) >= need) continue;
+    // Двигаем того, кто подвижен. Если оба подвижны — расходятся оба.
+    const mobile2 = (o2.type === "log" || o2.type === "kayaker");
+    const dir = dx >= 0 ? 1 : -1;
+    const push = (need - Math.abs(dx)) / hw;
+    if (mobile2){
+      o.t  += push/2*dir;  o.vt  = 0;
+      o2.t -= push/2*dir;  o2.vt = 0;
+    } else {
+      let nt = o.t + push*dir;
+      if (nt > lim || nt < -lim) nt = o.t - (need + Math.abs(dx))/hw*dir;
+      o.t = Math.max(-lim, Math.min(lim, nt));
+      o.vt = 0;
+    }
+  }
+  if (o.t >  lim) o.t =  lim;
+  if (o.t < -lim) o.t = -lim;
+}
+
 function spaceFree(t, wy, visHalf){
   const hw = widthAt(wy)/2;
   for (const o of g.obs){
@@ -672,6 +854,9 @@ function spOb(){
     if(spaceFree(cand,wy,visHalf)){t=cand;break;}
   }
   if(t===null)return;
+  // Двое соперников рядом толкают друг друга по кругу и всё равно
+  // налезают — проще не выпускать второго вплотную к первому.
+  if(ty=="kayaker"&&g.obs.some(o=>o.type=="kayaker"&&Math.abs(o.wy-wy)<300))return;
   g.obs.push({t,wy,type:ty,size:sz,halfPx,sprite,vt:0,
               visHalf,
               variant:ty=="kayaker"?Math.floor(Math.random()*3):undefined});
@@ -694,7 +879,9 @@ function spBn(){
 function spBev(){
   const ty=["bear","camp","fire","ducks","tower","fisher","bush","tree","tree"][Math.floor(Math.random()*9)];
   g.bev.push({type:ty,side:Math.random()<0.5?-1:1,wy:spawnWy(),
-              off:ty=="ducks"?10:26+Math.random()*38});
+              off:26+Math.random()*38,
+              phase:Math.random()*6.28,
+              mode:Math.random()<0.6?"swim":"sit"});
   g.ned=g.dist+22+Math.random()*38;
 }
 function spPt(x,y,cl,c){
@@ -716,8 +903,12 @@ function chkCl(){
         if(g.whiskyT>0){                       // под виски всё разлетается в щепки
           spPt(ox,oy,"#e8a838",20);g.obs.splice(i,1);g.sc+=10;
         }else{
-          damage();g.obs.splice(i,1);spPt(ox,oy,"#8d6e63",16);
-          if(g.s!="playing")return;
+          // Препятствие убирается ДО вызова damage(), потому что damage()
+          // пересобирает g.obs целиком, и продолжать обход по старым
+          // индексам после него нельзя — выходили за границы массива.
+          g.obs.splice(i,1);spPt(ox,oy,"#8d6e63",16);
+          damage();
+          return;
         }
       }else if(o.type=="shallows"){g.sp=Math.max(1.5,g.sp*0.65);spPt(ox,oy,"#ffd54f",6);g.obs.splice(i,1);
       }else if(o.type=="seaweed"){g.sp=Math.max(0.8,g.sp*0.45);spPt(ox,oy,"#2e7d32",6);g.obs.splice(i,1);}
@@ -742,21 +933,29 @@ function bonusWeights(){
   return b.map(v => v/sum);
 }
 
+// Три попытки, в каждой три сердца. Ничего не обнуляется: дистанция и счёт
+// идут сквозь все попытки, теряются только сердца.
 function damage(){
   if (g.inv > 0 || g.whiskyT > 0) return;
-  if (g.sh){ g.sh = false; g.shake = 8; popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
+  if (g.sh){ g.sh = false; g.shake = 8; sfx("hit"); popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
   g.hp -= 1;
   g.inv = INV_FRAMES;
   g.shake = 14;
   if (rapidBlend(g.scroll) > 0.5) g.cleanRun = false;
-  if (g.hp <= 0){ gmO(); return; }
-  // Попытка продолжается с того же места: дистанция сохраняется, байдарка
-  // возвращается на ось русла, а ближайшие препятствия убираются — иначе
-  // игрок влетал бы в тот же камень сразу после респавна.
   g.t = 0; g.vt = 0;
   g.sp = Math.max(1.8, g.sp*0.55);
   g.obs = g.obs.filter(o => Math.abs(o.wy - g.scroll) > 150);
-  popText("ПОПЫТКА " + (4 - g.hp) + " ИЗ 3", "#ff5252");
+  if (g.hp > 0){ sfx("hit"); popText("-1 СЕРДЦЕ","#ff5252"); return; }
+  // Сердца кончились — тратится попытка. Дальше экран «Продолжить»
+  // с обратным отсчётом, как на приставках: не нажал вовремя — конец игры.
+  g.lives -= 1;
+  if (g.lives <= 0){ sfx("over"); gmO(); return; }
+  sfx("life");
+  g.s = "continue";
+  g.contT = 600;                       // 10 секунд при 60 кадрах
+  document.getElementById("contLives").textContent = g.lives;
+  document.getElementById("contCount").textContent = "10";
+  document.getElementById("continueScreen").classList.remove("hidden");
 }
 
 function popText(text, color){
@@ -775,6 +974,7 @@ function tickEffects(){
 
 function apBn(b){
   spPt(screenXOf(b.t,b.wy),screenYOf(b.wy),"#ffd54f",15);
+  sfx("bonus");
   switch(b.type){
     case "bread":                       // сила гребка
       g.breadT = BREAD_FRAMES; g.bsc += 20; popText("+20 СИЛА","#eec27a"); break;
@@ -785,10 +985,16 @@ function apBn(b){
       else { g.sh = true; popText("ЩИТ","#4fc3f7"); }
       g.bsc += 15; break;
     case "axe": {                       // расчистка пути
-      let n = null, nd = Infinity;
+      // Цель выбирается не по близости, а по тому, насколько она стоит
+      // НА КУРСЕ: боковое отклонение штрафуется сильнее расстояния.
+      let n = null, best = Infinity;
       for (const o of g.obs){
         const d = o.wy - g.scroll;
-        if (d > 0 && d <= AXE_RANGE && d < nd){ nd = d; n = o; }
+        if (d < 60 || d > AXE_RANGE) continue;
+        const lateral = Math.abs(o.t - g.t) * widthAt(o.wy)/2;
+        if (lateral > 90) continue;
+        const score = d + lateral*3;
+        if (score < best){ best = score; n = o; }
       }
       if (n){
         spPt(screenXOf(n.t,n.wy), screenYOf(n.wy), "#a87848", 22);
@@ -804,7 +1010,7 @@ function sg(){
   document.getElementById("gameOverScreen").classList.add("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.inv=0;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
 }
@@ -847,7 +1053,24 @@ function gmO(){
     list.appendChild(row);
   });
 }
+function resumeRun(){
+  document.getElementById("continueScreen").classList.add("hidden");
+  g.s = "playing";
+  g.hp = 3;
+  g.inv = INV_FRAMES * 2;
+  g.sp = Math.max(1.8, g.sp*0.7);
+  g.obs = g.obs.filter(o => Math.abs(o.wy - g.scroll) > 200);
+  popText("ПОПЫТКА " + (4 - g.lives) + " ИЗ 3", "#ffd54f");
+}
+
 function upd(){
+  if(g.s=="continue"){
+    g.frame++;
+    g.contT--;
+    document.getElementById("contCount").textContent = Math.max(0, Math.ceil(g.contT/60));
+    if(g.contT<=0){ document.getElementById("continueScreen").classList.add("hidden"); sfx("over"); gmO(); }
+    return;
+  }
   if(g.s!="playing")return;g.frame++;
   if(g.sm){g.st--;if(g.st<=0)g.sm=false;}
   g.df=1+g.dist/1000;const tgt=Math.min(6.5,2.5+g.dist/700);g.sp+=(tgt-g.sp)*0.004;
@@ -861,7 +1084,7 @@ function upd(){
   // Чистый проход порога: вошёл — взводим флаг, вышел без удара — награда.
   const inRapid = rapidBlend(g.scroll) > 0.5;
   if (inRapid && !g.wasRapid) g.cleanRun = true;
-  if (!inRapid && g.wasRapid && g.cleanRun){ g.bsc += 150; popText("ЧИСТЫЙ ПРОХОД +150","#ffd54f"); }
+  if (!inRapid && g.wasRapid && g.cleanRun){ g.bsc += 150; sfx("clean"); popText("ЧИСТЫЙ ПРОХОД +150","#ffd54f"); }
   g.wasRapid = inRapid;
   // Кильватерный след за кормой.
   g.wake.push({ t: g.t, wy: g.scroll });
@@ -882,6 +1105,29 @@ function upd(){
   if(g.dist>=g.ned)spBev();
   for(let i=g.obs.length-1;i>=0;i--){
     const o=g.obs[i];
+    // Бревно плывёт по течению, но медленнее байдарок — мы его нагоняем.
+    // Камни и мель неподвижны, поэтому их wy не меняется вовсе.
+    if(o.type=="log"){
+      o.wy+=g.sp*sm*0.22;
+      o.t+=Math.sin(o.wy*0.02)*0.0006;          // лёгкое рыскание на воде
+      // Течение обносит бревно вокруг камня заранее, а не впечатывает в него.
+      // Без этого расталкивание срабатывало в последний момент и рывком.
+      {
+        const lhw=widthAt(o.wy)/2; let push=0;
+        for(const o2 of g.obs){
+          if(o2===o||o2.type=="log"||o2.type=="kayaker")continue;
+          const dy=o.wy-o2.wy;
+          if(dy>0&&dy<170){
+            const dx=(o.t-o2.t)*lhw;
+            const need=(o2.visHalf||24)+(o.visHalf||39);
+            if(Math.abs(dx)<need)push+=(dx>=0?1:-1);
+          }
+        }
+        o.vt=(o.vt||0)*0.92+push*0.0009;
+        o.vt=Math.max(-0.012,Math.min(0.012,o.vt));
+        o.t+=o.vt;
+      }
+    }
     if(o.type=="kayaker"){
       // Соперник тоже сплавляется, но медленнее течения — мы его догоняем.
       o.wy+=g.sp*sm*0.4;
@@ -902,26 +1148,17 @@ function upd(){
       o.vt*=0.9;
       o.vt=Math.max(-0.02,Math.min(0.02,o.vt));
       o.t+=o.vt;
-      // Жёсткое выталкивание: сил уклонения не хватает, когда соперник
-      // проплывает мимо неподвижного камня вплотную. Здесь пересечение
-      // просто устраняется сдвигом позиции.
-      for(const o2 of g.obs.concat(g.bns)){
-        if(o2===o||o2.type=="kayaker")continue;
-        if(Math.abs(o2.wy-o.wy)>70)continue;
-        // По видимым размерам, а не по радиусам столкновений: у мели
-        // радиус втрое меньше спрайта, и по нему выталкивание не срабатывало.
-        const need=((o2.visHalf||o2.halfPx||20)+(o.visHalf||32))*0.85;
-        const dx=(o.t-o2.t)*hw;
-        if(Math.abs(dx)<need){
-          o.t+=(need-Math.abs(dx))/hw*(dx>=0?1:-1);
-          o.vt=0;
-        }
-      }
       if(o.t>0.85){o.t=0.85;o.vt=0;}
       if(o.t<-0.85){o.t=-0.85;o.vt=0;}
     }
     if(offScreen(o.wy))g.obs.splice(i,1);
   }
+  // Расталкивание отдельным проходом, после того как все объекты сдвинулись.
+  // Внутри цикла обновления оно не работало: бревно расходилось с камнем,
+  // а следом соперник задвигал его обратно. Два прохода гасят остаток.
+  for(let pass=0;pass<4;pass++)
+    for(const o of g.obs)
+      if(o.type=="log"||o.type=="kayaker")separate(o);
   for(let i=g.bns.length-1;i>=0;i--)if(offScreen(g.bns[i].wy))g.bns.splice(i,1);
   for(let i=g.bev.length-1;i>=0;i--)if(offScreen(g.bev[i].wy))g.bev.splice(i,1);
   for(let i=g.pts.length-1;i>=0;i--){const p=g.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.lf--;if(p.lf<=0)g.pts.splice(i,1);}
