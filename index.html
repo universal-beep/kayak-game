@@ -54,7 +54,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",kx:W/2,ky:H-80,sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ro:0,rb:0,ned:200,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:200,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 3. Геометрия русла ===== */
@@ -175,10 +175,6 @@ function rapidBlend(w){
 function widthAt(w){ return baseWidthAt(w) * (1 - 0.38*rapidBlend(w)); }
 function speedMulAt(w){ return 1 + 0.4*rapidBlend(w); }
 
-const RLB=W*0.10,RRB=W*0.90;
-function rl(){return RLB+g.rb}
-function rr(){return RRB+g.rb}
-function rw(){return rr()-rl()}
 const keys={};let mt=null;
 addEventListener("keydown",e=>{keys[e.key]=true;if(e.key==" "||e.key=="Enter")hs();});
 addEventListener("keyup",e=>{keys[e.key]=false;});
@@ -233,7 +229,7 @@ function drwBg(){
   }
 }
 function drwKy(){
-  const x=g.kx,y=g.ky,bo=Math.sin(g.frame*0.06);
+  const x=screenXOf(g.t,g.scroll),y=PY,bo=Math.sin(g.frame*0.06);
   cx.fillStyle="rgba(0,0,0,0.08)";cx.fillRect(x-22,y+6,44,6);
   cx.fillStyle="#d84315";cx.beginPath();cx.moveTo(x-24,y-3+bo);cx.quadraticCurveTo(x-28,y+1+bo,x-24,y+5+bo);cx.lineTo(x+24,y+5+bo);cx.quadraticCurveTo(x+28,y+1+bo,x+24,y-3+bo);cx.closePath();cx.fill();
   cx.fillStyle="#bf360c";cx.fillRect(x-26,y+1+bo,52,3);
@@ -257,7 +253,8 @@ function drwKy(){
   }
 }
 function drwOb(o){
-  const x=o.x,y=o.y;
+  const x=screenXOf(o.t,o.wy),y=screenYOf(o.wy);
+  if(y<-90||y>H+90)return;
   switch(o.type){
     case "rock":{
       const r=o.size||16;
@@ -312,7 +309,8 @@ function drwOb(o){
   }
 }
 function drwBn(b){
-  const x=b.x,y=b.y+Math.sin(g.frame*0.08)*3;
+  const x=screenXOf(b.t,b.wy),y=screenYOf(b.wy)+Math.sin(g.frame*0.08)*3;
+  if(y<-70||y>H+70)return;
   switch(b.type){
     case "cognac":{
       cx.fillStyle="#2e7d32";cx.fillRect(x-7,y-10,14,18);
@@ -361,7 +359,9 @@ case "matches":{
   }
 }
 function drwBev(e){
-  const L=rl(),R=rr(),bx=e.side=="left"?L/2:R+(W-R)/2,by=e.y;
+  const ax=centerAt(e.wy),hw=widthAt(e.wy)/2;
+  const bx=ax+e.side*(hw+e.off),by=screenYOf(e.wy);
+  if(by<-140||by>H+140||bx<-50||bx>W+50)return;
   switch(e.type){
     case "bear":{
       const st=Math.sin(g.frame*0.04)*2;
@@ -415,27 +415,42 @@ function drwHUD(){
   if(g.sm){cx.fillStyle="#ffd54f";cx.font="8px "+F;cx.fillText("ЗАМЕДЛЕНИЕ",W-160,42);}
   cx.restore();
 }
+// Полуширина препятствия в пикселях — нужна и для коллизий, и для проверки,
+// влезает ли оно в русло.
+function obHalfPx(ty,size){
+  if(ty=="log")return size/2+9;
+  if(ty=="rock")return size;
+  if(ty=="shallows")return 20;
+  if(ty=="seaweed")return 12;
+  return 16;
+}
 function spOb(){
-  const L=rl(),R=rr(),RW=R-L,x=L+25+Math.random()*(RW-50);
-  const t=["rock","log","shallows","seaweed","kayaker"],w=[0.3,0.2,0.18,0.17,0.15];
+  const wy=spawnWy(),rw=widthAt(wy),rb=rapidBlend(wy);
+  const types=["rock","log","shallows","seaweed","kayaker"];
+  const ws=rb>0.5?[0.50,0.10,0.14,0.13,0.13]:[0.30,0.20,0.18,0.17,0.15];
   let r=Math.random(),c=0,ty="rock";
-  for(let i=0;i<t.length;i++){c+=w[i];if(r<c){ty=t[i];break;}}
+  for(let i=0;i<types.length;i++){c+=ws[i];if(r<c){ty=types[i];break;}}
   const sz=ty=="log"?36+Math.random()*24:14+Math.random()*8;
-  const kySpd=ty=="kayaker"?g.sp*0.4:0;
-  g.obs.push({x,y:-30,type:ty,size:sz,kSpd:kySpd,vx:0});
+  const halfPx=obHalfPx(ty,sz);
+  // Правило проходимости: препятствие шире 45% русла создало бы безвыходный
+  // расклад — такой спавн просто отменяется.
+  if(halfPx*2>rw*0.45)return;
+  const lim=Math.max(0,0.92-2*halfPx/rw);
+  g.obs.push({t:(Math.random()*2-1)*lim,wy,type:ty,size:sz,halfPx,vt:0});
 }
 function spBn(){
-  const L=rl(),R=rr(),RW=R-L,x=L+28+Math.random()*(RW-56);
+  const wy=spawnWy();
+  if(rapidBlend(wy)>0.5)return;            // на порогах бонусов нет
   const t=["cognac","snickers","medkit","matches"],w=[0.35,0.25,0.2,0.2];
   let r=Math.random(),c=0,ty="cognac";
   for(let i=0;i<t.length;i++){c+=w[i];if(r<c){ty=t[i];break;}}
-  g.bns.push({x,y:-30,type:ty});
+  g.bns.push({t:(Math.random()*2-1)*0.75,wy,type:ty});
 }
 function spBev(){
   const ty=["bear","camp","ducks","tower"][Math.floor(Math.random()*4)];
-  const sd=Math.random()<0.5?"left":"right";
-  g.bev.push({type:ty,side:sd,y:-60});
-  g.ned=g.dist+200+Math.random()*300;
+  g.bev.push({type:ty,side:Math.random()<0.5?-1:1,wy:spawnWy(),
+              off:ty=="ducks"?10:26+Math.random()*38});
+  g.ned=g.dist+120+Math.random()*200;
 }
 function spPt(x,y,cl,c){
   for(let i=0;i<c;i++){g.pts.push({x,y,vx:(Math.random()-0.5)*7,vy:(Math.random()-0.5)*7,lf:30+Math.random()*20,ml:50,cl,sz:2+Math.random()*3});}
@@ -445,37 +460,40 @@ function drwPt(){
   cx.globalAlpha=1;
 }
 function chkCl(){
-  const kx=g.kx,ky=g.ky,kr=16;
+  const kr=16;
   for(let i=g.obs.length-1;i>=0;i--){
-    const o=g.obs[i];let or=o.type=="log"?o.size/2:(o.size||16);
-    if(o.type=="shallows")or=18;if(o.type=="seaweed")or=12;if(o.type=="kayaker")or=14;
-    const dx=kx-o.x,dy=ky-o.y;
-    if(Math.sqrt(dx*dx+dy*dy)<kr+or){
+    const o=g.obs[i];
+    const hw=widthAt(o.wy)/2;
+    const dx=(g.t-o.t)*hw,dy=g.scroll-o.wy;
+    if(Math.hypot(dx,dy)<kr+(o.halfPx||16)){
+      const ox=screenXOf(o.t,o.wy),oy=screenYOf(o.wy);
       if(o.type=="rock"||o.type=="log"||o.type=="kayaker"){
-        if(g.sh){g.sh=false;spPt(o.x,o.y,"#4fc3f7",12);g.obs.splice(i,1);}
+        if(g.sh){g.sh=false;spPt(ox,oy,"#4fc3f7",12);g.obs.splice(i,1);}
         else{gmO();return;}
-      }else if(o.type=="shallows"){g.sp=Math.max(1.5,g.sp*0.65);spPt(o.x,o.y,"#ffd54f",6);g.obs.splice(i,1);
-      }else if(o.type=="seaweed"){g.sp=Math.max(0.8,g.sp*0.45);spPt(o.x,o.y,"#2e7d32",6);g.obs.splice(i,1);}
+      }else if(o.type=="shallows"){g.sp=Math.max(1.5,g.sp*0.65);spPt(ox,oy,"#ffd54f",6);g.obs.splice(i,1);
+      }else if(o.type=="seaweed"){g.sp=Math.max(0.8,g.sp*0.45);spPt(ox,oy,"#2e7d32",6);g.obs.splice(i,1);}
     }
   }
   for(let i=g.bns.length-1;i>=0;i--){
-    const b=g.bns[i];if(Math.sqrt((kx-b.x)**2+(ky-b.y)**2)<kr+12){apBn(b);g.bns.splice(i,1);}
+    const b=g.bns[i],hw=widthAt(b.wy)/2;
+    const dx=(g.t-b.t)*hw,dy=g.scroll-b.wy;
+    if(Math.hypot(dx,dy)<kr+14){apBn(b);g.bns.splice(i,1);}
   }
 }
 function apBn(b){
-  spPt(b.x,b.y,"#ffd54f",15);
+  spPt(screenXOf(b.t,b.wy),screenYOf(b.wy),"#ffd54f",15);
   switch(b.type){
     case "cognac":g.bsc+=50;break;
     case "snickers":g.sm=true;g.st=180;g.bsc+=20;break;
     case "medkit":g.sh=true;g.bsc+=30;break;
-    case "matches":{let n=null,nd=Infinity;for(const o of g.obs){if(o.type=="log"){const d=Math.abs(o.y-g.ky);if(d<nd){nd=d;n=o;}}}if(n){spPt(n.x,n.y,"#ff6f00",18);g.obs=g.obs.filter(o=>o!==n);}g.bsc+=25;break;}
+    case "matches":{let n=null,nd=Infinity;for(const o of g.obs){if(o.type=="log"){const d=o.wy-g.scroll;if(d>0&&d<nd){nd=d;n=o;}}}if(n){spPt(screenXOf(n.t,n.wy),screenYOf(n.wy),"#ff6f00",18);g.obs=g.obs.filter(o=>o!==n);}g.bsc+=25;break;}
   }
 }
 function sg(){
   document.getElementById("startScreen").classList.add("hidden");
   document.getElementById("gameOverScreen").classList.add("hidden");
-  g.s="playing";g.kx=W/2;g.ky=H-80;g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
-  g.sh=false;g.sm=false;g.st=0;g.ro=0;g.rb=0;g.ned=200;g.df=1;g.frame=0;
+  g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
+  g.sh=false;g.sm=false;g.st=0;g.ned=200;g.df=1;g.frame=0;
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.inv=0;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   ensureSegments(H*2);
 }
@@ -489,8 +507,7 @@ function upd(){
   if(g.s!="playing")return;g.frame++;
   if(g.sm){g.st--;if(g.st<=0)g.sm=false;}
   g.df=1+g.dist/1000;const tgt=Math.min(6.5,2.5+g.dist/700);g.sp+=(tgt-g.sp)*0.004;
-  g.rb=Math.sin(g.frame*0.002)*42+Math.sin(g.frame*0.005+1.2)*20+Math.sin(g.frame*0.001+0.7)*10;
-  const sm=g.sm?0.35:1;g.ro+=g.sp*sm;g.dist+=g.sp*0.04*sm;
+  const sm=g.sm?0.35:1;g.dist+=g.sp*0.04*sm;
   g.scroll += g.sp * sm * speedMulAt(g.scroll) * flowMul(g.t);
   ensureSegments(g.scroll + H*2);
   while (g.segs.length > 40) g.segs.shift();
@@ -503,39 +520,32 @@ function upd(){
     if (Math.abs(mt - px) > 4) input = Math.sign(mt - px);
   }
   stepLateral(input);
-  // Мост для старого кода: препятствия и столкновения ещё считают в экранных
-  // координатах. Уберётся в следующей задаче, когда они переедут на t.
-  g.kx = screenXOf(g.t, g.scroll);
-  g.ky = PY;
   const sr=0.018+g.df*0.007;if(Math.random()<sr)spOb();
   if(Math.random()<0.003)spBn();
   if(g.dist>=g.ned)spBev();
-  const L2=rl(),R2=rr();
   for(let i=g.obs.length-1;i>=0;i--){
     const o=g.obs[i];
-    const spd=o.type=="kayaker"?Math.min(o.kSpd,g.sp*0.45):g.sp;
-    o.y+=spd*sm;
     if(o.type=="kayaker"){
-      o.vx+=Math.sin(g.frame*0.03+o.x*0.01)*0.3;
-      const ahead=o.y+25;
+      // Соперник тоже сплавляется, но медленнее течения — мы его догоняем.
+      o.wy+=g.sp*sm*0.4;
+      const hw=widthAt(o.wy)/2;
       let danger=0;
       for(const o2 of g.obs){
-        if(o2===o)continue;
-        if(["rock","log","shallows","seaweed"].includes(o2.type)){
-          const dx=o.x-o2.x,dy=ahead-o2.y;
-          if(dy>0&&dy<50&&Math.abs(dx)<25)danger+=dx>0?-1:1;
-        }
+        if(o2===o||o2.type=="kayaker")continue;
+        const dy=o2.wy-o.wy;
+        if(dy>0&&dy<90){const dx=(o.t-o2.t)*hw;if(Math.abs(dx)<44)danger+=dx>=0?1:-1;}
       }
-      if(danger!==0)o.vx+=danger>0?-1:1;
-      o.vx*=0.9;
-      o.vx=Math.max(-2,Math.min(2,o.vx));
-      o.x+=o.vx;
-      o.x=Math.max(L2+18,Math.min(R2-18,o.x));
+      o.vt+=danger*0.0012+Math.sin(o.wy*0.004)*0.0004;
+      o.vt*=0.9;
+      o.vt=Math.max(-0.02,Math.min(0.02,o.vt));
+      o.t+=o.vt;
+      if(o.t>0.85){o.t=0.85;o.vt=0;}
+      if(o.t<-0.85){o.t=-0.85;o.vt=0;}
     }
-    if(o.y>H+40)g.obs.splice(i,1);
+    if(offScreen(o.wy))g.obs.splice(i,1);
   }
-  for(let i=g.bns.length-1;i>=0;i--){g.bns[i].y+=g.sp*sm;if(g.bns[i].y>H+40)g.bns.splice(i,1);}
-  for(let i=g.bev.length-1;i>=0;i--){g.bev[i].y+=g.sp*sm*1.5;if(g.bev[i].y>H+80)g.bev.splice(i,1);}
+  for(let i=g.bns.length-1;i>=0;i--)if(offScreen(g.bns[i].wy))g.bns.splice(i,1);
+  for(let i=g.bev.length-1;i>=0;i--)if(offScreen(g.bev[i].wy))g.bev.splice(i,1);
   for(let i=g.pts.length-1;i>=0;i--){const p=g.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.lf--;if(p.lf<=0)g.pts.splice(i,1);}
   chkCl();
 }
