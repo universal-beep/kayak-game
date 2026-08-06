@@ -54,7 +54,8 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",kx:W/2,ky:H-80,sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ro:0,rb:0,ned:200,frame:0,df:1,pa:0};
+const g={s:"start",kx:W/2,ky:H-80,sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ro:0,rb:0,ned:200,frame:0,df:1,pa:0,
+  t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 3. Геометрия русла ===== */
 const PY = H - 90;                 // экранная строка, на которой стоит байдарка
@@ -78,6 +79,15 @@ function secondDiff(fn, w, h){
 function curvAt(w){
   return secondDiff(centerAt, w, 40);
 }
+
+function screenYOf(wy){ return PY + g.scroll - wy; }
+function worldYOf(y){ return g.scroll + PY - y; }
+function spawnWy(){ return g.scroll + PY + 60; }
+function offScreen(wy){ return screenYOf(wy) > H + 60; }
+function screenXOf(t, wy){ return centerAt(wy) + t * widthAt(wy) / 2; }
+
+// временная заглушка: сегменты реки и сужение на порогах появятся в Task 5
+function widthAt(w){ return baseWidthAt(w); }
 
 const RLB=W*0.10,RRB=W*0.90;
 function rl(){return RLB+g.rb}
@@ -368,6 +378,7 @@ function sg(){
   document.getElementById("gameOverScreen").classList.add("hidden");
   g.s="playing";g.kx=W/2;g.ky=H-80;g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ro=0;g.rb=0;g.ned=200;g.df=1;g.frame=0;
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.inv=0;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
 }
 function gmO(){
   g.s="over";document.getElementById("gameOverScreen").classList.remove("hidden");
@@ -430,7 +441,8 @@ function rndr(){
 function lp(){upd();rndr();requestAnimationFrame(lp);}
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, centerAt, baseWidthAt, curvAt, secondDiff };
+globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secondDiff,
+                         screenYOf, worldYOf, spawnWy, offScreen, screenXOf };
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
 </body>
