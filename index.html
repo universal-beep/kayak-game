@@ -285,8 +285,12 @@ const SPR = {
   sitter:{map:[".....kkkk.....","....kttttk....","....kttttk....","....kkttkk....",
     "...krrrrrrk...","..krrrrrrrrk..",".krrrrrrrrrrk.",".krrrrrrrrrrk.",
     "kZZZkrrrrkZZZk","kZZZZkkkkZZZZk","kOOZZZZZZZZOOk","kkkkkkkkkkkkkk"],noOutline:true},
-  snag:{map:["..kk..",".kOOk.",".kOOk.","kOnOk.","kOnOk.","kOnnOk","kOOnOk",
-    "kOOOOk",".kOOk.","..kk.."],noOutline:true},
+  // Коряга: раздвоенный обломок ствола с острыми сучьями и пеной у воды.
+  // Прошлый вариант был округлым тёмным комком и читался совсем не так.
+  snag:{map:["........kk....",".......knnk...","...kk..knok...","..knnk.knok...",
+    "..knok.knok...","..knokkknok...","...knnnnnok...","...knnooook...",
+    "....knooOk....","....knoOOk....","....kOOOOk....","...kOOOOOOk...",
+    "..kfkOOOOkfk..",".kffkOOOOkffk.","..fffkkkkfff..","....ffffff...."],noOutline:true},
   barge:{map:[
     "...kkkkkkkkkkkkkkkkkkkkkkkkkkkk...",
     "..kIIIIIIIIIIIIIIIIIIIIIIIIIIIIk..",
@@ -376,7 +380,7 @@ SPR.kayak_left   = { map: shearMap(SPR.kayak_center.map, -1) };
 SPR.kayak_right  = { map: shearMap(SPR.kayak_center.map,  1) };
 
 // Часть спрайтов рисуется в меньшем масштабе, чтобы не подавлять остальные.
-const SPR_SCALE = { whisky:2, axe:2, medkit:2, slice:2, duck:2, fire:2, snag:2, barge:4,
+const SPR_SCALE = { whisky:2, axe:2, medkit:2, slice:2, duck:2, fire:2, snag:3, barge:4,
                     car:3, train:3, station:3 };
 function scaleOf(name){ return SPR_SCALE[name] || SCALE; }
 
@@ -751,9 +755,13 @@ function ensureForks(untilW){
     const start = prev + FORK_GAP*(0.7 + Math.random()*0.6);
     // Остров смещён от оси: один проход узкий и злой, другой широкий.
     const narrowLeft = Math.random() < 0.5;
+    // Проходы считаются от полуширины русла (на Медведице это 102 px).
+    // При half=0.26 узкий рукав выходил 51 px при ширине байдарки 63 —
+    // она туда визуально не помещалась. При half=0.19 рукава 95 и 70 px:
+    // байдарка проходит с запасом, а разница между рукавами сохраняется.
     g.forks.push({ start, end: start + FORK_LEN,
-                   center: narrowLeft ? -0.10 : 0.10,
-                   half: 0.34, narrowLeft });
+                   center: narrowLeft ? -0.12 : 0.12,
+                   half: 0.19, narrowLeft, taken:0 });
   }
   while (g.forks.length > 6) g.forks.shift();
 }
@@ -773,6 +781,20 @@ function inIsland(t, w){
   const sh = forkShape(w);
   return sh && sh.h > 0.02 && Math.abs(t - sh.c) < sh.h;
 }
+// Любой объект, оказавшийся на острове, выталкивается в ближайший проход.
+// Проверки только при спавне не хватало: брёвна и лодки движутся вдоль реки
+// и вплывают в остров уже после появления — отсюда и «плывут по траве».
+function pushOutOfIsland(o){
+  const sh = forkShape(o.wy);
+  if (!sh || sh.h <= 0.02) return;
+  const d = o.t - sh.c;
+  if (Math.abs(d) >= sh.h + 0.04) return;
+  const margin = ((o.visHalf || 24) / Math.max(1, widthAt(o.wy)/2)) + 0.03;
+  o.t = sh.c + (d >= 0 ? 1 : -1) * (sh.h + margin);
+  o.t = Math.max(-0.92, Math.min(0.92, o.t));
+  if (o.vt !== undefined) o.vt = 0;
+}
+
 function nextFork(w){
   for (const f of g.forks) if (f.start > w) return f;
   return null;
@@ -871,6 +893,9 @@ const BLEND = 200;
 function rapidBlend(w){
   // На Волге порогов нет вовсе: большая река не сужается и не бурлит.
   if (river() && river().rapids === false) return 0;
+  // В развилке порога тоже нет. Иначе русло сужалось дважды — сначала
+  // порогом, потом островом, и узкий рукав становился уже байдарки.
+  if (forkAt(w)) return 0;
   const s = segAt(w);
   if (!g.segs.length) return 0;
   const inRapid = s.type === "rapid";
@@ -1659,7 +1684,7 @@ function drwPops(){
 // Полуширина препятствия в пикселях — нужна и для коллизий, и для проверки,
 // влезает ли оно в русло.
 function obHalfPx(ty,size){
-  if(ty=="snag")return 11;
+  if(ty=="snag")return 15;
   if(ty=="barge")return 62;
   if(ty=="log")return size/2+9;
   if(ty=="shallows")return 34;
@@ -1725,6 +1750,20 @@ function spOb(){
   let r=Math.random(),c=0,ty="rock";
   for(let i=0;i<types.length;i++){c+=ws[i];if(r<c){ty=types[i];break;}}
   if (ty=="barge" && g.obs.some(o=>o.type=="barge")) return;   // не больше одной сразу
+  // В развилке препятствий нет вовсе: сам выбор прохода и есть испытание,
+  // а бревно поперёк узкого рукава делало его непроходимым.
+  if (forkAt(wy) || forkAt(wy - 220)) return;
+  // Бревно, соперник и баржа движутся вперёд и могут вплыть в рукав уже
+  // после появления, поэтому им закрыта вся зона перед развилкой.
+  if (ty == "log" || ty == "kayaker" || ty == "barge"){
+    for (const fk of g.forks)
+      if (fk.end > wy - 400 && fk.start < wy + 1400) return;
+  }
+  // Подвижным типам запрещаем появляться и на подходе: бревно плывёт вперёд
+  // и успевает вплыть в развилку уже после спавна.
+  if (ty=="log"||ty=="kayaker"||ty=="barge"){
+    for (const fk of g.forks) if (fk.end > wy - 300 && fk.start < wy + 1100) return;
+  }
   const sz=ty=="log"?36+Math.random()*24:14+Math.random()*8;
   // Камень бывает трёх форм: валун, клык и плита. Разные габариты дают
   // разные способы уворота, а плита ещё и не всегда влезает в русло.
@@ -1765,8 +1804,11 @@ function spBn(){
   for(let i=0;i<t.length;i++){c+=w[i];if(r<c){ty=t[i];break;}}
   const bVis=spriteSize(BN_SPRITE[ty]||"bread").w/2;
   let bt=null;
+  const fk=forkAt(wy);
   for(let a=0;a<10;a++){
-    const cand=(Math.random()*2-1)*0.75;
+    // В развилке бонусы кладём в узкий рукав: риск должен окупаться.
+    const cand = fk ? (fk.narrowLeft ? -1 : 1) * (0.55 + Math.random()*0.30)
+                    : (Math.random()*2-1)*0.75;
     if(inIsland(cand,wy))continue;
     if(spaceFree(cand,wy,bVis)){bt=cand;break;}
   }
@@ -2239,11 +2281,29 @@ function upd(){
   for(let pass=0;pass<4;pass++)
     for(const o of g.obs)
       if(o.type=="log"||o.type=="kayaker")separate(o);
+  for(const o of g.obs) pushOutOfIsland(o);
+  for(const b of g.bns) pushOutOfIsland(b);
   for(let i=g.bns.length-1;i>=0;i--)if(offScreen(g.bns[i].wy))g.bns.splice(i,1);
   for(let i=g.bev.length-1;i>=0;i--)if(offScreen(g.bev[i].wy))g.bev.splice(i,1);
   for(let i=g.pts.length-1;i>=0;i--){const p=g.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.lf--;if(p.lf<=0)g.pts.splice(i,1);}
   ensureForks(g.scroll + H*3);
   ensureBridges(g.scroll + H*3);
+  // Учёт, каким рукавом пошли, и награда за узкий.
+  {
+    const fk = forkAt(g.scroll);
+    if (fk && !fk.taken){
+      const sh = forkShape(g.scroll);
+      if (sh && sh.h > 0.10){
+        fk.taken = (g.t < sh.c) ? -1 : 1;
+        const narrowSide = fk.narrowLeft ? -1 : 1;
+        if (fk.taken === narrowSide){
+          g.bsc += 120; sfx("bonus"); popText("УЗКИМ РУКАВОМ +120", "#ffd54f");
+        } else {
+          popText("ШИРОКИМ РУКАВОМ", "#9aa9b2");
+        }
+      }
+    }
+  }
   chkIsland();
   chkBridges();
   chkCl();
