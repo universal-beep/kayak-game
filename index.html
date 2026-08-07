@@ -85,10 +85,12 @@ canvas { display:block;margin:0 auto; }
     <h1>СПЛАВ</h1>
     <p><span class="key">← →</span> или <span class="key">A D</span> — упр.</p>
     <p><span class="key">тач</span> — веди пальцем</p>
-    <p>батон — сила, виски — кураж</p>
+    <p>батон — гребок сильнее на 8 сек</p>
+    <p>виски — неуязвим и очки x2 на 6 сек</p>
     <p><span class="key">пробел</span> — удар веслом</p>
     <p><span class="key">M</span> — музыка &nbsp; <span class="key">Esc</span> — пауза</p>
-    <p>аптечка — прочность, топор — расчистка</p>
+    <p>аптечка — сердце или щит</p>
+    <p>топор — убирает препятствие по курсу</p>
     <button class="btn" id="startBtn">> СТАРТ <</button>
   </div>
   <div id="gameOverScreen" class="hidden">
@@ -112,6 +114,7 @@ canvas { display:block;margin:0 auto; }
     <div class="goal" id="pauseGoal"></div>
     <div class="maprow">
       <button class="btn small" id="resumeBtn">ПРОДОЛЖИТЬ</button>
+      <button class="btn small ghost" id="pauseMusicBtn">МУЗЫКА</button>
       <button class="btn small ghost" id="pauseMapBtn">К МАРШРУТУ</button>
     </div>
   </div>
@@ -130,6 +133,8 @@ canvas { display:block;margin:0 auto; }
     <div class="maprow">
       <button class="btn small" id="campBtn">ЛАГЕРЬ</button>
       <button class="btn small" id="diaryBtn">ДНЕВНИК</button>
+      <button class="btn small ghost" id="helpBtn">БОНУСЫ</button>
+      <button class="btn small ghost" id="musicBtn">МУЗЫКА: ВКЛ</button>
       <button class="btn small ghost" id="resetBtn">СБРОС</button>
     </div>
   </div>
@@ -188,7 +193,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -520,6 +525,7 @@ function startMusic(){
 
 function musicTick(){
   if (!actx || !musicOn) return;
+  if (g.s === "paused") return;          // на паузе музыка молчит
   const camp = musicMode === "camp";
   const beat = camp ? 0.26 : 0.19;
   const mel = camp ? TUNE_CAMP : TUNE;
@@ -548,6 +554,12 @@ function sfx(kind){
     [392, 330, 262].forEach((f, i) => tone(f, t + i*0.13, 0.24, "triangle", 0.10));
   } else if (kind === "over"){
     [523, 440, 349, 262, 196].forEach((f, i) => tone(f, t + i*0.18, 0.34, "square", 0.10));
+  } else if (kind === "pause"){
+    tone(660, t, 0.07, "square", 0.07);
+    tone(440, t + 0.07, 0.12, "square", 0.06);
+  } else if (kind === "unpause"){
+    tone(440, t, 0.07, "square", 0.06);
+    tone(660, t + 0.07, 0.10, "square", 0.07);
   } else if (kind === "swing"){
     tone(180, t, 0.09, "sawtooth", 0.07);
     tone(240, t + 0.07, 0.07, "square", 0.05);
@@ -562,7 +574,10 @@ function sfx(kind){
 
 function toggleMusic(){
   musicOn = !musicOn;
+  if (typeof save === "object" && save){ save.music = musicOn; commitSave(); }
   if (musicOn && actx) mNext = actx.currentTime + 0.05;
+  const b = document.getElementById("musicBtn");
+  if (b) b.textContent = musicOn ? "МУЗЫКА: ВКЛ" : "МУЗЫКА: ВЫКЛ";
 }
 
 /* ===== 3. Геометрия русла ===== */
@@ -1005,10 +1020,16 @@ document.getElementById("againBtn").addEventListener("click",()=>startDay(g.day)
 document.getElementById("retryBtn").addEventListener("click",()=>startDay(g.day));
 document.getElementById("toMapBtn").addEventListener("click",showMap);
 document.getElementById("diaryBtn").addEventListener("click",showDiary);
+document.getElementById("musicBtn").addEventListener("click",()=>{ startMusic(); toggleMusic(); });
+document.getElementById("helpBtn").addEventListener("click",showHelp);
 document.getElementById("diaryBack").addEventListener("click",showMap);
 document.getElementById("campBtn").addEventListener("click",showCamp);
 document.getElementById("pauseBtn").addEventListener("click",togglePause);
 document.getElementById("resumeBtn").addEventListener("click",togglePause);
+document.getElementById("pauseMusicBtn").addEventListener("click",()=>{
+  toggleMusic();
+  document.getElementById("pauseMusicBtn").textContent = musicOn ? "МУЗЫКА: ВКЛ" : "МУЗЫКА: ВЫКЛ";
+});
 document.getElementById("pauseMapBtn").addEventListener("click",()=>{g.s="map";showMap();});
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(confirm("Сбросить весь поход?")){resetSave();showMap();}
@@ -1205,6 +1226,36 @@ function drwBev(e){
   const bx = ax + e.side*(hw + e.off);
   if (bx < -60 || bx > W + 60) return;
 
+  // Компания у костра: четверо, один с гитарой, над ними ноты.
+  if (e.type === "guitar"){
+    const flick = 0.85 + Math.sin(g.frame*0.35 + ph)*0.12;
+    cx.save(); cx.translate(bx, by + 8); cx.scale(1, flick); cx.translate(-bx, -(by + 8));
+    drawSprite("fire", bx, by + 8);
+    cx.restore();
+    drawSprite("sitter", bx - 34, by + 4 + Math.sin(g.frame*0.05 + ph)*1.5);
+    drawSprite("sitter", bx + 34, by + 4 + Math.sin(g.frame*0.05 + ph + 2)*1.5);
+    drawSprite("person", bx + 4, by - 26, 1);
+    // гитарист чуть впереди костра
+    const gy = by + 6 + Math.sin(g.frame*0.045 + ph)*1.2;
+    drawSprite("sitter", bx - 4, gy);
+    cx.fillStyle = PAL.o;
+    cx.fillRect(bx + 4, gy - 16, 16, 10);
+    cx.fillRect(bx + 18, gy - 14, 12, 3);
+    cx.fillStyle = PAL.O;
+    cx.fillRect(bx + 8, gy - 13, 6, 4);
+    // ноты над компанией
+    for (let i = 0; i < 3; i++){
+      const t = (g.frame*0.8 + i*44 + ph*25) % 150;
+      if (t > 120) continue;
+      const a = (1 - t/120).toFixed(2);
+      cx.fillStyle = "rgba(255,255,255," + a + ")";
+      const nx = bx - 12 + Math.sin(t*0.07 + i)*14, ny = by - 34 - t*0.5;
+      cx.fillRect(nx, ny, 3, 8); cx.fillRect(nx + 3, ny, 5, 3);
+      cx.fillRect(nx - 3, ny + 7, 6, 4);
+    }
+    return;
+  }
+
   // Костёр: пламя живёт своей жизнью, рядом сидит турист и греется.
   if (e.type === "fire"){
     const flick = 0.85 + Math.sin(g.frame*0.35 + ph)*0.10 + Math.sin(g.frame*0.71 + ph*2)*0.05;
@@ -1265,8 +1316,9 @@ const SAVE_KEY = "kayak_campaign";
 
 // Прогресс похода живёт отдельно от объекта g: g целиком сбрасывается
 // при старте дня, а поход должен переживать и это, и перезагрузку страницы.
-const SAVE_DEFAULT = { day:0, stars:{}, wallet:0, gear:[], diary:[], best:{}, name:"", board:{} };
+const SAVE_DEFAULT = { day:0, stars:{}, wallet:0, gear:[], diary:[], best:{}, name:"", board:{}, music:true };
 let save = loadSave();
+musicOn = save.music !== false;
 
 function loadSave(){
   try {
@@ -1400,8 +1452,8 @@ function drwHUD(){
   if (g.sh){ cx.fillStyle = "#4fc3f7"; cx.fillRect(W - 30 - mhp*26, 13, 14, 13); }
 
   let ey = 78;
-  if (g.breadT  > 0){ drwEffBar("БАТОН", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
-  if (g.whiskyT > 0){ drwEffBar("ВИСКИ", g.whiskyT/WHISKY_FRAMES,"#e8a838", ey); ey += 16; }
+  if (g.breadT  > 0){ drwEffBar("ГРЕБОК+", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
+  if (g.whiskyT > 0){ drwEffBar("НЕУЯЗВИМ", g.whiskyT/WHISKY_FRAMES,"#e8a838", ey); ey += 16; }
 
   const seg = segAt(g.scroll);
   const next = g.segs.find(x => x.type === "rapid" && x.start > g.scroll);
@@ -1488,6 +1540,7 @@ function showMap(){
   g.s = "map";
   document.getElementById("mapWallet").textContent = save.wallet;
   document.getElementById("mapStars").textContent = totalStars();
+  document.getElementById("musicBtn").textContent = musicOn ? "МУЗЫКА: ВКЛ" : "МУЗЫКА: ВЫКЛ";
   const box = document.getElementById("mapDays");
   box.innerHTML = "";
   LEVELS.forEach((L, i) => {
@@ -1595,6 +1648,23 @@ function showCamp(){
 function leaveCamp(){
   if (campTimer){ clearInterval(campTimer); campTimer = null; }
   setMusic("river");
+}
+
+const BONUS_HELP = [
+  ["БАТОН",   "Гребок мощнее в полтора раза, течение сносит вдвое слабее. 8 секунд"],
+  ["ВИСКИ",   "Неуязвимость 6 секунд: препятствия разлетаются в щепки. Очки идут вдвойне"],
+  ["АПТЕЧКА", "Возвращает сердце. Если все целы — даёт щит на один удар"],
+  ["ТОПОР",   "Срабатывает сам: убирает препятствие прямо по курсу"]
+];
+
+function showHelp(){
+  hideAllScreens();
+  const box = document.getElementById("diaryText");
+  box.innerHTML = BONUS_HELP.map(([n,d]) => "<p><b>" + n + ".</b> " + d + "</p>").join("") +
+    "<p><b>КОМБО.</b> Проходи препятствия подряд без удара — множитель растёт, " +
+    "и чем ближе проходишь, тем больше очков</p>" +
+    "<p><b>ПОРОГ.</b> Пройди целиком без удара — плюс 150</p>";
+  document.getElementById("diaryScreen").classList.remove("hidden");
 }
 
 function showDiary(){
@@ -1731,6 +1801,26 @@ function drwSign(){
   cx.fillText(r.note, W/2, y + 42);
   cx.restore();
   cx.textAlign = "left";
+}
+
+// Подсказка про бонус: две строки внизу экрана, не мешают игре.
+function drwHint(){
+  if (!g.hint) return;
+  const a = Math.min(1, g.hint.life/40);
+  const words = g.hint.text.split(" ");
+  const lines = []; let cur = "";
+  for (const w of words){
+    if ((cur + " " + w).trim().length > 34){ lines.push(cur.trim()); cur = w; }
+    else cur += " " + w;
+  }
+  if (cur.trim()) lines.push(cur.trim());
+  const h = 16 + lines.length*13;
+  cx.save(); cx.globalAlpha = a;
+  cx.fillStyle = "rgba(0,0,0,0.78)"; cx.fillRect(10, H-118-h, W-20, h);
+  cx.strokeStyle = "#4fc3f7"; cx.lineWidth = 2; cx.strokeRect(10, H-118-h, W-20, h);
+  cx.font = "7px " + F; cx.fillStyle = "#fff"; cx.textAlign = "center";
+  lines.forEach((ln, i) => cx.fillText(ln, W/2, H-118-h+18+i*13));
+  cx.restore(); cx.textAlign = "left";
 }
 
 function drwPops(){
@@ -1899,7 +1989,11 @@ function spawnCamp(wy){
 }
 
 function spBev(){
-  const ty=["bear","camp","fire","ducks","tower","fisher","bush","tree","tree"][Math.floor(Math.random()*9)];
+  // На Волге по берегам стоят компании с гитарой — это её характер.
+  const pool = level().river === 0
+    ? ["guitar","guitar","camp","fire","ducks","tower","fisher","bush","tree"]
+    : ["bear","camp","fire","ducks","tower","fisher","bush","tree","tree"];
+  const ty = pool[Math.floor(Math.random()*pool.length)];
   g.bev.push({type:ty,side:Math.random()<0.5?-1:1,wy:spawnWy(),
               off:26+Math.random()*38,
               phase:Math.random()*6.28,
@@ -2049,6 +2143,15 @@ function crush(){
   loseAttempt();
 }
 
+// Первый подбор каждого бонуса объясняется словами: одной подписи
+// «+20 СИЛА» недостаточно, чтобы понять, что предмет вообще делает.
+function explain(kind, text){
+  if (!save.seen) save.seen = {};
+  if (save.seen[kind]) return;
+  save.seen[kind] = true; commitSave();
+  g.hint = { text, life: 260 };
+}
+
 function popText(text, color){
   g.pops.push({ text, color, x: screenXOf(g.t,g.scroll), y: PY - 34, life: 55 });
 }
@@ -2070,13 +2173,21 @@ function apBn(b){
   g.bonuses++;
   switch(b.type){
     case "bread":                       // сила гребка
-      g.breadT = BREAD_FRAMES; addBonus(20); popText("+20 СИЛА","#eec27a"); break;
+      g.breadT = BREAD_FRAMES; addBonus(20);
+      popText("ГРЕБОК СИЛЬНЕЕ · 8 СЕК","#eec27a");
+      explain("bread","БАТОН: гребок мощнее в полтора раза и течение сносит вдвое слабее. 8 секунд");
+      break;
     case "whisky":                      // кураж: неуязвимость и двойные очки
-      addBonus(50); g.whiskyT = WHISKY_FRAMES; popText("+50 КУРАЖ x2","#e8a838"); break;
+      addBonus(50); g.whiskyT = WHISKY_FRAMES;
+      popText("НЕУЯЗВИМ · ОЧКИ x2 · 6 СЕК","#e8a838");
+      explain("whisky","ВИСКИ: 6 секунд тебя не берут препятствия, они разлетаются в щепки, а очки идут вдвойне");
+      break;
     case "medkit":                      // прочность, при полной — щит
-      if (g.hp < maxHp()){ g.hp += 1; popText("+1 ПРОЧНОСТЬ","#e53935"); }
-      else { g.sh = true; popText("ЩИТ","#4fc3f7"); }
-      addBonus(15); break;
+      if (g.hp < maxHp()){ g.hp += 1; popText("+1 СЕРДЦЕ","#e53935"); }
+      else { g.sh = true; popText("ЩИТ НА ОДИН УДАР","#4fc3f7"); }
+      addBonus(15);
+      explain("medkit","АПТЕЧКА: возвращает сердце. Если все целы — даёт щит, который гасит один удар");
+      break;
     case "axe": {                       // расчистка пути
       // Цель выбирается не по близости, а по тому, насколько она стоит
       // НА КУРСЕ: боковое отклонение штрафуется сильнее расстояния.
@@ -2094,7 +2205,9 @@ function apBn(b){
         g.obs = g.obs.filter(o => o !== n);
         g.shake = 6;
       }
-      addBonus(25); popText("+25 РУБИМ","#c2ced6"); break;
+      addBonus(25); popText("РАСЧИСТИЛ ПУТЬ","#c2ced6");
+      explain("axe","ТОПОР: срабатывает сам и убирает препятствие, которое стоит прямо по курсу");
+      break;
     }
   }
 }
@@ -2106,6 +2219,7 @@ function startDay(idx){
 
 function togglePause(){
   if (g.s === "playing"){
+    sfx("pause");
     g.s = "paused";
     const L = level();
     document.getElementById("pausePlace").textContent = "ДЕНЬ " + L.day + " · " + river().name;
@@ -2116,6 +2230,8 @@ function togglePause(){
   } else if (g.s === "paused"){
     document.getElementById("pauseScreen").classList.add("hidden");
     g.s = "playing";
+    sfx("unpause");
+    if (actx) mNext = actx.currentTime + 0.05;   // не выплёвываем накопленное
   }
 }
 
@@ -2245,6 +2361,13 @@ function upd(){
   g.pa=Math.sin(g.frame*0.12);
 
   if (g.signT > 0) g.signT--;
+  // Проплывая мимо компании с гитарой, слышно, что они играют.
+  {
+    let nearGuitar = false;
+    for (const e of g.bev)
+      if (e.type === "guitar" && Math.abs(e.wy - g.scroll) < 460){ nearGuitar = true; break; }
+    setMusic(nearGuitar ? "camp" : "river");
+  }
 
   // Финишная лента выставляется за экран до конца дистанции, дальше она
   // сама наплывает на игрока вместе с течением.
@@ -2289,6 +2412,7 @@ function upd(){
     }
   }
   if (g.comboT > 0){ g.comboT--; if (g.comboT === 0) g.combo = 0; }
+  if (g.hint && --g.hint.life <= 0) g.hint = null;
   tickEffects();
   g.shake *= 0.88; if (g.shake < 0.1) g.shake = 0;
   // Чистый проход порога: вошёл — взводим флаг, вышел без удара — награда.
@@ -2433,7 +2557,7 @@ function rndr(){
   for(const b of g.bns)drwBn(b);
   drwWake();drwPt();drwKy();drwTape();
   cx.restore();
-  drwRain();drwForkSign();drwSign();drwPops();drwHUD();
+  drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();
   if (g.whiskyT > 0){
     cx.strokeStyle = "rgba(232,168,56," + (0.30 + Math.sin(g.frame*0.15)*0.08) + ")";
     cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
