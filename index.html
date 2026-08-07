@@ -745,23 +745,23 @@ const RIVERS = [
 // третьей звезды — цели разные по сути, а не «то же самое, но дальше».
 const LEVELS = [
   { day:1, river:0, place:"ПАЛАТОЧНЫЙ ГОРОДОК", len: 800, goal:"bonuses",     need:5,
-    goalText:"Собрать 5 бонусов",            aggro:0.00, barges:true, arrive:"camp" },
+    goalText:"Собрать 5 бонусов",            aggro:0.00, arrive:"camp",   dens:0.011 },
   { day:2, river:0, place:"СТАРИЦА",            len: 800, goal:"passed",      need:6,
-    goalText:"Обогнать 6 байдарочников",     aggro:0.00, barges:true, arrive:"church" },
-  { day:3, river:1, place:"СТОЯНКА В ЛЕСУ",     len:1000, goal:"noshallows",  need:0,
-    goalText:"Не коснуться ни одной мели",   aggro:0.30, forks:true, snags:true, arrive:"camp" },
+    goalText:"Обогнать 6 байдарочников",     aggro:0.00, barges:true, arrive:"church", dens:0.013 },
+  { day:3, river:1, place:"СТОЯНКА В ЛЕСУ",     len:1000, goal:"shallowsmax", need:1,
+    goalText:"Задеть не больше одной мели",  aggro:0.30, forks:true, snags:true, arrive:"camp", dens:0.014 },
   { day:4, river:1, place:"ЛАГЕРЬ НА МЕДВЕДИЦЕ",len:1000, goal:"parries",     need:3,
-    goalText:"Парировать 3 удара веслом",    aggro:0.30, forks:true, snags:true, arrive:"camp" },
+    goalText:"Парировать 3 удара веслом",    aggro:0.35, forks:true, snags:true, arrive:"camp", dens:0.016 },
   { day:5, river:2, place:"ДЕРЕВНЯ",            len:1000, goal:"bridges",     need:4,
-    goalText:"Пройти 4 моста в пролёт",      aggro:0.45, rain:0.55, bridges:true, arrive:"village" },
+    goalText:"Пройти 4 моста в пролёт",      aggro:0.45, rain:0.55, bridges:true, arrive:"village", dens:0.017 },
   { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:1,
-    goalText:"Дойти, сохранив сердце",       aggro:0.45, rain:1.00, bridges:true, arrive:"town" },
+    goalText:"Дойти, сохранив сердце",       aggro:0.45, rain:0.85, bridges:true, arrive:"town", dens:0.016 },
   { day:7, river:3, place:"ПОРОГ ПЕРВЫЙ",       len:1200, goal:"cleanrapids", need:3,
-    goalText:"Пройти 3 порога чисто",        aggro:0.60, arrive:"camp" },
-  { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:12,
-    goalText:"Набрать комбо 12",             aggro:0.60, arrive:"camp" },
+    goalText:"Пройти 3 порога чисто",        aggro:0.55, arrive:"camp",   dens:0.016 },
+  { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:20,
+    goalText:"Набрать комбо 20",             aggro:0.55, arrive:"camp",   dens:0.018 },
   { day:9, river:3, place:"УСТЬЕ ОСУГИ",        len:1200, goal:"nolives",     need:0,
-    goalText:"Пройти без потери попыток",    aggro:0.60, arrive:"camp" }
+    goalText:"Пройти без потери попыток",    aggro:0.60, arrive:"camp",   dens:0.019 }
 ];
 
 function level(){ return LEVELS[Math.min(g.day, LEVELS.length-1)]; }
@@ -1387,7 +1387,7 @@ function drwHUD(){
     cx.textAlign = "center";
     cx.fillText("x" + g.combo, W/2, 42);
     cx.fillStyle = "rgba(255,213,79,0.30)";
-    cx.fillRect(W/2 - 30, 48, 60*(g.comboT/150), 4);
+    cx.fillRect(W/2 - 30, 48, 60*(g.comboT/320), 4);
     cx.textAlign = "left";
   }
 
@@ -1433,7 +1433,7 @@ function goalMet(){
   switch (L.goal){
     case "bonuses":     return g.bonuses    >= L.need;
     case "passed":      return g.passed     >= L.need;
-    case "noshallows":  return g.shallowsHit === 0;
+    case "shallowsmax": return g.shallowsHit <= L.need;
     case "parries":     return g.parries    >= L.need;
     case "bridges":     return g.bridges    >= L.need;
     case "hearts":      return g.hp         >= L.need;
@@ -1618,7 +1618,23 @@ function ensureBridges(untilW){
   while (g.bridges_.length > 5) g.bridges_.shift();
 }
 
-const PIER_T = 0.42, PIER_HALF_PX = 16;
+const PIER_T = 0.44, PIER_HALF_PX = 12;
+
+// Разметка створа: заранее видно, куда целиться.
+function drwBridgeAim(b){
+  const d = b.wy - g.scroll;
+  if (d < 0 || d > 900) return;
+  const y = screenYOf(b.wy);
+  const c = centerAt(b.wy), hw = widthAt(b.wy)/2;
+  const a = Math.min(1, (900 - d)/500);
+  for (let i = 1; i <= 3; i++){
+    const yy = y + i*54;
+    if (yy < -20 || yy > H + 20) continue;
+    cx.fillStyle = "rgba(255,213,79," + (0.30*a).toFixed(2) + ")";
+    cx.fillRect(c - PIER_T*hw + PIER_HALF_PX + 2, yy, 4, 10);
+    cx.fillRect(c + PIER_T*hw - PIER_HALF_PX - 6, yy, 4, 10);
+  }
+}
 
 function drwBridge(b){
   const y = screenYOf(b.wy);
@@ -2221,7 +2237,7 @@ function upd(){
   }
   if(g.s!="playing")return;g.frame++;
   if(g.sm){g.st--;if(g.st<=0)g.sm=false;}
-  g.df=1+g.dist/1000;const tgt=Math.min(6.5,2.5+g.dist/700);g.sp+=(tgt-g.sp)*0.004;
+  g.df=1+g.dist/(level().len*1.6);const tgt=Math.min(6.5,2.5+g.dist/700);g.sp+=(tgt-g.sp)*0.004;
   const sm=g.sm?0.35:1;g.dist+=g.sp*0.04*sm;
   g.scroll += g.sp * sm * speedMulAt(g.scroll) * flowMul(g.t);
   ensureSegments(g.scroll + H*2);
@@ -2258,13 +2274,18 @@ function upd(){
     const hw = widthAt(o.wy)/2;
     const gap = Math.abs(o.t - g.t)*hw - (o.halfPx || 20) - KAYAK_R;
     o.grazed = true;
-    if (gap < 26 && gap > -2){
+    // Любое пройденное препятствие продлевает цепочку, но очки тем больше,
+    // чем ближе прошёл. Раньше засчитывался только проход впритирку,
+    // и цепочка рвалась на каждом объекте, который обошли широко.
+    if (gap > -2){
+      const tight = gap < 45;
       g.combo++;
       if (g.combo > g.maxCombo) g.maxCombo = g.combo;
-      g.comboT = 150;
-      const add = 5 * Math.min(10, g.combo);
+      g.comboT = 320;
+      const add = (tight ? 5 : 2) * Math.min(12, g.combo);
       addScore(add);
-      if (g.combo % 3 === 0) popText("ВПРИТИРКУ x" + g.combo + "  +" + add, "#ffd54f");
+      if (tight && g.combo % 3 === 0)
+        popText("ВПРИТИРКУ x" + g.combo + "  +" + add, "#ffd54f");
     }
   }
   if (g.comboT > 0){ g.comboT--; if (g.comboT === 0) g.combo = 0; }
@@ -2289,7 +2310,7 @@ function upd(){
     if (Math.abs(mt - px) > 4) input = Math.sign(mt - px);
   }
   stepLateral(input);
-  const sr=(0.018+g.df*0.007)*(g.rRocks||1);if(Math.random()<sr)spOb();
+  const sr=(level().dens||0.016)*g.df*(g.rRocks||1);if(Math.random()<sr)spOb();
   if(Math.random()<0.003)spBn();
   if(g.dist>=g.ned)spBev();
   for(let i=g.obs.length-1;i>=0;i--){
@@ -2407,7 +2428,7 @@ function rndr(){
   if (amp > 0.1) cx.translate((Math.random()-0.5)*amp, (Math.random()-0.5)*amp);
   drwBg();
   for(const e of g.bev)drwBev(e);
-  for(const b of g.bridges_)drwBridge(b);
+  for(const b of g.bridges_){ drwBridgeAim(b); drwBridge(b); }
   for(const o of g.obs)drwOb(o);
   for(const b of g.bns)drwBn(b);
   drwWake();drwPt();drwKy();drwTape();
