@@ -302,6 +302,21 @@ const SPR = {
     "kIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIk",
     ".kgggggggggggggggggggggggggggggk..",
     "..kkkkkkkkkkkkkkkkkkkkkkkkkkkkk..."],noOutline:true},
+  church:{map:[
+    ".........yk.........",".......yyyyy........",".........yk.........",
+    ".........yk.........",".......kkkkk........","......kzzzzzk.......",
+    ".....kzzzzzzzk......",".....kzzzzzzzk......","......kzzzzzk.......",
+    ".......kkkkk........","......kwwwwwk.......","......kwzzzwk.......",
+    "......kwwwwwk.......","....kkkkkkkkkkk.....","...kwwwwwwwwwwwk....",
+    "...kwwzzwwwzzwwk....","...kwwzzwwwzzwwk....","...kwwwwwwwwwwwk....",
+    "..kwwwwwwwwwwwwwwk..","..kwwzzwwwwzzwwwwk..","..kwwzzwwwwzzwwwwk..",
+    "..kwwwwwwwwwwwwwwk..","..kwwwwwOOOOwwwwwk..","..kwwwwwOOOOwwwwwk..",
+    "..kwwwwwOOOOwwwwwk..","..kkkkkkkkkkkkkkkk.."]},
+  house:{map:[
+    ".......kk.......","......krrk......",".....krrrrk.....","....krrrrrrk....",
+    "...krrrrrrrrk...","..krrrrrrrrrrk..",".krrrrrrrrrrrrk.","kkkkkkkkkkkkkkkk",
+    "knnnnnnnnnnnnnnk","knnzzknnnnkzznnk","knnzzknnnnkzznnk","knnnnnkOOkknnnnk",
+    "knnnnnkOOkknnnnk","kkkkkkkkkkkkkkkk"]},
   car:{map:[
     "..........kkkkkkkk..........",
     ".........kzzzzzzzzk.........",
@@ -719,23 +734,23 @@ const RIVERS = [
 // третьей звезды — цели разные по сути, а не «то же самое, но дальше».
 const LEVELS = [
   { day:1, river:0, place:"ПАЛАТОЧНЫЙ ГОРОДОК", len: 800, goal:"bonuses",     need:5,
-    goalText:"Собрать 5 бонусов",            aggro:0.00, barges:true },
+    goalText:"Собрать 5 бонусов",            aggro:0.00, barges:true, arrive:"camp" },
   { day:2, river:0, place:"СТАРИЦА",            len: 800, goal:"passed",      need:6,
-    goalText:"Обогнать 6 байдарочников",     aggro:0.00, barges:true },
+    goalText:"Обогнать 6 байдарочников",     aggro:0.00, barges:true, arrive:"church" },
   { day:3, river:1, place:"СТОЯНКА В ЛЕСУ",     len:1000, goal:"noshallows",  need:0,
-    goalText:"Не коснуться ни одной мели",   aggro:0.30, forks:true, snags:true },
+    goalText:"Не коснуться ни одной мели",   aggro:0.30, forks:true, snags:true, arrive:"camp" },
   { day:4, river:1, place:"ЛАГЕРЬ НА МЕДВЕДИЦЕ",len:1000, goal:"parries",     need:3,
-    goalText:"Парировать 3 удара веслом",    aggro:0.30, forks:true, snags:true },
+    goalText:"Парировать 3 удара веслом",    aggro:0.30, forks:true, snags:true, arrive:"camp" },
   { day:5, river:2, place:"ДЕРЕВНЯ",            len:1000, goal:"bridges",     need:4,
-    goalText:"Пройти 4 моста в пролёт",      aggro:0.45, rain:0.55, bridges:true },
+    goalText:"Пройти 4 моста в пролёт",      aggro:0.45, rain:0.55, bridges:true, arrive:"village" },
   { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:1,
-    goalText:"Дойти, сохранив сердце",       aggro:0.45, rain:1.00, bridges:true },
+    goalText:"Дойти, сохранив сердце",       aggro:0.45, rain:1.00, bridges:true, arrive:"town" },
   { day:7, river:3, place:"ПОРОГ ПЕРВЫЙ",       len:1200, goal:"cleanrapids", need:3,
-    goalText:"Пройти 3 порога чисто",        aggro:0.60 },
+    goalText:"Пройти 3 порога чисто",        aggro:0.60, arrive:"camp" },
   { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:12,
-    goalText:"Набрать комбо 12",             aggro:0.60 },
+    goalText:"Набрать комбо 12",             aggro:0.60, arrive:"camp" },
   { day:9, river:3, place:"УСТЬЕ ОСУГИ",        len:1200, goal:"nolives",     need:0,
-    goalText:"Пройти без потери попыток",    aggro:0.60 }
+    goalText:"Пройти без потери попыток",    aggro:0.60, arrive:"camp" }
 ];
 
 function level(){ return LEVELS[Math.min(g.day, LEVELS.length-1)]; }
@@ -893,9 +908,9 @@ const BLEND = 200;
 function rapidBlend(w){
   // На Волге порогов нет вовсе: большая река не сужается и не бурлит.
   if (river() && river().rapids === false) return 0;
-  // В развилке порога тоже нет. Иначе русло сужалось дважды — сначала
-  // порогом, потом островом, и узкий рукав становился уже байдарки.
-  if (forkAt(w)) return 0;
+  // В развилке порога нет: иначе русло сужается дважды — сначала порогом,
+  // потом островом. Гасим порог ПЛАВНО на 260 px, иначе на границе развилки
+  // ширина прыгала скачком и берег на экране получал излом.
   const s = segAt(w);
   if (!g.segs.length) return 0;
   const inRapid = s.type === "rapid";
@@ -905,9 +920,19 @@ function rapidBlend(w){
   const dRight = s.end - w;
   const dIn = Math.min(dLeft, dRight);
   const k = Math.max(0, Math.min(1, dIn / BLEND));
-  return inRapid ? 0.5 + 0.5*k : 0.5 - 0.5*k;
+  const base = inRapid ? 0.5 + 0.5*k : 0.5 - 0.5*k;
+  return base * forkSuppress(w);
 }
 
+// Насколько порог подавлен близостью развилки: 0 внутри, 1 вдали.
+function forkSuppress(w){
+  let k = 1;
+  for (const f of g.forks){
+    const d = Math.max(f.start - w, w - f.end, 0);
+    if (d < 260) k = Math.min(k, d / 260);
+  }
+  return k;
+}
 function widthAt(w){ return baseWidthAt(w) * (1 - 0.38*rapidBlend(w)); }
 function speedMulAt(w){ return 1 + 0.4*rapidBlend(w); }
 
@@ -1247,6 +1272,11 @@ function resetSave(){
   save = JSON.parse(JSON.stringify(SAVE_DEFAULT));
   commitSave();
 }
+// Максимум сердец зависит от снаряжения. Раньше тройка была вбита в трёх
+// местах — лечение, отрисовка HUD и восстановление после попытки, — и
+// четвёртое сердце от сухпайка просто терялось.
+function maxHp(){ return hasGear("ration") ? 4 : 3; }
+
 const GEAR = [
   { id:"helmet", name:"КАСКА",           price:300, note:"Щит на старте дня — гасит первый удар" },
   { id:"paddle", name:"ЗАПАСНОЕ ВЕСЛО",  price:450, note:"Гребок мощнее на четверть" },
@@ -1346,12 +1376,13 @@ function drwHUD(){
     cx.textAlign = "left";
   }
 
-  for (let i = 0; i < 3; i++){
+  const mhp = maxHp();
+  for (let i = 0; i < mhp; i++){
     cx.fillStyle = i < g.hp ? "#e53935" : "#4a2c2c";
     cx.fillRect(W - 24 - i*26, 12, 18, 14);
     cx.fillRect(W - 27 - i*26, 15, 24, 8);
   }
-  if (g.sh){ cx.fillStyle = "#4fc3f7"; cx.fillRect(W - 104, 13, 14, 13); }
+  if (g.sh){ cx.fillStyle = "#4fc3f7"; cx.fillRect(W - 30 - mhp*26, 13, 14, 13); }
 
   let ey = 78;
   if (g.breadT  > 0){ drwEffBar("БАТОН", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
@@ -1817,11 +1848,21 @@ function spBn(){
 }
 // Палаточный городок у финиша: несколько палаток, костёр и люди
 // на том берегу, к которому причаливаем.
+const ARRIVALS = {
+  camp:    [["tent",0,34],["fire",70,30],["tent",140,40],["person",40,26],
+            ["sitter",96,28],["tree",210,52],["tent",250,36]],
+  church:  [["church",20,44],["house",130,38],["tree",210,54],
+            ["person",70,26],["person",96,28],["house",250,42]],
+  village: [["house",0,34],["house",90,40],["person",50,26],["tree",170,52],
+            ["house",210,36],["person",130,28]],
+  town:    [["church",0,46],["house",100,36],["house",170,42],["house",240,34],
+            ["person",60,26],["person",140,28],["tree",300,52]]
+};
+
 function spawnCamp(wy){
   const sd = g.landSide;
-  const items = [["tent",0,34],["fire",70,30],["tent",140,40],
-                 ["person",40,26],["sitter",96,28],["tree",210,52],["tent",250,36]];
-  for (const [type, back, off] of items)
+  const kind = level().arrive || "camp";
+  for (const [type, back, off] of (ARRIVALS[kind] || ARRIVALS.camp))
     g.bev.push({ type, side:sd, wy: wy - back + 40, off,
                  phase:Math.random()*6.28, mode:"sit", atCamp:true });
 }
@@ -1976,7 +2017,7 @@ function apBn(b){
     case "whisky":                      // кураж: неуязвимость и двойные очки
       g.whiskyT = WHISKY_FRAMES; g.bsc += 50; popText("+50 КУРАЖ","#e8a838"); break;
     case "medkit":                      // прочность, при полной — щит
-      if (g.hp < 3){ g.hp += 1; popText("+1 ПРОЧНОСТЬ","#e53935"); }
+      if (g.hp < maxHp()){ g.hp += 1; popText("+1 ПРОЧНОСТЬ","#e53935"); }
       else { g.sh = true; popText("ЩИТ","#4fc3f7"); }
       g.bsc += 15; break;
     case "axe": {                       // расчистка пути
@@ -2046,7 +2087,7 @@ function sg(){
   g.signT = 260;
   // Снаряжение действует весь день.
   if (save.gear.indexOf("helmet") >= 0) g.sh = true;
-  if (save.gear.indexOf("ration") >= 0) g.hp = 4;
+  g.hp = maxHp();
 }
 function gmO(){
   failLevel();
@@ -2096,7 +2137,7 @@ function gmO_old(){
 function resumeRun(){
   document.getElementById("continueScreen").classList.add("hidden");
   g.s = "playing";
-  g.hp = 3;
+  g.hp = maxHp();
   g.inv = INV_FRAMES * 2;
   g.sp = Math.max(1.8, g.sp*0.7);
   g.obs = g.obs.filter(o => Math.abs(o.wy - g.scroll) > 200);
@@ -2345,7 +2386,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   loadBest, saveBest, upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
   startDay, showMap, showCamp, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
-  GEAR, hasGear, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
+  GEAR, hasGear, maxHp, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
