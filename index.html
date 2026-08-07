@@ -308,16 +308,41 @@ const SPR = {
     "....knooOk....","....knoOOk....","....kOOOOk....","...kOOOOOOk...",
     "..kfkOOOOkfk..",".kffkOOOOkffk.","..fffkkkkfff..","....ffffff...."],noOutline:true},
   barge:{map:[
-    "...kkkkkkkkkkkkkkkkkkkkkkkkkkkk...",
-    "..kIIIIIIIIIIIIIIIIIIIIIIIIIIIIk..",
-    ".kIWWWWWWWWWWWWWWWWWWWWWWWWWWWWIk.",
-    "kIWWkkkkWWWWkkkkWWWWkkkkWWWWkkWWIk",
-    "kIWWkWWkWWWWkWWkWWWWkWWkWWWWkWWWIk",
-    "kIWWkkkkWWWWkkkkWWWWkkkkWWWWkkWWIk",
-    "kIWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWIk",
-    "kIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIk",
-    ".kgggggggggggggggggggggggggggggk..",
-    "..kkkkkkkkkkkkkkkkkkkkkkkkkkkkk..."],noOutline:true},
+    ".....kkkkkkkkkk.....",
+    "....kIIIIIIIIIIk....",
+    "...kIIIIIIIIIIIIk...",
+    "..kIIIIIIIIIIIIIIk..",
+    "..kIiiiiiiiiiiiiIk..",
+    "..kIrrrrrrrrrrrrIk..",
+    "..kIiiiiiiiiiiiiIk..",
+    "..kIggggggggggggIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIgSSSSSSSSSSgIk..",
+    "..kIggggggggggggIk..",
+    "..kIiiiiiiiiiiiiIk..",
+    "..kIIIIIIIIIIIIIIk..",
+    "..kIIIkkkkkkkkIIIk..",
+    "..kIIIkWWWWWWkIIIk..",
+    "..kIIIkWzzzzWkIIIk..",
+    "..kIIIkWzzzzWkIIIk..",
+    "..kIIIkWWWWWWkIIIk..",
+    "..kIIIkkkkkkkkIIIk..",
+    "..kIIIIIIIIIIIIIIk..",
+    "..kIggggggggggggIk..",
+    "..kkgggggggggggkk...",
+    "...kkkkkkkkkkkkk...."],noOutline:true},
   church:{map:[
     ".........yk.........",".......yyyyy........",".........yk.........",
     ".........yk.........",".......kkkkk........","......kzzzzzk.......",
@@ -1837,7 +1862,7 @@ function drwPops(){
 // влезает ли оно в русло.
 function obHalfPx(ty,size){
   if(ty=="snag")return 15;
-  if(ty=="barge")return 62;
+  if(ty=="barge")return 34;
   if(ty=="log")return size/2+9;
   if(ty=="shallows")return 34;
   if(ty=="seaweed")return 15;
