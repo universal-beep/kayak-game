@@ -88,7 +88,7 @@ canvas { display:block;margin:0 auto; }
     <p><span class="key">тач</span> — веди пальцем</p>
     <p>батон — гребок сильнее на 8 сек</p>
     <p>виски — неуязвим и очки x2 на 6 сек</p>
-    <p><span class="key">↑ ↓</span> или <span class="key">W S</span> — разгон и торможение</p>
+    <p><span class="key">↑ ↓</span> или <span class="key">W S</span> — вперёд и назад по реке</p>
     <p><span class="key">пробел</span> — удар веслом</p>
     <p><span class="key">M</span> — музыка &nbsp; <span class="key">Esc</span> — пауза</p>
     <p>аптечка — сердце или щит</p>
@@ -201,7 +201,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,btnFwd:false,btnBack:false,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,btnFwd:false,btnBack:false,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -655,9 +655,14 @@ function curvAt(w){
   return secondDiff(centerAt, w, 40);
 }
 
-function screenYOf(wy){ return PY + g.scroll - wy; }
-function worldYOf(y){ return g.scroll + PY - y; }
-function spawnWy(){ return g.scroll + PY + 60; }
+const PY_MIN = 210, PY_MAX = PY + 34;   // куда лодка может доехать по экрану
+
+// Камера привязана к лодке: где лодка на экране, там и точка отсчёта.
+// Поэтому мир продолжает идти с прежней скоростью, а меняется только
+// положение байдарки в кадре.
+function screenYOf(wy){ return g.py + g.scroll - wy; }
+function worldYOf(y){ return g.scroll + g.py - y; }
+function spawnWy(){ return g.scroll + g.py + 60; }
 function offScreen(wy){ return screenYOf(wy) > H + 60; }
 function screenXOf(t, wy){ return centerAt(wy) + t * widthAt(wy) / 2; }
 
@@ -922,13 +927,19 @@ function rowInput(){
   return f;
 }
 
-// Множитель хода от продольной гребли. Разгон только пока есть силы.
-function rowMul(){
+// Гребля двигает лодку по экрану, а не разгоняет мир: игровое поле идёт
+// с постоянной скоростью. Вперёд — лодка уходит выше, к верхней кромке,
+// и препятствия долетают до неё быстрее. Назад — опускается, времени
+// на реакцию больше.
+function rowStep(){
   const f = rowInput();
-  if (f > 0 && g.stam > 1){ g.rowing = 1;  return 1 + ROW_FWD; }
-  if (f < 0){                g.rowing = -1; return 1 - ROW_BACK; }
-  g.rowing = 0;
-  return 1;
+  let target = PY;
+  if (f > 0 && g.stam > 1){ g.rowing = 1;  target = PY_MIN; }
+  else if (f < 0){          g.rowing = -1; target = PY_MAX; }
+  else                      g.rowing = 0;
+  g.py += (target - g.py) * 0.035;
+  if (g.py < PY_MIN) g.py = PY_MIN;
+  if (g.py > PY_MAX) g.py = PY_MAX;
 }
 
 function tickStamina(){
@@ -1158,7 +1169,7 @@ const OB_SPRITE = { log:"log", shallows:"shallows", seaweed:"seaweed", kayaker:"
 const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe" };
 
 function drwKy(){
-  const x = screenXOf(g.t, g.scroll), y = PY;
+  const x = screenXOf(g.t, g.scroll), y = g.py;
   // Мигание в кадрах неуязвимости после удара.
   if (g.inv > 0 && Math.floor(g.frame/4) % 2 === 0) return;
   const name = leanOf(g.vt);
@@ -1649,9 +1660,17 @@ function showFinish(L, stars, total){
     (g.livesLost === 0 ? "★ без потери попыток" : "☆ потеряно попыток: " + g.livesLost) + "<br>" +
     (goalMet() ? "★ " : "☆ ") + L.goalText;
   document.getElementById("nextBtn").textContent = (g.day >= LEVELS.length-1) ? "К МАРШРУТУ" : "ДАЛЬШЕ";
-  const inp = document.getElementById("finName");
-  inp.value = save.name || "";
   g.pendingScore = total;
+  // Имя спрашиваем только один раз за поход: дальше результат
+  // записывается сам.
+  const row = document.querySelector(".namerow");
+  if (save.name){
+    row.classList.add("hidden");
+    addResult(L.day, save.name, total);
+  } else {
+    row.classList.remove("hidden");
+    document.getElementById("finName").value = "";
+  }
   renderBoard(L.day, total);
   document.getElementById("finishScreen").classList.remove("hidden");
 }
@@ -1743,10 +1762,11 @@ function showHelp(){
   hideAllScreens();
   const box = document.getElementById("diaryText");
   box.innerHTML =
-    "<p><b>ГРЕБЛЯ.</b> Стрелка вверх — разгон: быстрее идёшь и догоняешь соперников, " +
-    "но тратятся силы и меньше времени на реакцию. Стрелка вниз — табанить: " +
-    "тормозишь, чтобы протиснуться в щель или пропустить баржу. Силы копятся сами, " +
-    "батон восстанавливает их втрое быстрее</p>" +
+    "<p><b>ГРЕБЛЯ.</b> Стрелка вверх выводит байдарку вперёд по реке — она уходит " +
+    "к верхней кромке экрана, ты раньше настигаешь соперников и бонусы, но времени " +
+    "увернуться остаётся меньше. Стрелка вниз отводит назад: реакции больше, зато " +
+    "всё уплывает от тебя. Скорость самой реки при этом не меняется. Разгон тратит " +
+    "силы, батон восстанавливает их втрое быстрее</p>" +
     BONUS_HELP.map(([n,d]) => "<p><b>" + n + ".</b> " + d + "</p>").join("") +
     "<p><b>КОМБО.</b> Проходи препятствия подряд без удара — множитель растёт, " +
     "и чем ближе проходишь, тем больше очков</p>" +
@@ -2240,7 +2260,7 @@ function explain(kind, text){
 }
 
 function popText(text, color){
-  g.pops.push({ text, color, x: screenXOf(g.t,g.scroll), y: PY - 34, life: 55 });
+  g.pops.push({ text, color, x: screenXOf(g.t,g.scroll), y: g.py - 34, life: 55 });
 }
 
 function tickEffects(){
@@ -2338,7 +2358,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.btnFwd=false;g.btnBack=false;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.btnFwd=false;g.btnBack=false;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
@@ -2411,6 +2431,8 @@ function updArrive(){
   g.arriveT--;
   const target = g.landSide * 0.70;
   g.t += (target - g.t) * 0.035;
+  g.py += (PY - g.py) * 0.05;
+  g.rowing = 0;
   g.vt = 0;
   g.sp *= 0.982;
   g.scroll += g.sp * 0.55;
@@ -2445,8 +2467,9 @@ function upd(){
   // Один шаг на всё: и прокрутка мира, и пройденные метры. Раньше дистанция
   // считалась мимо множителей, и стрежень с порогами на неё не влияли.
   const step = g.sp * sm * speedMulAt(g.scroll) * flowMul(g.t)
-             * (g.whiskyT > 0 ? 1.2 : 1) * rowMul();
+             * (g.whiskyT > 0 ? 1.2 : 1);
   g.dist += step * 0.04;
+  rowStep();
   tickStamina();
   g.scroll += step;
   ensureSegments(g.scroll + H*2);
@@ -2518,7 +2541,7 @@ function upd(){
   if (g.wake.length > 40) g.wake.shift();
   // Брызги от гребка.
   if (g.frame % (g.breadT > 0 ? 9 : 14) === 0)
-    spPt(screenXOf(g.t,g.scroll) + (Math.sin(g.frame*0.3)>0?26:-26), PY + 6, "#dff0fa", 3);
+    spPt(screenXOf(g.t,g.scroll) + (Math.sin(g.frame*0.3)>0?26:-26), g.py + 6, "#dff0fa", 3);
   let input = 0;
   if (keys["ArrowLeft"] || keys["a"] || keys["A"]) input = -1;
   if (keys["ArrowRight"] || keys["d"] || keys["D"]) input = 1;
@@ -2665,7 +2688,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   loadBest, saveBest, upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
   startDay, showMap, showCamp, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
-  GEAR, hasGear, maxHp, rowMul, rowInput, tickStamina, STAM_MAX, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
+  GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
