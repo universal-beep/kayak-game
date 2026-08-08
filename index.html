@@ -201,7 +201,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,btnFwd:false,btnBack:false,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -657,12 +657,15 @@ function curvAt(w){
 
 const PY_MIN = 210, PY_MAX = PY + 34;   // куда лодка может доехать по экрану
 
-// Камера привязана к лодке: где лодка на экране, там и точка отсчёта.
-// Поэтому мир продолжает идти с прежней скоростью, а меняется только
-// положение байдарки в кадре.
-function screenYOf(wy){ return g.py + g.scroll - wy; }
-function worldYOf(y){ return g.scroll + g.py - y; }
-function spawnWy(){ return g.scroll + g.py + 60; }
+// g.scroll — положение КАМЕРЫ в мире, она идёт ровно и ни от чего не зависит.
+// Поэтому картина на экране не дёргается при гребле.
+function screenYOf(wy){ return PY + g.scroll - wy; }
+function worldYOf(y){ return g.scroll + PY - y; }
+function spawnWy(){ return g.scroll + PY + 60; }
+
+// Экранная строка байдарки — следствие того, насколько игрок ушёл вперёд
+// или отстал от камеры.
+function playerY(){ return screenYOf(g.pwy); }
 function offScreen(wy){ return screenYOf(wy) > H + 60; }
 function screenXOf(t, wy){ return centerAt(wy) + t * widthAt(wy) / 2; }
 
@@ -931,15 +934,23 @@ function rowInput(){
 // с постоянной скоростью. Вперёд — лодка уходит выше, к верхней кромке,
 // и препятствия долетают до неё быстрее. Назад — опускается, времени
 // на реакцию больше.
-function rowStep(){
+function rowStep(step){
   const f = rowInput();
-  let target = PY;
-  if (f > 0 && g.stam > 1){ g.rowing = 1;  target = PY_MIN; }
-  else if (f < 0){          g.rowing = -1; target = PY_MAX; }
-  else                      g.rowing = 0;
-  g.py += (target - g.py) * 0.035;
-  if (g.py < PY_MIN) g.py = PY_MIN;
-  if (g.py > PY_MAX) g.py = PY_MAX;
+  let extra = 0;
+  if (f > 0 && g.stam > 1){ g.rowing = 1;  extra =  step * ROW_FWD; }
+  else if (f < 0){          g.rowing = -1; extra = -step * ROW_BACK; }
+  else {
+    g.rowing = 0;
+    // Без гребли игрок сам сползает обратно к своей обычной строке.
+    const back = (g.scroll - g.pwy) * 0.03;
+    extra = back;
+  }
+  g.pwy += step + extra;
+  // Лодка не должна уезжать за отведённую полосу экрана.
+  const maxLead = PY - PY_MIN, maxLag = PY_MAX - PY;
+  if (g.pwy > g.scroll + maxLead) g.pwy = g.scroll + maxLead;
+  if (g.pwy < g.scroll - maxLag)  g.pwy = g.scroll - maxLag;
+  g.py = playerY();
 }
 
 function tickStamina(){
@@ -983,7 +994,7 @@ function stepLateral(input){
   g.vt += input * ACC * (breadOn ? 1.6 : 1) * (hasGear("paddle") ? 1.25 : 1) * wet;
   // Центробежный снос: на повороте прижимает к внешнему берегу.
   // curvAt > 0 там, где ось выгибается вправо, — байдарку при этом уносит влево.
-  g.vt -= curvAt(g.scroll) * DRIFT * (breadOn ? 0.5 : 1);
+  g.vt -= curvAt(g.pwy) * DRIFT * (breadOn ? 0.5 : 1);
   g.vt *= DAMP;
   // Батон поднимает и потолок скорости, а не только ускорение: иначе обе
   // скорости упираются в один и тот же VMAX и эффект пропадает на длинной гребле.
@@ -1169,7 +1180,7 @@ const OB_SPRITE = { log:"log", shallows:"shallows", seaweed:"seaweed", kayaker:"
 const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe" };
 
 function drwKy(){
-  const x = screenXOf(g.t, g.scroll), y = g.py;
+  const x = screenXOf(g.t, g.pwy), y = g.py;
   // Мигание в кадрах неуязвимости после удара.
   if (g.inv > 0 && Math.floor(g.frame/4) % 2 === 0) return;
   const name = leanOf(g.vt);
@@ -1548,14 +1559,14 @@ function drwHUD(){
   if (g.breadT  > 0){ drwEffBar("ГРЕБОК+", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
   if (g.whiskyT > 0){ drwEffBar("НЕУЯЗВИМ", g.whiskyT/WHISKY_FRAMES,"#e8a838", ey); ey += 16; }
 
-  const seg = segAt(g.scroll);
-  const next = g.segs.find(x => x.type === "rapid" && x.start > g.scroll);
-  if (next && next.start - g.scroll < 400 && Math.floor(g.frame/12) % 2 === 0){
+  const seg = segAt(g.pwy);
+  const next = g.segs.find(x => x.type === "rapid" && x.start > g.pwy);
+  if (next && next.start - g.pwy < 400 && Math.floor(g.frame/12) % 2 === 0){
     cx.font = "12px " + F; cx.fillStyle = "#ff5252"; cx.textAlign = "center";
     cx.fillText("ПОРОГ", W/2, 104); cx.textAlign = "left";
   }
   if (seg.type === "rapid"){
-    const pr = (g.scroll - seg.start) / (seg.end - seg.start);
+    const pr = (g.pwy - seg.start) / (seg.end - seg.start);
     cx.fillStyle = "rgba(0,0,0,0.45)"; cx.fillRect(W/2 - 60, 92, 120, 8);
     cx.fillStyle = g.cleanRun ? "#4fc3f7" : "#ff5252";
     cx.fillRect(W/2 - 60, 92, 120*Math.max(0, Math.min(1, pr)), 8);
@@ -1799,7 +1810,7 @@ const PIER_T = 0.44, PIER_HALF_PX = 12;
 
 // Разметка створа: заранее видно, куда целиться.
 function drwBridgeAim(b){
-  const d = b.wy - g.scroll;
+  const d = b.wy - g.pwy;
   if (d < 0 || d > 900) return;
   const y = screenYOf(b.wy);
   const c = centerAt(b.wy), hw = widthAt(b.wy)/2;
@@ -1815,27 +1826,64 @@ function drwBridgeAim(b){
 
 function drwBridge(b){
   const y = screenYOf(b.wy);
-  if (y < -70 || y > H + 70) return;
+  if (y < -90 || y > H + 90) return;
   const c = centerAt(b.wy), hw = widthAt(b.wy)/2;
-  // настил
+
+  // Дорога идёт по обоим берегам и уходит за край экрана: без подходов
+  // мост читался как палка поперёк воды.
+  cx.fillStyle = "#6b6b63";                       // насыпь
+  cx.fillRect(0, y - 30, W, 40);
+  cx.fillStyle = "#4a4a44";
+  cx.fillRect(0, y - 32, W, 3);
+  cx.fillRect(0, y + 7,  W, 3);
+
+  cx.fillStyle = "#3c3c3c";                       // полотно
+  cx.fillRect(0, y - 26, W, 32);
+  cx.fillStyle = "#585858";
+  cx.fillRect(0, y - 26, W, 3);
+
+  cx.fillStyle = "#d8d8c0";                       // разметка по оси дороги
+  for (let x = 4; x < W; x += 26) cx.fillRect(x, y - 12, 14, 3);
+
+  // Пролётное строение над водой: фермы по краям настила.
+  const bl = Math.max(0, c - hw - 22), br = Math.min(W, c + hw + 22);
+  cx.fillStyle = "#8a7a5c";
+  cx.fillRect(bl, y - 34, br - bl, 5);
+  cx.fillRect(bl, y + 8,  br - bl, 5);
   cx.fillStyle = "#5d4634";
-  cx.fillRect(c - hw - 26, y - 20, hw*2 + 52, 16);
-  cx.fillStyle = "#7f5533";
-  for (let x = c - hw - 26; x < c + hw + 26; x += 12) cx.fillRect(x, y - 20, 6, 16);
-  cx.fillStyle = "#3e2a1c";
-  cx.fillRect(c - hw - 26, y - 6, hw*2 + 52, 5);
-  // опоры
+  for (let x = bl; x < br; x += 18){
+    cx.fillRect(x, y - 34, 4, 47);                // раскосы фермы
+  }
+
+  // Перила: столбики и поручень с обеих сторон.
+  cx.fillStyle = "#9aa9b2";
+  cx.fillRect(0, y - 42, W, 3);
+  cx.fillRect(0, y + 16, W, 3);
+  cx.fillStyle = "#74858e";
+  for (let x = 2; x < W; x += 16){
+    cx.fillRect(x, y - 42, 3, 10);
+    cx.fillRect(x, y + 16, 3, 10);
+  }
+
+  // Тень моста на воде.
+  cx.fillStyle = "rgba(0,0,0,0.22)";
+  cx.fillRect(Math.max(0, c - hw), y + 26, Math.min(W, hw*2), 14);
+
+  // Опоры в воде и бурун у них.
   for (const sgn of [-1, 1]){
     const px = c + sgn*PIER_T*hw;
-    cx.fillStyle = "#8a99a3"; cx.fillRect(px - PIER_HALF_PX, y - 4, PIER_HALF_PX*2, 30);
-    cx.fillStyle = "#5e6d75"; cx.fillRect(px - PIER_HALF_PX + 4, y + 2, PIER_HALF_PX*2 - 8, 22);
-    cx.fillStyle = PAL.f;     cx.fillRect(px - PIER_HALF_PX, y + 26, PIER_HALF_PX*2, 4);
+    cx.fillStyle = "#8a99a3"; cx.fillRect(px - PIER_HALF_PX, y + 6, PIER_HALF_PX*2, 34);
+    cx.fillStyle = "#5e6d75"; cx.fillRect(px - PIER_HALF_PX + 3, y + 12, PIER_HALF_PX*2 - 6, 26);
+    cx.fillStyle = "#3f4c53"; cx.fillRect(px - PIER_HALF_PX, y + 6, PIER_HALF_PX*2, 4);
+    cx.fillStyle = PAL.f;
+    cx.fillRect(px - PIER_HALF_PX - 3, y + 36, PIER_HALF_PX*2 + 6, 5);
+    cx.fillRect(px - PIER_HALF_PX + 2, y + 41, PIER_HALF_PX*2 - 4, 3);
   }
 }
 
 function chkBridges(){
   for (const b of g.bridges_){
-    if (b.passed || g.scroll < b.wy) continue;
+    if (b.passed || g.pwy < b.wy) continue;
     b.passed = true;
     const hw = widthAt(b.wy)/2;
     let hit = false;
@@ -2115,7 +2163,7 @@ function drwPt(){
   cx.globalAlpha=1;
 }
 function chkIsland(){
-  const sh = forkShape(g.scroll);
+  const sh = forkShape(g.pwy);
   if (!sh || sh.h <= 0.02) return;
   const d = g.t - sh.c;
   if (Math.abs(d) < sh.h + 0.03){
@@ -2127,9 +2175,9 @@ function chkIsland(){
 }
 
 function drwForkSign(){
-  const f = nextFork(g.scroll);
+  const f = nextFork(g.pwy);
   if (!f) return;
-  const d = f.start - g.scroll;
+  const d = f.start - g.pwy;
   if (d > 520 || d < 0) return;
   const wy = f.start;
   const c = centerAt(wy), hw = widthAt(wy)/2, y = screenYOf(wy);
@@ -2151,7 +2199,7 @@ function chkCl(){
   for(let i=g.obs.length-1;i>=0;i--){
     const o=g.obs[i];
     const hw=widthAt(o.wy)/2;
-    const dx=(g.t-o.t)*hw,dy=g.scroll-o.wy;
+    const dx=(g.t-o.t)*hw,dy=g.pwy-o.wy;
     if(Math.hypot(dx,dy)<kr+(o.halfPx||16)){
       const ox=screenXOf(o.t,o.wy),oy=screenYOf(o.wy);
       if(o.type=="barge"){
@@ -2177,7 +2225,7 @@ function chkCl(){
   }
   for(let i=g.bns.length-1;i>=0;i--){
     const b=g.bns[i],hw=widthAt(b.wy)/2;
-    const dx=(g.t-b.t)*hw,dy=g.scroll-b.wy;
+    const dx=(g.t-b.t)*hw,dy=g.pwy-b.wy;
     if(Math.hypot(dx,dy)<kr+14){apBn(b);g.bns.splice(i,1);}
   }
 }
@@ -2211,10 +2259,10 @@ function damage(){
   g.combo = 0; g.comboT = 0;
   // Без гермомешка удар сбивает активные эффекты.
   if (!hasGear("drybag")){ g.breadT = 0; g.whiskyT = 0; }
-  if (rapidBlend(g.scroll) > 0.5) g.cleanRun = false;
+  if (rapidBlend(g.pwy) > 0.5) g.cleanRun = false;
   g.t = 0; g.vt = 0;
   g.sp = Math.max(1.8, g.sp*0.55);
-  g.obs = g.obs.filter(o => Math.abs(o.wy - g.scroll) > 150);
+  g.obs = g.obs.filter(o => Math.abs(o.wy - g.pwy) > 150);
   if (g.hp > 0){ sfx("hit"); popText("-1 СЕРДЦЕ","#ff5252"); return; }
   loseAttempt();
 }
@@ -2245,7 +2293,7 @@ function crush(){
   if (rapidBlend(g.scroll) > 0.5) g.cleanRun = false;
   g.t = 0; g.vt = 0;
   g.sp = Math.max(1.8, g.sp*0.5);
-  g.obs = g.obs.filter(o => Math.abs(o.wy - g.scroll) > 200);
+  g.obs = g.obs.filter(o => Math.abs(o.wy - g.pwy) > 200);
   popText("БАРЖА!","#ff5252");
   loseAttempt();
 }
@@ -2260,7 +2308,7 @@ function explain(kind, text){
 }
 
 function popText(text, color){
-  g.pops.push({ text, color, x: screenXOf(g.t,g.scroll), y: g.py - 34, life: 55 });
+  g.pops.push({ text, color, x: screenXOf(g.t,g.pwy), y: g.py - 34, life: 55 });
 }
 
 function tickEffects(){
@@ -2300,7 +2348,7 @@ function apBn(b){
       // НА КУРСЕ: боковое отклонение штрафуется сильнее расстояния.
       let n = null, best = Infinity;
       for (const o of g.obs){
-        const d = o.wy - g.scroll;
+        const d = o.wy - g.pwy;
         if (d < 60 || d > AXE_RANGE) continue;
         const lateral = Math.abs(o.t - g.t) * widthAt(o.wy)/2;
         if (lateral > 90) continue;
@@ -2358,7 +2406,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.btnFwd=false;g.btnBack=false;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
@@ -2431,13 +2479,15 @@ function updArrive(){
   g.arriveT--;
   const target = g.landSide * 0.70;
   g.t += (target - g.t) * 0.035;
-  g.py += (PY - g.py) * 0.05;
+  g.pwy += (g.scroll - g.pwy) * 0.05;
+  g.py = playerY();
   g.rowing = 0;
   g.vt = 0;
   g.sp *= 0.982;
   g.scroll += g.sp * 0.55;
+  g.pwy += g.sp * 0.55;
   ensureSegments(g.scroll + H*2);
-  g.wake.push({ t:g.t, wy:g.scroll });
+  g.wake.push({ t:g.t, wy:g.pwy });
   if (g.wake.length > 40) g.wake.shift();
   for (let i=g.pts.length-1;i>=0;i--){
     const pt=g.pts[i]; pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.15;
@@ -2469,7 +2519,7 @@ function upd(){
   const step = g.sp * sm * speedMulAt(g.scroll) * flowMul(g.t)
              * (g.whiskyT > 0 ? 1.2 : 1);
   g.dist += step * 0.04;
-  rowStep();
+  rowStep(step);
   tickStamina();
   g.scroll += step;
   ensureSegments(g.scroll + H*2);
@@ -2481,7 +2531,7 @@ function upd(){
   {
     let nearGuitar = false;
     for (const e of g.bev)
-      if (e.type === "guitar" && Math.abs(e.wy - g.scroll) < 460){ nearGuitar = true; break; }
+      if (e.type === "guitar" && Math.abs(e.wy - g.pwy) < 460){ nearGuitar = true; break; }
     setMusic(nearGuitar ? "camp" : "river");
   }
 
@@ -2493,7 +2543,7 @@ function upd(){
     spawnCamp(g.tapeWy);
   }
   // Пересекли ленту — дальше игра ведёт байдарку сама.
-  if (g.tapeWy > 0 && g.scroll >= g.tapeWy){
+  if (g.tapeWy > 0 && g.pwy >= g.tapeWy){
     g.s = "arrive"; g.arriveT = 210; g.obs.length = 0; g.bns.length = 0;
     sfx("clean");
     return;
@@ -2501,7 +2551,7 @@ function upd(){
 
   // Обгон соперников засчитывается: он ушёл за спину, значит обогнали.
   for (const o of g.obs)
-    if (o.type === "kayaker" && !o.passed && o.wy < g.scroll - 30){
+    if (o.type === "kayaker" && !o.passed && o.wy < g.pwy - 30){
       o.passed = true; g.passed++; addScore(15);
       popText("ОБГОН +15", "#7fd67f");
     }
@@ -2509,7 +2559,7 @@ function upd(){
   // Комбо: проход впритирку мимо препятствия без удара наращивает множитель.
   for (const o of g.obs){
     if (o.grazed) continue;
-    if (o.wy > g.scroll - 10) continue;              // ещё не поравнялись
+    if (o.wy > g.pwy - 10) continue;              // ещё не поравнялись
     const hw = widthAt(o.wy)/2;
     const gap = Math.abs(o.t - g.t)*hw - (o.halfPx || 20) - KAYAK_R;
     o.grazed = true;
@@ -2532,21 +2582,21 @@ function upd(){
   tickEffects();
   g.shake *= 0.88; if (g.shake < 0.1) g.shake = 0;
   // Чистый проход порога: вошёл — взводим флаг, вышел без удара — награда.
-  const inRapid = rapidBlend(g.scroll) > 0.5;
+  const inRapid = rapidBlend(g.pwy) > 0.5;
   if (inRapid && !g.wasRapid) g.cleanRun = true;
   if (!inRapid && g.wasRapid && g.cleanRun){ addBonus(150); g.cleanRapids++; sfx("clean"); popText("ЧИСТЫЙ ПРОХОД +150","#ffd54f"); }
   g.wasRapid = inRapid;
   // Кильватерный след за кормой.
-  g.wake.push({ t: g.t, wy: g.scroll });
+  g.wake.push({ t: g.t, wy: g.pwy });
   if (g.wake.length > 40) g.wake.shift();
   // Брызги от гребка.
   if (g.frame % (g.breadT > 0 ? 9 : 14) === 0)
-    spPt(screenXOf(g.t,g.scroll) + (Math.sin(g.frame*0.3)>0?26:-26), g.py + 6, "#dff0fa", 3);
+    spPt(screenXOf(g.t,g.pwy) + (Math.sin(g.frame*0.3)>0?26:-26), g.py + 6, "#dff0fa", 3);
   let input = 0;
   if (keys["ArrowLeft"] || keys["a"] || keys["A"]) input = -1;
   if (keys["ArrowRight"] || keys["d"] || keys["D"]) input = 1;
   if (mt !== null){
-    const px = screenXOf(g.t, g.scroll);
+    const px = screenXOf(g.t, g.pwy);
     if (Math.abs(mt - px) > 4) input = Math.sign(mt - px);
   }
   stepLateral(input);
@@ -2586,7 +2636,7 @@ function upd(){
       if(o.aggro){
         const ahw=widthAt(o.wy)/2;
         const lat=Math.abs(o.t-g.t)*ahw;
-        const alongside=Math.abs(o.wy-g.scroll)<75 && lat<STRIKE_REACH;
+        const alongside=Math.abs(o.wy-g.pwy)<75 && lat<STRIKE_REACH;
         if(o.swingT<0 && alongside && g.inv<=0 && g.whiskyT<=0){
           o.swingT=SWING_FRAMES; sfx("swing");
           if(!g.taughtParry){ g.taughtParry=true; popText("ПРОБЕЛ — ВЕСЛОМ!","#ff5252"); }
@@ -2633,9 +2683,9 @@ function upd(){
   ensureBridges(g.scroll + H*3);
   // Учёт, каким рукавом пошли, и награда за узкий.
   {
-    const fk = forkAt(g.scroll);
+    const fk = forkAt(g.pwy);
     if (fk && !fk.taken){
-      const sh = forkShape(g.scroll);
+      const sh = forkShape(g.pwy);
       if (sh && sh.h > 0.10){
         fk.taken = (g.t < sh.c) ? -1 : 1;
         const narrowSide = fk.narrowLeft ? -1 : 1;
@@ -2664,7 +2714,7 @@ function rndr(){
   cx.clearRect(0,0,W,H);
   if (g.s == "cutscene" && g.cut){ drwCut(); return; }
   cx.save();
-  const amp = g.shake + rapidBlend(g.scroll)*2;
+  const amp = g.shake + rapidBlend(g.pwy)*2;
   if (amp > 0.1) cx.translate((Math.random()-0.5)*amp, (Math.random()-0.5)*amp);
   drwBg();
   for(const e of g.bev)drwBev(e);
@@ -2688,7 +2738,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   loadBest, saveBest, upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
   startDay, showMap, showCamp, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
-  GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
+  GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
