@@ -2718,10 +2718,13 @@ function rndr(){
   if (amp > 0.1) cx.translate((Math.random()-0.5)*amp, (Math.random()-0.5)*amp);
   drwBg();
   for(const e of g.bev)drwBev(e);
-  for(const b of g.bridges_){ drwBridgeAim(b); drwBridge(b); }
+  for(const b of g.bridges_) drwBridgeAim(b);   // поплавки лежат на воде
   for(const o of g.obs)drwOb(o);
   for(const b of g.bns)drwBn(b);
-  drwWake();drwPt();drwKy();drwTape();
+  drwWake();drwPt();drwKy();
+  // Мост рисуется ПОСЛЕ байдарки: под мостом проплывают, а не по нему.
+  for(const b of g.bridges_) drwBridge(b);
+  drwTape();
   cx.restore();
   drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();
   if (g.whiskyT > 0){
