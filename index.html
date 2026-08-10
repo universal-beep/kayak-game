@@ -44,6 +44,9 @@ canvas { display:block;margin:0 auto; }
 .board { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#bbb;width:100%;max-width:300px;margin:6px 0 4px; }
 .brow { display:flex;justify-content:space-between;padding:3px 4px;line-height:1.6; }
 .brow.mine { color:#ffd54f;background:rgba(255,213,79,0.12); }
+#endScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,10,20,0.97);pointer-events:all;padding:16px; }
+.endgrid { display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin:14px 0;font-family:"Press Start 2P",monospace;font-size:9px;color:#ddd; }
+.endgrid b { color:#ffd54f;font-weight:normal; }
 #campCanvas { image-rendering:pixelated;width:300px;height:120px;margin-bottom:10px;border-radius:6px; }
 .gear { display:flex;flex-direction:column;gap:5px;width:100%;max-width:340px;margin-bottom:10px; }
 .gitem { font-family:"Press Start 2P",monospace;font-size:7px;color:#ddd;background:rgba(255,255,255,0.06);padding:7px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px;line-height:1.7; }
@@ -57,22 +60,11 @@ canvas { display:block;margin:0 auto; }
 #continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
 #continueScreen .score { font-family:"Press Start 2P",monospace;font-size:11px;color:#fff;margin:4px 0; }
 #continueScreen .dist { color:#4fc3f7;font-size:9px; }
-#startScreen,#gameOverScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);pointer-events:all; }
-#startScreen h1 { font-family:"Press Start 2P",monospace;font-size:26px;color:#4fc3f7;margin-bottom:20px;text-shadow:4px 4px 0 #0d47a1;letter-spacing:4px; }
+#startScreen,#startScreen h1 { font-family:"Press Start 2P",monospace;font-size:26px;color:#4fc3f7;margin-bottom:20px;text-shadow:4px 4px 0 #0d47a1;letter-spacing:4px; }
 #startScreen p { font-family:"Press Start 2P",monospace;font-size:9px;color:#bbb;margin:5px 0;line-height:2; }
 #startScreen .key { color:#4fc3f7; }
-#startScreen .btn,#gameOverScreen .btn { font-family:"Press Start 2P",monospace;font-size:14px;background:#4fc3f7;color:#1a1a2e;border:none;padding:14px 32px;margin-top:24px;cursor:pointer;pointer-events:all; }
-#startScreen .btn:hover,#gameOverScreen .btn:hover { background:#81d4fa; }
-#gameOverScreen h1 { font-family:"Press Start 2P",monospace;font-size:22px;color:#ff5252;margin-bottom:16px;text-shadow:4px 4px 0 #b71c1c; }
-#gameOverScreen .score { font-family:"Press Start 2P",monospace;font-size:15px;color:#fff;margin:6px 0; }
-#gameOverScreen .bonus { color:#ffd54f; }
-#gameOverScreen .dist { color:#4fc3f7; }
-#gameOverScreen .verdict { font-family:"Press Start 2P",monospace;font-size:10px;margin:14px 0 6px; }
-#gameOverScreen .runs-title { font-family:"Press Start 2P",monospace;font-size:8px;color:#888;margin-top:10px; }
-#gameOverScreen .runs { font-family:"Press Start 2P",monospace;font-size:8px;color:#bbb;line-height:2;margin-top:6px; }
-#gameOverScreen .runs .top { color:#ffd54f; }
-.hidden { display:none !important; }
-#pauseBtn { position:absolute;top:10px;right:10px;width:40px;height:40px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
+#startScreen .btn,#startScreen .btn:hover,.hidden { display:none !important; }
+#pauseBtn { position:absolute;top:8px;right:8px;width:34px;height:34px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
 #pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,10,20,0.92);pointer-events:all; }
 #mobileControls { position:absolute;bottom:16px;left:0;right:0;display:none;justify-content:space-between;padding:0 16px;pointer-events:none; }
 #mobileControls .ctrlgroup { display:flex;gap:10px; }
@@ -95,20 +87,6 @@ canvas { display:block;margin:0 auto; }
     <p>топор — убирает препятствие по курсу</p>
     <button class="btn" id="startBtn">> СТАРТ <</button>
   </div>
-  <div id="gameOverScreen" class="hidden">
-    <h1>ПЕРЕВЕРНУЛИ!</h1>
-    <div class="score dist">Дистанция: <span id="finalDist">0</span> м</div>
-    <div class="score bonus">+ Бонусы: <span id="finalBonus">0</span></div>
-    <div class="score bonus">Обгонов: <span id="finalPassed">0</span></div>
-    <div class="score">Итого: <span id="finalScore">0</span></div>
-    <div class="score">Рекорд: <span id="bestScore">0</span></div>
-    <div class="score bonus hidden" id="newBest">НОВЫЙ РЕКОРД!</div>
-    <div class="verdict" id="verdict"></div>
-    <div class="runs-title">Лучший за сессию: <span id="sessionBest">0</span></div>
-    <div class="runs-title">Последние забеги</div>
-    <div class="runs" id="runs"></div>
-    <button class="btn" id="restartBtn">> ЕЩЁ РАЗ <</button>
-  </div>
 </div>
   <div id="pauseScreen" class="hidden">
     <h1 class="maph">ПАУЗА</h1>
@@ -118,6 +96,15 @@ canvas { display:block;margin:0 auto; }
       <button class="btn small" id="resumeBtn">ПРОДОЛЖИТЬ</button>
       <button class="btn small ghost" id="pauseMusicBtn">МУЗЫКА</button>
       <button class="btn small ghost" id="pauseMapBtn">К МАРШРУТУ</button>
+    </div>
+  </div>
+  <div id="endScreen" class="hidden">
+    <h1 class="finh">ПОХОД ПРОЙДЕН</h1>
+    <div class="place">Осуга впадает в Тверцу.<br>Байдарки на прицеп, вокзал, электричка.</div>
+    <div class="endgrid" id="endStats"></div>
+    <div class="goal" id="endDays"></div>
+    <div class="maprow">
+      <button class="btn small" id="endMapBtn">К МАРШРУТУ</button>
     </div>
   </div>
   <div id="campScreen" class="hidden">
@@ -1088,7 +1075,6 @@ for(const[id,k]of[["btnLeft","ArrowLeft"],["btnRight","ArrowRight"]]){
 }
 function hs(){startMusic();if(g.s=="continue"){resumeRun();return;}if(g.s=="start")showMap();}
 document.getElementById("startBtn").addEventListener("click",()=>{startMusic();showMap();});
-document.getElementById("restartBtn").addEventListener("click",()=>{startMusic();sg();});
 document.getElementById("contBtn").addEventListener("click",()=>{startMusic();resumeRun();});
 document.getElementById("saveNameBtn").addEventListener("click",()=>{
   const nm = (document.getElementById("finName").value || "").trim().slice(0,12);
@@ -1099,7 +1085,7 @@ document.getElementById("saveNameBtn").addEventListener("click",()=>{
 });
 document.getElementById("nextBtn").addEventListener("click",()=>{
   // После последнего дня — финал с вокзалом и электричкой.
-  if(g.day>=LEVELS.length-1){ playCut("finale", showMap); return; }
+  if(g.day>=LEVELS.length-1){ playCut("finale", showCampaignEnd); return; }
   const wasRiver = LEVELS[g.day].river;
   g.day++;
   const nowRiver = LEVELS[g.day].river;
@@ -1115,6 +1101,7 @@ document.getElementById("diaryBtn").addEventListener("click",showDiary);
 document.getElementById("musicBtn").addEventListener("click",()=>{ startMusic(); toggleMusic(); });
 document.getElementById("helpBtn").addEventListener("click",showHelp);
 document.getElementById("diaryBack").addEventListener("click",showMap);
+document.getElementById("endMapBtn").addEventListener("click",showMap);
 document.getElementById("campBtn").addEventListener("click",showCamp);
 document.getElementById("pauseBtn").addEventListener("click",togglePause);
 document.getElementById("resumeBtn").addEventListener("click",togglePause);
@@ -1403,12 +1390,15 @@ function drwBev(e){
   drawSprite(e.type, bx, by);
 }
 
-const BEST_KEY = "kayak_best";
 const SAVE_KEY = "kayak_campaign";
 
 // Прогресс похода живёт отдельно от объекта g: g целиком сбрасывается
 // при старте дня, а поход должен переживать и это, и перезагрузку страницы.
-const SAVE_DEFAULT = { day:0, stars:{}, wallet:0, gear:[], diary:[], best:{}, name:"", board:{}, music:true };
+// Версия схемы сохранения. Без неё любое изменение структуры дней молча
+// ломало бы чужой прогресс.
+const SAVE_VERSION = 1;
+const SAVE_DEFAULT = { v:SAVE_VERSION, day:0, stars:{}, wallet:0, gear:[], diary:[],
+                       best:{}, name:"", board:{}, music:true, seen:{} };
 let save = loadSave();
 musicOn = save.music !== false;
 
@@ -1417,7 +1407,11 @@ function loadSave(){
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return JSON.parse(JSON.stringify(SAVE_DEFAULT));
     const v = JSON.parse(raw);
-    return Object.assign(JSON.parse(JSON.stringify(SAVE_DEFAULT)), v);
+    const fresh = JSON.parse(JSON.stringify(SAVE_DEFAULT));
+    // Сохранение от несовместимой версии не читаем: лучше начать заново,
+    // чем ловить необъяснимые сбои на чужой структуре.
+    if ((v.v || 0) !== SAVE_VERSION) return fresh;
+    return Object.assign(fresh, v);
   } catch(e){ return JSON.parse(JSON.stringify(SAVE_DEFAULT)); }
 }
 function commitSave(){
@@ -1432,11 +1426,17 @@ function resetSave(){
 // четвёртое сердце от сухпайка просто терялось.
 function maxHp(){ return hasGear("ration") ? 4 : 3; }
 
+// Звёзды открывают снаряжение. Без этого они были чистой декорацией:
+// собираются, показываются на карте и ничего не дают.
 const GEAR = [
-  { id:"helmet", name:"КАСКА",           price:300, note:"Щит на старте дня — гасит первый удар" },
-  { id:"paddle", name:"ЗАПАСНОЕ ВЕСЛО",  price:450, note:"Гребок мощнее на четверть" },
-  { id:"drybag", name:"ГЕРМОМЕШОК",      price:400, note:"Удар не сбивает батон и виски" },
-  { id:"ration", name:"СУХПАЁК",         price:500, note:"Четвёртое сердце на старте" }
+  { id:"helmet", name:"КАСКА",           price:300, stars:0,
+    note:"Щит на старте дня — гасит первый удар" },
+  { id:"paddle", name:"ЗАПАСНОЕ ВЕСЛО",  price:450, stars:6,
+    note:"Гребок мощнее на четверть" },
+  { id:"drybag", name:"ГЕРМОМЕШОК",      price:400, stars:12,
+    note:"Удар не сбивает батон и виски" },
+  { id:"ration", name:"СУХПАЁК",         price:500, stars:18,
+    note:"Четвёртое сердце на старте" }
 ];
 function hasGear(id){ return save.gear.indexOf(id) >= 0; }
 
@@ -1497,11 +1497,6 @@ function totalStars(){
   return n;
 }
 function dayUnlocked(idx){ return idx <= save.day; }
-// Результаты всех забегов текущей сессии. Живут вне объекта g, потому что
-// g целиком сбрасывается при старте новой игры.
-const sessionRuns = [];
-function loadBest(){ return Number(localStorage.getItem(BEST_KEY) || 0); }
-function saveBest(v){ if (v > loadBest()) localStorage.setItem(BEST_KEY, String(v)); }
 
 function drwHUD(){
   cx.save();
@@ -1512,7 +1507,7 @@ function drwHUD(){
   cx.fillText("СЧЁТ: " + (g.sc + g.bsc), 12, 42);
   cx.font = "8px " + F;
   cx.fillStyle = "#9aa9b2";
-  cx.fillText("РЕКОРД: " + loadBest(), 12, 60);
+  cx.fillText("ЛУЧШЕЕ ЗА ДЕНЬ: " + (save.best[level().day] || 0), 12, 60);
   cx.fillStyle = "#cfe8f5";
   cx.fillText("ДЕНЬ " + level().day + " · " + river().name, 12, H - 26);
   cx.fillStyle = "#9aa9b2";
@@ -1547,15 +1542,17 @@ function drwHUD(){
     if (g.rowing > 0){ cx.fillStyle = "#7fd67f"; cx.fillText("РАЗГОН", bx + 52, by - 4); }
     if (g.rowing < 0){ cx.fillStyle = "#4fc3f7"; cx.fillText("ТАБАНЮ", bx + 52, by - 4); }
   }
+  // Сердца опущены ниже: в правом верхнем углу висит кнопка паузы,
+  // и раньше она их перекрывала — особенно четвёртое от сухпайка.
   const mhp = maxHp();
   for (let i = 0; i < mhp; i++){
     cx.fillStyle = i < g.hp ? "#e53935" : "#4a2c2c";
-    cx.fillRect(W - 24 - i*26, 12, 18, 14);
-    cx.fillRect(W - 27 - i*26, 15, 24, 8);
+    cx.fillRect(W - 24 - i*26, 56, 18, 14);
+    cx.fillRect(W - 27 - i*26, 59, 24, 8);
   }
-  if (g.sh){ cx.fillStyle = "#4fc3f7"; cx.fillRect(W - 30 - mhp*26, 13, 14, 13); }
+  if (g.sh){ cx.fillStyle = "#4fc3f7"; cx.fillRect(W - 30 - mhp*26, 57, 14, 13); }
 
-  let ey = 78;
+  let ey = 96;
   if (g.breadT  > 0){ drwEffBar("ГРЕБОК+", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
   if (g.whiskyT > 0){ drwEffBar("НЕУЯЗВИМ", g.whiskyT/WHISKY_FRAMES,"#e8a838", ey); ey += 16; }
 
@@ -1626,7 +1623,10 @@ function finishLevel(){
 function failLevel(){
   const L = level();
   const total = Math.floor(g.dist) + g.bsc + g.sc;
-  save.wallet += Math.floor(total / 3);      // неудачный день тоже что-то даёт
+  // За провал платим втрое меньше, чем за прохождение. Раньше ставка была
+  // одинаковой, и самым выгодным способом копить очки было намеренно
+  // разбиваться на длинном дне.
+  save.wallet += Math.floor(total / 9);
   commitSave();
   g.s = "fail";
   showFail(L, total);
@@ -1741,16 +1741,19 @@ function showCamp(){
   document.getElementById("campWallet").textContent = save.wallet;
   const box = document.getElementById("gearList");
   box.innerHTML = "";
+  const st = totalStars();
   for (const it of GEAR){
     const owned = hasGear(it.id);
+    const locked = st < it.stars;
     const el = document.createElement("div");
     el.className = "gitem" + (owned ? " owned" : "");
-    el.innerHTML = "<div><div class='gn'>" + it.name + "</div><div class='gnote'>" + it.note + "</div></div>";
+    el.innerHTML = "<div><div class='gn'>" + it.name + "</div><div class='gnote'>" +
+      (locked ? "нужно звёзд: " + it.stars + " · сейчас " + st : it.note) + "</div></div>";
     const b = document.createElement("button");
-    b.textContent = owned ? "ЕСТЬ" : it.price;
-    b.disabled = owned || save.wallet < it.price;
+    b.textContent = owned ? "ЕСТЬ" : (locked ? "★" + it.stars : it.price);
+    b.disabled = owned || locked || save.wallet < it.price;
     b.onclick = () => {
-      if (hasGear(it.id) || save.wallet < it.price) return;
+      if (hasGear(it.id) || locked || save.wallet < it.price) return;
       save.wallet -= it.price; save.gear.push(it.id); commitSave();
       sfx("bonus"); showCamp();
     };
@@ -1788,6 +1791,30 @@ function showHelp(){
     "и чем ближе проходишь, тем больше очков</p>" +
     "<p><b>ПОРОГ.</b> Пройди целиком без удара — плюс 150</p>";
   document.getElementById("diaryScreen").classList.remove("hidden");
+}
+
+// Итоги всего похода. Раньше после финального мульта игрока просто
+// выбрасывало на карту — девять дней заканчивались ничем.
+function showCampaignEnd(){
+  hideAllScreens();
+  g.s = "end";
+  const st = totalStars();
+  let dist = 0, best = 0;
+  for (const L of LEVELS){ dist += L.len; best += (save.best[L.day] || 0); }
+  const rows = [
+    ["Дней пройдено", LEVELS.length],
+    ["Звёзд собрано", st + " из " + (LEVELS.length*3)],
+    ["Пройдено вёслами", dist + " м"],
+    ["Сумма лучших", best],
+    ["Снаряжения", save.gear.length + " из " + GEAR.length],
+    ["Записей в дневнике", save.diary.length]
+  ];
+  document.getElementById("endStats").innerHTML =
+    rows.map(([k,v]) => "<div>" + k + "</div><div><b>" + v + "</b></div>").join("");
+  document.getElementById("endDays").innerHTML =
+    LEVELS.map(L => "★".repeat(starsOf(L.day)) + "☆".repeat(3-starsOf(L.day)) +
+                    " · " + L.place).join("<br>");
+  document.getElementById("endScreen").classList.remove("hidden");
 }
 
 function showDiary(){
@@ -2397,7 +2424,7 @@ function togglePause(){
 
 function hideAllScreens(){
   if (typeof campTimer !== "undefined" && campTimer){ clearInterval(campTimer); campTimer = null; }
-  for (const id of ["startScreen","gameOverScreen","continueScreen","pauseScreen",
+  for (const id of ["startScreen","continueScreen","pauseScreen","endScreen",
                     "mapScreen","finishScreen","failScreen","campScreen","diaryScreen"]){
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
@@ -2427,46 +2454,6 @@ function gmO(){
   return;
 }
 
-function gmO_old(){
-  const total = Math.floor(g.dist) + g.bsc;
-  const prevBest = loadBest();
-  const isBest = total > prevBest;
-  saveBest(total);
-  sessionRuns.push(total);
-
-  g.s = "over";
-  document.getElementById("gameOverScreen").classList.remove("hidden");
-  document.getElementById("finalDist").textContent = Math.floor(g.dist);
-  document.getElementById("finalBonus").textContent = g.bsc;
-  document.getElementById("finalScore").textContent = total;
-  document.getElementById("finalPassed").textContent = g.passed;
-  document.getElementById("bestScore").textContent = loadBest();
-  document.getElementById("newBest").classList.toggle("hidden", !isBest);
-
-  const sessionBest = Math.max.apply(null, sessionRuns);
-  const verdict = document.getElementById("verdict");
-  if (isBest){
-    verdict.textContent = "РЕКОРД ПОБИТ! +" + (total - prevBest);
-    verdict.style.color = "#7fd67f";
-  } else {
-    verdict.textContent = "ДО РЕКОРДА НЕ ХВАТИЛО " + (prevBest - total);
-    verdict.style.color = "#ff8a65";
-  }
-
-  // Последние забеги этой сессии, лучший подсвечен.
-  document.getElementById("sessionBest").textContent =
-    sessionBest + "  (забегов: " + sessionRuns.length + ")";
-  const list = document.getElementById("runs");
-  list.innerHTML = "";
-  const shown = sessionRuns.slice(-6);
-  const offset = sessionRuns.length - shown.length;
-  shown.forEach((v, i) => {
-    const row = document.createElement("div");
-    row.className = "run" + (v === sessionBest ? " top" : "");
-    row.textContent = "#" + (offset + i + 1) + "  " + v + (v === sessionBest ? "  ЛУЧШИЙ" : "");
-    list.appendChild(row);
-  });
-}
 function resumeRun(){
   document.getElementById("continueScreen").classList.add("hidden");
   g.s = "playing";
@@ -2744,8 +2731,8 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX,
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
-  loadBest, saveBest, upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
-  startDay, showMap, showCamp, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
+  upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
+  startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult };
 prerenderAll();
