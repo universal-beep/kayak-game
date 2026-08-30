@@ -1178,35 +1178,63 @@ document.getElementById("resetBtn").addEventListener("click",()=>{
 /* ===== 9. Рендер: русло и берега ===== */
 const BAND = 4;   // высота полосы построчного рендера
 
+// Смешение двух цветов #rrggbb в пропорции k (0..1) -> "rgb(r,g,b)".
+function mixHex(a,b,k){
+  k=Math.max(0,Math.min(1,k));
+  return "rgb("
+    +Math.round(parseInt(a.slice(1,3),16)+(parseInt(b.slice(1,3),16)-parseInt(a.slice(1,3),16))*k)+","
+    +Math.round(parseInt(a.slice(3,5),16)+(parseInt(b.slice(3,5),16)-parseInt(a.slice(3,5),16))*k)+","
+    +Math.round(parseInt(a.slice(5,7),16)+(parseInt(b.slice(5,7),16)-parseInt(a.slice(5,7),16))*k)+")";
+}
+// Детерминированный псевдослучай 0..1 от целого.
+function hsh(n){ n=(n<<13)^n; return (((n*(n*n*15731+789221)+1376312589)>>>0)&0x7fffffff)/0x7fffffff; }
+
 function drwBg(){
+  // Даль смазывается туманом: чем выше на экране (дальше по реке), тем сильнее
+  // трава и вода светлеют к цвету неба. Так возникает мягкий горизонт без рамки,
+  // и сцена читается как «плыву вперёд», а не «мотор вверх».
+  const FOG_END = 320;
   for (let y = 0; y < H; y += BAND){
     const wy = worldYOf(y);
     const c  = centerAt(wy);
     const hw = widthAt(wy)/2;
     const L = c - hw, R = c + hw;
     const rb = rapidBlend(wy);
+    const fy = Math.max(0, (FOG_END - y) / FOG_END);
+    const fog = fy*0.9;
 
-    cx.fillStyle = g.rGrass || "#3f8f43";
+    const grass = mixHex(g.rGrass || "#3f8f43", "#c3d6a8", fog);
+    const water = mixHex(g.rWater || "#1565c0", "#d8e9f5", fog);
+    const sand  = mixHex("#d2b674", "#dfe3c8", fog*0.9);
+    const edge  = mixHex("#0d47a1", "#d8e9f5", fog);
+
+    cx.fillStyle = grass;
     cx.fillRect(0, y, Math.max(0, L), BAND);
     cx.fillRect(Math.min(W, R), y, W - R, BAND);
 
-    cx.fillStyle = "#d2b674";
+    cx.fillStyle = sand;
     cx.fillRect(L - 6, y, 6, BAND);
     cx.fillRect(R, y, 6, BAND);
 
-    cx.fillStyle = g.rWater || "#1565c0";
+    cx.fillStyle = water;
     cx.fillRect(L, y, R - L, BAND);
 
-    cx.fillStyle = "#0d47a1";
+    cx.fillStyle = edge;
     cx.fillRect(L, y, 8, BAND);
     cx.fillRect(R - 8, y, 8, BAND);
+
+    // Середина русла чуть светлее — вода «выпуклая», а не плоская заливка.
+    if (fy < 0.6){
+      cx.fillStyle = "rgba(255,255,255," + (0.05*(1-fy)).toFixed(3) + ")";
+      cx.fillRect(L + (R-L)*0.40, y, (R-L)*0.20, BAND);
+    }
 
     const isl = forkShape(wy);
     if (isl && isl.h > 0.02){
       const ix = c + isl.c*hw, ih = isl.h*hw;
-      cx.fillStyle = "#d2b674";
+      cx.fillStyle = sand;
       cx.fillRect(ix - ih - 5, y, ih*2 + 10, BAND);
-      cx.fillStyle = g.rGrass || "#3f8f43";
+      cx.fillStyle = grass;
       cx.fillRect(ix - ih, y, ih*2, BAND);
       if (Math.sin(wy*0.07) > 0.7){
         cx.fillStyle = "#2f7434";
@@ -1221,6 +1249,40 @@ function drwBg(){
       cx.fillStyle = `rgba(255,255,255,${0.18 + rb*0.42})`;
       const bw = (R - L) * (0.20 + 0.5*Math.abs(Math.sin(wy*0.021)));
       cx.fillRect(L + 8 + ((wy*7) % Math.max(1, R - L - bw - 16)), y, bw, BAND);
+    }
+
+    // Береговой декор: кусты, деревья, камыш. Живут на травяных полосах,
+    // поэтому с руслом (геймплеем) не пересекаются. Рисуются детерминированно
+    // по мировому сантиметру и не шевелятся, когда камера плывёт.
+    // В дали их съедает туман, поэтому там декора нет.
+    if (fy < 0.45 && (wy % 13) < BAND){
+      const vwx = Math.floor(wy/13);
+      const s1 = hsh(vwx*7+3), s2 = hsh(vwx*13+9), s3 = hsh(vwx*17+5);
+      const wob = Math.sin(g.frame*0.05 + vwx)*2;
+      const bushl = mixHex("#2c6a2b", s2 > 0.5 ? "#3f8a35" : "#205324", 0.6);
+      if (s1 > 0.62){
+        const bx = L - 10 - Math.floor(s2*20) + wob;
+        cx.fillStyle = bushl;
+        cx.fillRect(bx, y, 9, BAND); cx.fillRect(bx + 2, y - 4, 5, BAND);
+      } else if (s2 > 0.62){
+        const bx = R + 8 + Math.floor(s1*20) - wob;
+        cx.fillStyle = bushl;
+        cx.fillRect(bx, y, 9, BAND); cx.fillRect(bx + 2, y - 4, 5, BAND);
+      }
+      if (s3 > 0.72){
+        const side = s1 > 0.5 ? 1 : -1;
+        const tx = (side > 0 ? R : L) + side*(12 + Math.floor(s2*26)) + wob;
+        const th = 16 + Math.floor(s3*12);
+        cx.fillStyle = "#33200f";
+        cx.fillRect(tx - 1, y - th + 4, 3, th);
+        cx.fillStyle = mixHex("#2c6a2b", "#245c27", 0.5);
+        cx.fillRect(tx - 6, y - th, 13, 6);
+        cx.fillRect(tx - 3, y - th - 4, 7, 5);
+      }
+      if (s1 > 0.30 && s1 < 0.44 && (wy % 22) < BAND){
+        cx.fillStyle = "#4d6b35";
+        cx.fillRect(L - 4 + (s2 > 0.5 ? 1 : 0), y - 6, 1, 8);
+      }
     }
   }
 }
@@ -2868,7 +2930,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   showFinish, showFail, recordFinish,
   campaignSum,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult, save, sg, isStrikeTap };
+  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
