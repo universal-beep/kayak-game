@@ -70,18 +70,10 @@ canvas { display:block;margin:0 auto; }
 #startScreen .btn,#startScreen .btn:hover,.hidden { display:none !important; }
 #pauseBtn { position:absolute;top:8px;right:8px;width:34px;height:34px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
 #pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.92);pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
-#mobileControls { position:absolute;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:0;right:0;display:none;justify-content:space-between;padding:0 calc(16px + env(safe-area-inset-right,0px)) 0 calc(16px + env(safe-area-inset-left,0px));pointer-events:none; }
-#mobileControls .ctrlgroup { display:flex;gap:10px; }
-#mobileControls .ctrl { width:66px;height:66px;background:rgba(79,195,247,0.2);border:3px solid rgba(79,195,247,0.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#4fc3f7;pointer-events:all; }
-@media (max-width:768px),(hover:none) and (pointer:coarse) { #mobileControls { display:flex; } }
-/* Альбомная ориентация телефона: раньше кнопки ложились горизонтально друг
-   на друга по всей ширине и перекрывали лодку. Теперь они стоят по углам
-   колонками, а середина реки — где ходит байдарка — остаётся открытой. */
-@media (orientation:landscape) and (max-height:560px) {
-  #mobileControls { bottom:0; }
-  #mobileControls .ctrlgroup { flex-direction:column; }
-  #mobileControls .ctrl { width:46px;height:46px;font-size:22px;border-radius:8px;background:rgba(79,195,247,0.14); }
-}
+#mHint { position:absolute;top:14%;left:50%;transform:translateX(-50%);background:rgba(4,10,20,0.82);border:2px solid #4fc3f7;border-radius:8px;padding:10px 14px;font-family:"Press Start 2P",monospace;font-size:7px;color:#cfd8c5;line-height:2;text-align:center;z-index:6;pointer-events:none;opacity:1;transition:opacity .8s; }
+#mHint b { color:#4fc3f7;font-weight:normal; }
+#mHint.hide { opacity:0; }
+@media (min-width:769px) and (hover:hover) { #mHint { display:none; } }
 </style>
 </head>
 <body>
@@ -183,15 +175,10 @@ canvas { display:block;margin:0 auto; }
     <button class="btn" id="contBtn">&gt; ПРОДОЛЖИТЬ &lt;</button>
   </div>
 </div>
-<div id="mobileControls">
-  <div class="ctrlgroup">
-    <div class="ctrl" id="btnLeft">◀</div>
-    <div class="ctrl" id="btnRight">▶</div>
-  </div>
-  <div class="ctrlgroup">
-    <div class="ctrl" id="btnBack">▼</div>
-    <div class="ctrl" id="btnFwd">▲</div>
-  </div>
+<div id="mHint">
+  <div><b>ВЕДИ ПАЛЕЦ</b> — РУЛЬ</div>
+  <div><b>ПАЛЕЦ СВЕРХУ</b> — ГРЕБИ&nbsp;&nbsp;·&nbsp;&nbsp;<b>ПАЛЕЦ СНИЗУ</b> — ТАБАНЬ</div>
+  <div><b>ДВОЙНОЙ ТАП</b> — УДАР ВЕСЛОМ</div>
 </div>
 <div id="pauseBtn" class="hidden">II</div>
 <canvas id="game"></canvas>
@@ -202,7 +189,7 @@ const W=420,H=720;c.width=W;c.height=H;
 function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -928,6 +915,9 @@ function rowInput(){
   let f = 0;
   if (keys["ArrowUp"]   || keys["w"] || keys["W"] || keys["ц"] || keys["Ц"] || g.btnFwd)  f += 1;
   if (keys["ArrowDown"] || keys["s"] || keys["S"] || keys["ы"] || keys["Ы"] || g.btnBack) f -= 1;
+  // Мобильная версия без кнопок: скорость задаётся вертикальной зоной экрана
+  // (палец вверху = вперёд, внизу = табань, середина = по инерции).
+  if (g.mSpeed !== null && g.mSpeed !== undefined) f += g.mSpeed;
   return f;
 }
 
@@ -1081,43 +1071,59 @@ addEventListener("keydown",e=>{
 addEventListener("keyup",e=>{keys[e.key]=false;});
 // Потеря фокуса (Alt+Tab, другое окно) — клавиши не должны «залипать».
 addEventListener("blur",()=>{for(const k in keys)keys[k]=false;});
-let tapX=0,tapY=0,tapT=0,tapMoved=false;
-// Решает, можно ли считать прикосновение ударом веслом. Отдельная функция,
-// чтобы удар был тестируемым, а не зашитым в обработчик.
+// Решает, можно ли считать прикосновение коротким тапом (а не ведением).
+// Отдельная функция, чтобы тап был тестируемым, а не зашитым в обработчик.
 function isStrikeTap(ms, dx, dy){
   return ms < 260 && Math.abs(dx) < 12 && Math.abs(dy) < 12;
 }
+// Второй тап в паре — удар веслом.
+function doubleStrike(now, last){
+  return last > 0 && (now - last) < 340;
+}
+// «Гребля/табань» по вертикальной зоне экрана: палец вверху — вперёд,
+// внизу — назад, середина — плывём по инерции.
+function speedFromScreenY(my){
+  if (my <= H*0.38) return 1;
+  if (my >= H*0.62) return -1;
+  return 0;
+}
+let tapX=0,tapY=0,tapT=0,tapMoved=false,tapSeqT=0;
 c.addEventListener("touchstart",e=>{e.preventDefault();const r=c.getBoundingClientRect();
   mt=(e.touches[0].clientX-r.left)*(W/r.width);
   tapX=e.touches[0].clientX;tapY=e.touches[0].clientY;tapT=Date.now();tapMoved=false;
   if(g.s=="cutscene"){endCut();return;}
-  if(g.s=="start"||g.s=="over"||g.s=="continue")hs();},{passive:false});
+  if(g.s=="start"||g.s=="over"||g.s=="continue"){hs();return;}
+  if(g.s=="playing")g.mSpeed=speedFromScreenY((e.touches[0].clientY-r.top)*(H/r.height));
+},{passive:false});
 c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();
   mt=(e.touches[0].clientX-r.left)*(W/r.width);
-  // Палец поехал — это руление, а не замах: подняв палец там же, где начал,
-  // игрок не должен случайно ударить веслом.
-  if(Math.abs(e.touches[0].clientX-tapX)>12||Math.abs(e.touches[0].clientY-tapY)>12)tapMoved=true;},{passive:false});
+  if(g.s=="playing")g.mSpeed=speedFromScreenY((e.touches[0].clientY-r.top)*(H/r.height));
+  // Палец поехал — это руление, а не тап: серия двойного тапа прерывается.
+  if(Math.abs(e.touches[0].clientX-tapX)>12||Math.abs(e.touches[0].clientY-tapY)>12){
+    tapMoved=true; tapSeqT=0;
+  }
+},{passive:false});
 c.addEventListener("touchend",e=>{e.preventDefault();
-  // Короткий тап без ведения — удар веслом. Ведение пальцем занято рулением.
   const t=e.changedTouches[0];
-  if(g.s=="playing"&&!tapMoved&&isStrikeTap(Date.now()-tapT, t.clientX-tapX, t.clientY-tapY))
-    paddleStrike();
+  if(g.s=="playing"){
+    g.mSpeed=null;
+    // Короткий тап без ведения: первый — перекладывает руль в точку касания,
+    // второй в течение 340мс — удар веслом.
+    if(!tapMoved&&isStrikeTap(Date.now()-tapT, t.clientX-tapX, t.clientY-tapY)){
+      const now=Date.now();
+      if(doubleStrike(now, tapSeqT)){ paddleStrike(); tapSeqT=0; }
+      else tapSeqT=now;
+    }
+  }
   mt=null;},{passive:false});
-for(const[id,fld]of[["btnFwd","btnFwd"],["btnBack","btnBack"]]){
-  const el=document.getElementById(id);
-  el.addEventListener("touchstart",e=>{e.preventDefault();g[fld]=true;},{passive:false});
-  el.addEventListener("touchend",e=>{e.preventDefault();g[fld]=false;},{passive:false});
-  el.addEventListener("mousedown",()=>g[fld]=true);
-  el.addEventListener("mouseup",()=>g[fld]=false);
-  el.addEventListener("mouseleave",()=>g[fld]=false);
-}
-for(const[id,k]of[["btnLeft","ArrowLeft"],["btnRight","ArrowRight"]]){
-  const el=document.getElementById(id);
-  el.addEventListener("touchstart",e=>{e.preventDefault();keys[k]=true;},{passive:false});
-  el.addEventListener("touchend",e=>{e.preventDefault();keys[k]=false;},{passive:false});
-  el.addEventListener("mousedown",()=>keys[k]=true);
-  el.addEventListener("mouseup",()=>keys[k]=false);
-  el.addEventListener("mouseleave",()=>keys[k]=false);
+// Обучающий оверлей для мобильной версии — что какой тап делает.
+function showMobileHint(){
+  if(typeof matchMedia==="undefined")return;
+  if(!matchMedia("(hover:none) and (pointer:coarse)").matches)return;
+  const el=document.getElementById("mHint");
+  el.classList.remove("hide");
+  clearTimeout(g._mhT);
+  g._mhT=setTimeout(()=>el.classList.add("hide"), 8000);
 }
 function hs(){startMusic();if(g.s=="continue"){resumeRun();return;}if(g.s=="start")showMap();}
 document.getElementById("startBtn").addEventListener("click",()=>{startMusic();showMap();});
@@ -2584,6 +2590,7 @@ function startDay(idx){
   g.day = Math.max(0, Math.min(idx, LEVELS.length - 1));
   hideAllScreens();
   sg();
+  showMobileHint();
 }
 
 function togglePause(){
@@ -2620,7 +2627,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
@@ -2930,7 +2937,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   showFinish, showFail, recordFinish,
   campaignSum,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg };
+  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
