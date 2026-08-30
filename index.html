@@ -2961,7 +2961,17 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, drwCut };
 prerenderAll();
-if (typeof __KAYAK_TEST__ === "undefined") lp();
+if (typeof __KAYAK_TEST__ === "undefined"){
+  // Режим просмотра катсцен без прохождения игры: ?cut=night|morning|drive|finale (или all — по кругу).
+  const cutPreview = new URLSearchParams(location.search).get("cut");
+  if (cutPreview && (cutPreview === "all" || CUTS[cutPreview])){
+    const seq = cutPreview === "all" ? Object.keys(CUTS) : [cutPreview];
+    let ci = 0;
+    const loop = () => { if (cutPreview === "all") ci = (ci + 1) % seq.length; playCut(seq[ci], loop); };
+    playCut(seq[ci], loop);
+  }
+  lp();
+}
 </script>
 </body>
 </html>
