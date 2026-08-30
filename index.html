@@ -991,7 +991,7 @@ function paddleStrike(){
     spPt(ox, oy, "#ffd54f", 26);
     g.obs.splice(i, 1);
     addBonus(75); g.shake = 9; g.parries++; sfx("parry");
-    popText("ПАРИРОВАЛ +75", "#ffd54f");
+    popText("ПАРИРОВАЛ +" + award(75), "#ffd54f");
     // Перевернувшийся соперник роняет своё снаряжение.
     const kind = ["bread","whisky","medkit","axe"][Math.floor(Math.random()*4)];
     g.bns.push({ t:o.t, wy:o.wy, type:kind, visHalf:spriteSize(BN_SPRITE[kind]).w/2 });
@@ -1109,35 +1109,46 @@ function speedFromScreenY(my){
   if (my >= H*0.62) return -1;
   return 0;
 }
-let tapX=0,tapY=0,tapT=0,tapMoved=false,tapSeqT=0;
-c.addEventListener("touchstart",e=>{e.preventDefault();const r=c.getBoundingClientRect();
-  mt=(e.touches[0].clientX-r.left)*(W/r.width);
-  tapX=e.touches[0].clientX;tapY=e.touches[0].clientY;tapT=Date.now();tapMoved=false;
+let tapX=0,tapY=0,tapT=0,tapMoved=false,tapSeqT=0,mDown=false;
+// Мышь и тач гребут одним кодом: указатель в логических координатах канваса.
+// Отдельные функции, чтобы руление было тестируемым (и не зависело от события).
+function ptrClientPos(ev){
+  const r=c.getBoundingClientRect();
+  return { x:(ev.clientX||ev.touches[0].clientX-r.left)*(W/(r.width||W)),
+           y:(ev.clientY||ev.touches[0].clientY-r.top)*(H/(r.height||H)) };
+}
+function ptrStart(x,y){
+  mt=x;
+  tapX=x;tapY=y;tapT=Date.now();tapMoved=false;
   if(g.s=="cutscene"){endCut();return;}
   if(g.s=="start"||g.s=="over"||g.s=="continue"){hs();return;}
-  if(g.s=="playing")g.mSpeed=speedFromScreenY((e.touches[0].clientY-r.top)*(H/r.height));
-},{passive:false});
-c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();
-  mt=(e.touches[0].clientX-r.left)*(W/r.width);
-  if(g.s=="playing")g.mSpeed=speedFromScreenY((e.touches[0].clientY-r.top)*(H/r.height));
-  // Палец поехал — это руление, а не тап: серия двойного тапа прерывается.
-  if(Math.abs(e.touches[0].clientX-tapX)>12||Math.abs(e.touches[0].clientY-tapY)>12){
-    tapMoved=true; tapSeqT=0;
-  }
-},{passive:false});
-c.addEventListener("touchend",e=>{e.preventDefault();
-  const t=e.changedTouches[0];
+  if(g.s=="playing")g.mSpeed=speedFromScreenY(y);
+}
+function ptrMove(x,y){
+  mt=x;
+  if(g.s=="playing")g.mSpeed=speedFromScreenY(y);
+  // Указатель поехал — это руление, а не тап: серия двойного тапа прерывается.
+  if(Math.abs(x-tapX)>12||Math.abs(y-tapY)>12){tapMoved=true;tapSeqT=0;}
+}
+function ptrEnd(x,y){
   if(g.s=="playing"){
     g.mSpeed=null;
     // Короткий тап без ведения: первый — перекладывает руль в точку касания,
     // второй в течение 340мс — удар веслом.
-    if(!tapMoved&&isStrikeTap(Date.now()-tapT, t.clientX-tapX, t.clientY-tapY)){
+    if(!tapMoved&&isStrikeTap(Date.now()-tapT, x-tapX, y-tapY)){
       const now=Date.now();
       if(doubleStrike(now, tapSeqT)){ paddleStrike(); tapSeqT=0; }
       else tapSeqT=now;
     }
   }
-  mt=null;},{passive:false});
+  mt=null;
+}
+c.addEventListener("touchstart",e=>{e.preventDefault();const p=ptrClientPos(e);ptrStart(p.x,p.y);},{passive:false});
+c.addEventListener("touchmove",e=>{e.preventDefault();const p=ptrClientPos(e);ptrMove(p.x,p.y);},{passive:false});
+c.addEventListener("touchend",e=>{e.preventDefault();ptrEnd(tapX,tapY);},{passive:false});
+c.addEventListener("mousedown",e=>{if(e.button!==0)return;e.preventDefault();mDown=true;const p=ptrClientPos(e);ptrStart(p.x,p.y);});
+c.addEventListener("mousemove",e=>{if(!mDown)return;e.preventDefault();const p=ptrClientPos(e);ptrMove(p.x,p.y);});
+c.addEventListener("mouseup",e=>{if(e.button!==0)return;e.preventDefault();mDown=false;const p=ptrClientPos(e);ptrEnd(p.x,p.y);});
 // Обучающий оверлей для мобильной версии — что какой тап делает.
 function showMobileHint(){
   if(typeof matchMedia==="undefined")return;
@@ -1151,6 +1162,7 @@ function hs(){startMusic();if(g.s=="continue"){resumeRun();return;}if(g.s=="star
 document.getElementById("startBtn").addEventListener("click",()=>{startMusic();showMap();});
 document.getElementById("contBtn").addEventListener("click",()=>{startMusic();resumeRun();});
 function recordFinish(){
+  if (g.s !== "finish") return;   // Enter + клик по сфокусированной кнопке не дублируются
   const L = level(), total = g.pendingScore || 0;
   if (!save.name){
     const v = (document.getElementById("finName").value || "").trim().slice(0,12);
@@ -1160,6 +1172,7 @@ function recordFinish(){
   renderBoard(L.day, total);
 }
 function nextDay(){
+  if (g.s !== "finish") return;   // повторный вызов (Enter + клик) день не двигает
   // После последнего дня — финал с вокзалом и электричкой.
   if(g.day>=LEVELS.length-1){ playCut("finale", showCampaignEnd); return; }
   const wasRiver = LEVELS[g.day].river;
@@ -2132,7 +2145,7 @@ function chkBridges(){
     for (const sgn of [-1, 1])
       if (Math.abs((g.t - sgn*PIER_T)*hw) < PIER_HALF_PX + KAYAK_R) hit = true;
     if (hit){ damage(); popText("В ОПОРУ!","#ff5252"); }
-    else { g.bridges++; addScore(40); popText("В ПРОЛЁТ +40","#7fd67f"); sfx("bonus"); }
+    else { g.bridges++; addScore(40); popText("В ПРОЛЁТ +" + award(40),"#7fd67f"); sfx("bonus"); }
   }
 }
 
@@ -2477,8 +2490,11 @@ const INV_FRAMES = 90, BREAD_FRAMES = 480, WHISKY_FRAMES = 360, AXE_RANGE = 360;
 // Виски обещало двойные очки — а множителя в коде не было вовсе.
 // Теперь все начисления идут через эти две функции.
 function scoreMul(){ return g.whiskyT > 0 ? 2 : 1; }
-function addScore(n){ g.sc  += Math.round(n * scoreMul()); }
-function addBonus(n){ g.bsc += Math.round(n * scoreMul()); }
+// Число, которое реально зачислится под виски: поп-апы обязаны показывать
+// его, а не базовое — иначе экран врёт игроку про награду.
+function award(n){ return Math.round(n * scoreMul()); }
+function addScore(n){ g.sc  += award(n); }
+function addBonus(n){ g.bsc += award(n); }
 
 // Шанс аптечки удваивается при низкой прочности. Игрок этого не замечает,
 // но получает ощущение «на грани вытянул».
@@ -2649,7 +2665,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
@@ -2756,7 +2772,7 @@ function upd(){
   for (const o of g.obs)
     if (o.type === "kayaker" && !o.passed && o.wy < g.pwy - 30){
       o.passed = true; g.passed++; addScore(15);
-      popText("ОБГОН +15", "#7fd67f");
+      popText("ОБГОН +" + award(15), "#7fd67f");
     }
 
   // Комбо: проход впритирку мимо препятствия без удара наращивает множитель.
@@ -2777,7 +2793,7 @@ function upd(){
       const add = (tight ? 5 : 2) * Math.min(12, g.combo);
       addScore(add);
       if (tight && g.combo % 3 === 0)
-        popText("ВПРИТИРКУ x" + g.combo + "  +" + add, "#ffd54f");
+        popText("ВПРИТИРКУ x" + g.combo + "  +" + award(add), "#ffd54f");
     }
   }
   if (g.comboT > 0){ g.comboT--; if (g.comboT === 0) g.combo = 0; }
@@ -2787,7 +2803,7 @@ function upd(){
   // Чистый проход порога: вошёл — взводим флаг, вышел без удара — награда.
   const inRapid = rapidBlend(g.pwy) > 0.5;
   if (inRapid && !g.wasRapid) g.cleanRun = true;
-  if (!inRapid && g.wasRapid && g.cleanRun){ addBonus(150); g.cleanRapids++; sfx("clean"); popText("ЧИСТЫЙ ПРОХОД +150","#ffd54f"); }
+  if (!inRapid && g.wasRapid && g.cleanRun){ addBonus(150); g.cleanRapids++; sfx("clean"); popText("ЧИСТЫЙ ПРОХОД +" + award(150), "#ffd54f"); }
   g.wasRapid = inRapid;
   // Кильватерный след за кормой.
   g.wake.push({ t: g.t, wy: g.pwy });
@@ -2905,7 +2921,7 @@ function upd(){
         fk.taken = (g.t < sh.c) ? -1 : 1;
         const narrowSide = fk.narrowLeft ? -1 : 1;
         if (fk.taken === narrowSide){
-          addBonus(120); sfx("bonus"); popText("УЗКИМ РУКАВОМ +120", "#ffd54f");
+          addBonus(120); sfx("bonus"); popText("УЗКИМ РУКАВОМ +" + award(120), "#ffd54f");
         } else {
           popText("ШИРОКИМ РУКАВОМ", "#9aa9b2");
         }
@@ -2956,10 +2972,10 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
-  showFinish, showFail, recordFinish,
+  showFinish, showFail, recordFinish, nextDay,
   campaignSum,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, drwCut };
+  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, drwCut, ptrStart, ptrMove, ptrEnd, award };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined"){
   // Режим просмотра катсцен без прохождения игры: ?cut=night|morning|drive|finale (или all — по кругу).
