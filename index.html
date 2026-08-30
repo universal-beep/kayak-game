@@ -55,6 +55,9 @@ canvas { display:block;margin:0 auto; }
 .gitem button { font-family:"Press Start 2P",monospace;font-size:7px;padding:6px 8px;background:#4fc3f7;color:#12202e;border:none;cursor:pointer;white-space:nowrap; }
 .gitem button:disabled { background:#2c3b47;color:#6b7a86;cursor:default; }
 .gitem.owned .gn { color:#7fd67f; }
+.gitem.owned { border:1px solid rgba(127,214,127,0.45); }
+#campToast { position:fixed;left:50%;top:16%;transform:translateX(-50%);background:rgba(14,20,30,0.95);color:#ffd54f;border:1px solid #ffd54f;padding:10px 16px;border-radius:8px;font-family:"Press Start 2P",monospace;font-size:9px;letter-spacing:1px;opacity:0;transition:opacity .3s;z-index:60;pointer-events:none;white-space:nowrap; }
+#campToast.show { opacity:1; }
 #continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;pointer-events:all; }
 #continueScreen h1 { font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;margin-bottom:22px;letter-spacing:2px; }
 #continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
@@ -115,6 +118,7 @@ canvas { display:block;margin:0 auto; }
     <div class="gear" id="gearList"></div>
     <button class="btn small" id="goBtn">В ПУТЬ</button>
   </div>
+  <div id="campToast"></div>
   <div id="mapScreen" class="hidden">
     <h1 class="maph">МАРШРУТ</h1>
     <div class="wallet">Рюкзак: <span id="mapWallet">0</span> &nbsp;|&nbsp; Звёзд: <span id="mapStars">0</span>/27</div>
@@ -1457,7 +1461,10 @@ function commitSave(){
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e){}
 }
 function resetSave(){
-  save = JSON.parse(JSON.stringify(SAVE_DEFAULT));
+  // Мутируем объект на месте, а не перевязываем: экспортируемая ссылка
+  // save должна оставаться живой (пробы читают save.gear напрямую).
+  const fresh = JSON.parse(JSON.stringify(SAVE_DEFAULT));
+  for (const k in fresh) save[k] = fresh[k];
   commitSave();
   // Иначе музыка «возвращалась» при перезагрузке: сохранялось старое.
   musicOn = save.music !== false;
@@ -1598,6 +1605,21 @@ function drwHUD(){
     cx.fillRect(W - 27 - i*26, 59, 24, 8);
   }
   if (g.sh){ cx.fillStyle = "#4fc3f7"; cx.fillRect(W - 30 - mhp*26, 57, 14, 13); }
+  // Снаряжение видно всю дорогу: купил — носишь. Раньше «запасное весло»
+  // и «гермомешок» действовали молча, и покупки казались пустыми.
+  const GEAR_BADGES = [["helmet","К","#4fc3f7"],["paddle","В","#7fd67f"],
+                       ["drybag","Г","#ffd54f"],["ration","С","#e53935"]];
+  let gi = 0;
+  for (const [ge,ch,col] of GEAR_BADGES){
+    if (!hasGear(ge)) continue;
+    cx.fillStyle = "rgba(0,0,0,0.5)";
+    cx.fillRect(W - 34 - gi*20, 76, 14, 14);
+    cx.strokeStyle = col; cx.lineWidth = 1;
+    cx.strokeRect(W - 34 - gi*20, 76, 14, 14);
+    cx.fillStyle = col; cx.font = "bold 8px " + F; cx.textAlign = "left";
+    cx.fillText(ch, W - 31 - gi*20, 86);
+    gi++;
+  }
 
   let ey = 96;
   if (g.breadT  > 0){ drwEffBar("ГРЕБОК+", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
@@ -1781,6 +1803,17 @@ function drwCampArt(){
 
 let campFrame = 0, campTimer = null;
 
+let campToastT;
+function campToast(text){
+  const el = document.getElementById("campToast");
+  if (!el) return;
+  el.textContent = text;
+  el.classList.add("show");
+  if (typeof clearTimeout !== "undefined") clearTimeout(campToastT);
+  if (typeof setTimeout !== "function") return;
+  campToastT = setTimeout(() => { el.classList.remove("show"); }, 1900);
+}
+
 function showCamp(){
   hideAllScreens();
   g.s = "camp";
@@ -1797,13 +1830,17 @@ function showCamp(){
     const el = document.createElement("div");
     el.className = "gitem" + (owned ? " owned" : "");
     el.innerHTML = "<div><div class='gn'>" + it.name + "</div><div class='gnote'>" +
-      (locked ? "нужно звёзд: " + it.stars + " · сейчас " + st : it.note) + "</div></div>";
+      (locked ? "нужно звёзд: " + it.stars + " · сейчас " + st
+              : (owned ? "в рюкзаке — " + it.note : it.note)) + "</div></div>";
     const b = document.createElement("button");
-    b.textContent = owned ? "ЕСТЬ" : (locked ? "★" + it.stars : it.price);
+    b.textContent = owned ? "✓ В РЮКЗАКЕ" : (locked ? "★" + it.stars : it.price);
     b.disabled = owned || locked || save.wallet < it.price;
     b.onclick = () => {
       if (hasGear(it.id) || locked || save.wallet < it.price) return;
       save.wallet -= it.price; save.gear.push(it.id); commitSave();
+      // Покупка должна быть видна: раньше все четыре предмета действовали
+      // молча, и бонусы «казались пустыми».
+      campToast("КУПЛЕНО: " + it.name + "  ·  −" + it.price + " монет");
       sfx("bonus"); showCamp();
     };
     el.appendChild(b);
@@ -2796,7 +2833,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult };
+  ensureBoard, addResult, save, sg };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
