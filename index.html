@@ -395,6 +395,30 @@ const SPR = {
   fish:{map:["..kkk..",".kWWWkk","kWWWWWk",".kWWWkk","..kkk.."],noOutline:true},
   fire:{map:["....kk....","...kuuk...","..kuyyuk..","..kyyyyk..",".kyyrryyk.",
     ".kyrrrryk.","kOOkkkkOOk",".kOOOOOOk.","..kkkkkk.."],noOutline:true},
+  // Три кадра пламени одного костра: тот же кострище из камней, разная форма
+  // огня. Движок катсцен циклит их через «cycle» — дешёвое мерцание без анимации.
+  fire0:{map:["....kk....","...kuuk...","..kuyyuk..","..kyyyyk..",".kyyrryyk.",
+    ".kyrrrryk.","kOOkkkkOOk",".kOOOOOOk.","..kkkkkk.."],noOutline:true},
+  fire1:{map:[".....kk...","....kuuk..","...kuyyuk.","..kuyyyuk.","..kyrrryk.",
+    ".kyrrrryk.","kOOkkkkOOk",".kOOOOOOk.","..kkkkkk.."],noOutline:true},
+  fire2:{map:["...kkk....","..kuuuk...","..kuyyuk..",".kuyyyuk..",".kyrryyrk.",
+    ".kyrrrrrk.","kOOkkkkOOk",".kOOOOOOk.","..kkkkkk.."],noOutline:true},
+  // Тёмный силуэт туриста внутри освещённой палатки.
+  sil:{map:["...kk...","..kKKk..","..kKKk..","..kkkk..",".kKKKKk.",
+    ".kKKKKk.",".kKKKKk.",".kkkkkk."],noOutline:true},
+  // Ель-силуэт: ряд таких по горизонту даёт полосу дальнего леса в ночной сцене.
+  fir:{map:["....kkk....","...kKKKk...","..kKKKKKk..",".kKKKKKKKk.","kKKKKKKKKKk",
+    ".kKKKKKKKk.","..kKKKKKk..","...kKKKk...","....kKk....","..kKKKKKk..",
+    "..kKKKKKk..","..kkkkkkk.."],noOutline:true},
+  // Кадры покачивания туриста-гитариста: вторая фаза — голова на пиксель ниже.
+  sitter_b:{map:["..............",".....kkkk.....","....kttttk....","....kttttk....",
+    "....kkttkk....","...krrrrrrk...","..krrrrrrrrk..",".krrrrrrrrrrk.",
+    ".krrrrrrrrrrk.","kZZZkrrrrkZZZk","kZZZZkkkkZZZZk","kOOZZZZZZZZOOk"],noOutline:true},
+  // Кадр ходьбы: те же торс и руки, ноги в шаге — циклится с «person».
+  person_w1:{map:["....kkkk....","...kttttk...","...kttttk...","...kkttkk...",
+    "..krrrrrrk..",".krrrrrrrrk.","krrrrrrrrrrk","krrrrrrrrrrk",".krrrrrrrrk.",
+    "..kZZZZZZk..","..kZZZZZZk..","...kZZkZZ...","...kZZkZZ...","...kZZkZZ...",
+    ".kOOkkkkOOk.",".kkkkkkkkkk."],noOutline:true},
   tower:{map:[".......kk.......","......kIIk......",".....kIIIIk.....","....kIIIIIIk....",
     "...kIIIIIIIIk...","..kIIIIIIIIIIk..",".kIIIIIIIIIIIIk.","kkkkkkkkkkkkkkkk",
     "kOwwwwwwwwwwwwOk","kOwkkwwkkwwkkwOk","kOwwwwwwwwwwwwOk","kOOOOOOOOOOOOOOk",
@@ -431,10 +455,13 @@ function shearMap(map, dir){
 SPR.kayak_center = { map: swapPalette(SPR.rower.map, { r:"w", z:"r", p:"u", x:"Y" }) };
 SPR.kayak_left   = { map: shearMap(SPR.kayak_center.map, -1) };
 SPR.kayak_right  = { map: shearMap(SPR.kayak_center.map,  1) };
+// Палатка с освещённым изнутри входом: вся тёмная лента входа становится
+// тёплой, силуэт туриста внутри — отдельный спрайт сверху.
+SPR.tent_lit = { map: swapPalette(SPR.tent.map, { K:"A" }), noOutline:true };
 
 // Часть спрайтов рисуется в меньшем масштабе, чтобы не подавлять остальные.
 const SPR_SCALE = { whisky:2, axe:2, medkit:2, slice:2, duck:2, fire:2, snag:3, barge:4,
-                    car:3, train:3, station:3 };
+                    car:3, train:3, station:3, fire0:2, fire1:2, fire2:2 };
 function scaleOf(name){ return SPR_SCALE[name] || SCALE; }
 
 function spriteSize(name){
@@ -668,13 +695,33 @@ function lerp(a, b, k){ return a + (b - a) * Math.max(0, Math.min(1, k)); }
 
 // Каждый актёр: спрайт, ключевые кадры [доляВремени, x, y, масштаб, альфа]
 const CUTS = {
+  // Ночь по Gemini-референсу: дальний лес елей, палатки, костёр с тремя кадрами
+  // пламени и искрами, гитарист у огня, турист уходит из костра к крайней
+  // палатке — и вход загорается тёплым светом с силуэтом внутри.
   night: { sky:"night", ground:"#1d3324", caption:"Ночёвка на берегу",
+    fx:{ glow:{ x:210, y:300, r0:26, r1:46 },
+         sparks:{ x:210, y:302, n:9, h:74, spread:15, life:66 } },
     actors:[
-      { spr:"tent",   keys:[[0,120,300,1,1],[1,120,300,1,1]] },
-      { spr:"tent",   keys:[[0,300,290,0.8,1],[1,300,290,0.8,1]] },
-      { spr:"fire",   keys:[[0,210,300,0.6,0],[0.25,210,300,1.1,1],[1,210,300,1.2,1]] },
-      { spr:"sitter", keys:[[0,160,306,0.9,0],[0.4,160,306,0.9,1],[1,160,306,0.9,1]] },
-      { spr:"person", keys:[[0,-40,300,0.9,1],[0.45,258,300,0.9,1],[1,258,300,0.9,1]] }
+      { spr:"fir", keys:[[0,36,284,0.6,1],[1,36,284,0.6,1]] },
+      { spr:"fir", keys:[[0,120,280,0.75,1],[1,120,280,0.75,1]] },
+      { spr:"fir", keys:[[0,210,282,0.65,1],[1,210,282,0.65,1]] },
+      { spr:"fir", keys:[[0,330,278,0.8,1],[1,330,278,0.8,1]] },
+      { spr:"fir", keys:[[0,404,285,0.55,1],[1,404,285,0.55,1]] },
+      { spr:"kayak_center", keys:[[0,338,338,0.6,1],[1,338,338,0.6,1]] },
+      { spr:"kayak_center", keys:[[0,372,350,0.55,1],[1,372,350,0.55,1]] },
+      { spr:"tent", keys:[[0,72,302,0.75,1],[1,72,302,0.75,1]] },
+      { spr:"tent", keys:[[0,300,290,0.9,1],[1,300,290,0.9,1]] },
+      { spr:"fire0", cycle:{ per:6, spr:["fire0","fire1","fire2"] },
+        keys:[[0,210,300,0.6,0],[0.25,210,300,1.1,1],[1,210,300,1.1,1]] },
+      { spr:"sitter", cycle:{ per:14, spr:["sitter","sitter_b"] },
+        keys:[[0,164,306,0.9,0],[0.3,164,306,0.9,1],[1,164,306,0.9,1]] },
+      { spr:"sitter", keys:[[0,256,306,0.9,0],[0.4,256,306,0.9,1],[1,256,306,0.9,1]] },
+      { spr:"sitter", keys:[[0,140,306,0.9,1],[0.16,140,306,0.9,1],[0.22,140,306,0.9,0],[1,140,306,0.9,0]] },
+      { spr:"person", cycle:{ per:9, spr:["person","person_w1"] },
+        keys:[[0,140,300,0.9,0],[0.22,140,300,0.9,0],[0.28,140,298,0.9,1],
+              [0.58,295,300,0.9,1],[0.63,302,300,0.9,0],[1,302,300,0.9,0]] },
+      { spr:"tent_lit", keys:[[0,300,290,0.9,0],[0.66,300,290,0.9,0],[0.74,300,290,0.9,1],[1,300,290,0.9,1]] },
+      { spr:"sil", keys:[[0,300,284,0.32,0],[0.74,300,284,0.32,0],[0.82,300,284,0.32,1],[1,300,284,0.32,1]] }
     ] },
   morning: { sky:"morning", ground:"#2c4a2f", caption:"Утро. Идём дальше",
     actors:[
@@ -739,12 +786,62 @@ function cutScr(cw, ch){
   return { s, xf, yf };
 }
 
+// Состояние актёра в момент времени t (в кадрах): интерполяция по ключам,
+// как в drwCut, плюс подстановка кадра из «cycle». Чистая функция — её держат
+// тесты. cycle: { per, spr:[имена] } — кадр меняется каждые per кадров.
+function cutState(a, t){
+  const ks = a.keys;
+  const k = t / CUT_LEN;
+  let i = 0;
+  while (i < ks.length-2 && k > ks[i+1][0]) i++;
+  const k0 = ks[i], k1 = ks[Math.min(i+1, ks.length-1)];
+  const span = Math.max(1e-6, k1[0]-k0[0]);
+  const u = (k - k0[0]) / span;
+  let spr = a.spr;
+  if (a.cycle && a.cycle.spr.length)
+    spr = a.cycle.spr[Math.floor(t / a.cycle.per) % a.cycle.spr.length];
+  return { spr, x: lerp(k0[1],k1[1],u), y: lerp(k0[2],k1[2],u),
+    scl: lerp(k0[3],k1[3],u), al: lerp(k0[4],k1[4],u) };
+}
+
+// Эффекты сцены по времени: свет (glow) и искры. Всё детерминировано, без
+// случайности — картинка в тестах воспроизводится кадр в кадр. Искры летят
+// вверх, разгораются и гаснут; свечение пульсирует двумя гармониками.
+function cutFx(sc, t){
+  const fx = sc.fx || {};
+  let glow = null;
+  if (fx.glow){
+    const g0 = fx.glow;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.10 + 0.7) * 0.6 +
+                         0.5 * Math.sin(t * 0.23 + 1.7) * 0.4;
+    glow = { x: g0.x, y: g0.y, r: Math.max(3, g0.r0 + (g0.r1 - g0.r0) * pulse) };
+  }
+  const sparks = [];
+  if (fx.sparks){
+    const s0 = fx.sparks;
+    const life = s0.life || 60;
+    const stagger = life / Math.max(1, s0.n);
+    for (let i = 0; i < s0.n; i++){
+      const p = ((t - i * stagger) % life + life) % life / life;
+      if (p > 0.95) continue;
+      const sway = Math.sin(i * 12.9898 + p * 6.283 * 1.7);
+      const x = s0.x + sway * s0.spread * (1 - p * 0.55);
+      const y = s0.y - p * s0.h;
+      sparks.push({
+        x: Math.round(x), y: Math.round(y),
+        c: p < 0.45 ? "#ffe853" : "#e65319",
+        a: Math.max(0, Math.min(1, p * 5, (1 - p) * 5))
+      });
+    }
+  }
+  return { glow, sparks };
+}
+
 // Небо на весь экран, земля прижата к низу, актёры — по сцене, подпись — по
 // центру нижней полосы. Разные пропорции окна не ломают композицию: ширина
 // раскрывается за край канваса (деревья проезжают через весь экран).
 function drwCut(){
   const sc = CUTS[g.cut.name];
-  const k = g.cut.t / CUT_LEN;
   const cw = c.width, ch = c.height;
   const { s, xf, yf } = cutScr(cw, ch);
   const sky = CUT_SKY[sc.sky];
@@ -760,24 +857,39 @@ function drwCut(){
   }
   const gy = Math.round(320*s);
   cx.fillStyle = sc.ground; cx.fillRect(0, gy, cw, ch-gy);
+  // тёплое свечение костра — под актёрами, чтобы не перекрывать силуэты
+  const fx = cutFx(sc, g.cut.t);
+  if (fx.glow){
+    const r = fx.glow.r * s;
+    cx.save();
+    const grad = cx.createRadialGradient(xf(fx.glow.x), yf(fx.glow.y), 0,
+      xf(fx.glow.x), yf(fx.glow.y), r);
+    grad.addColorStop(0, "rgba(255,180,60,0.45)");
+    grad.addColorStop(1, "rgba(255,180,60,0)");
+    cx.fillStyle = grad;
+    cx.fillRect(xf(fx.glow.x)-r, yf(fx.glow.y)-r, r*2, r*2);
+    cx.restore();
+  }
   if (sc.sky === "evening"){                 // перрон
     cx.fillStyle = "#5a5f66"; cx.fillRect(0, gy + 24*s, cw, 10*s);
     cx.fillStyle = "#2b2f34"; cx.fillRect(0, gy + 34*s, cw, 8*s);
   }
   for (const a of sc.actors){
-    const ks = a.keys;
-    let i = 0;
-    while (i < ks.length-2 && k > ks[i+1][0]) i++;
-    const k0 = ks[i], k1 = ks[Math.min(i+1, ks.length-1)];
-    const span = Math.max(1e-6, k1[0]-k0[0]);
-    const u = (k - k0[0]) / span;
-    const x = lerp(k0[1],k1[1],u), y = lerp(k0[2],k1[2],u);
-    const scl = lerp(k0[3],k1[3],u), al = lerp(k0[4],k1[4],u);
-    const spr = SPR[a.spr];
-    if (!spr || !spr.img || al <= 0.01) continue;
-    cx.save(); cx.globalAlpha = al;
-    const w = spr.img.width*scl*s, h = spr.img.height*scl*s;
-    cx.drawImage(spr.img, Math.round(xf(x)-w/2), Math.round(yf(y)-h), w, h);
+    const st = cutState(a, g.cut.t);
+    const spr = SPR[st.spr];
+    if (!spr || !spr.img || st.al <= 0.01) continue;
+    cx.save(); cx.globalAlpha = st.al;
+    const w = spr.img.width*st.scl*s, h = spr.img.height*st.scl*s;
+    cx.drawImage(spr.img, Math.round(xf(st.x)-w/2), Math.round(yf(st.y)-h), w, h);
+    cx.restore();
+  }
+  // искры над актёрами: они летят из костра и видны поверх людей у огня
+  for (const sp of fx.sparks){
+    if (sp.a <= 0.02) continue;
+    cx.save(); cx.globalAlpha = sp.a;
+    cx.fillStyle = sp.c;
+    const d = Math.max(1, Math.round(1.4*s));
+    cx.fillRect(Math.round(xf(sp.x)), Math.round(yf(sp.y)), d, d);
     cx.restore();
   }
   // подпись и подсказка — всегда внизу экрана
@@ -2975,7 +3087,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   showFinish, showFail, recordFinish, nextDay,
   campaignSum,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, drwCut, ptrStart, ptrMove, ptrEnd, award };
+  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, drwCut, ptrStart, ptrMove, ptrEnd, award };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined"){
   // Режим просмотра катсцен без прохождения игры: ?cut=night|morning|drive|finale (или all — по кругу).
