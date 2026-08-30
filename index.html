@@ -186,7 +186,8 @@ canvas { display:block;margin:0 auto; }
 const c=document.getElementById("game"),cx=c.getContext("2d");
 cx.imageSmoothingEnabled=false;
 const W=420,H=720;c.width=W;c.height=H;
-function rs(){const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
+let cutFull=false;   // канвас на весь экран, пока идёт катсцена
+function rs(){if(cutFull){c.width=innerWidth;c.height=innerHeight;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px";return;}const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.width=W;c.height=H;c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
 const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
@@ -707,6 +708,7 @@ function playCut(name, then){
   g.cut = { name, t: 0, then };
   g.s = "cutscene";
   hideAllScreens();
+  cutFull = true; rs();                  // канвас на весь экран
   setMusic(name === "night" ? "camp" : "river");
 }
 
@@ -723,27 +725,44 @@ function endCut(){
   // Состояние обязано смениться, иначе цикл продолжит звать updCut
   // с пустой сценой. Колбэк при желании переопределит.
   g.s = "map";
+  cutFull = false; rs();                 // обратно к игровому размеру канваса
   if (then) then();
 }
 
+// Полноэкранный расклад катсцены: арт 420×720 масштабируется по высоте окна,
+// горизонтальный центр сцены ложится на центр экрана, и никакого литтербокса.
+// Чистая функция — её же держат тесты.
+function cutScr(cw, ch){
+  const s = ch / H;
+  const xf = (x) => (x - W / 2) * s + cw / 2;
+  const yf = (y) => y * s;
+  return { s, xf, yf };
+}
+
+// Небо на весь экран, земля прижата к низу, актёры — по сцене, подпись — по
+// центру нижней полосы. Разные пропорции окна не ломают композицию: ширина
+// раскрывается за край канваса (деревья проезжают через весь экран).
 function drwCut(){
   const sc = CUTS[g.cut.name];
   const k = g.cut.t / CUT_LEN;
+  const cw = c.width, ch = c.height;
+  const { s, xf, yf } = cutScr(cw, ch);
   const sky = CUT_SKY[sc.sky];
-  const gr = cx.createLinearGradient(0,0,0,H);
+  const gr = cx.createLinearGradient(0,0,0,ch);
   gr.addColorStop(0, sky[0]); gr.addColorStop(1, sky[1]);
-  cx.fillStyle = gr; cx.fillRect(0,0,W,H);
+  cx.fillStyle = gr; cx.fillRect(0,0,cw,ch);
   if (sc.sky === "night"){
-    for (let i=0;i<40;i++){
-      const sx=(i*97)%W, sy=(i*53)%220;
+    for (let i=0;i<80;i++){
+      const sx=(i*97)%cw, sy=(i*53)%Math.round(ch*0.45);
       cx.fillStyle = (Math.floor(g.frame/14+i)%6) ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)";
       cx.fillRect(sx,sy,2,2);
     }
   }
-  cx.fillStyle = sc.ground; cx.fillRect(0, 320, W, H-320);
+  const gy = Math.round(320*s);
+  cx.fillStyle = sc.ground; cx.fillRect(0, gy, cw, ch-gy);
   if (sc.sky === "evening"){                 // перрон
-    cx.fillStyle = "#5a5f66"; cx.fillRect(0, 344, W, 10);
-    cx.fillStyle = "#2b2f34"; cx.fillRect(0, 354, W, 8);
+    cx.fillStyle = "#5a5f66"; cx.fillRect(0, gy + 24*s, cw, 10*s);
+    cx.fillStyle = "#2b2f34"; cx.fillRect(0, gy + 34*s, cw, 8*s);
   }
   for (const a of sc.actors){
     const ks = a.keys;
@@ -757,16 +776,19 @@ function drwCut(){
     const spr = SPR[a.spr];
     if (!spr || !spr.img || al <= 0.01) continue;
     cx.save(); cx.globalAlpha = al;
-    const w = spr.img.width*scl, h = spr.img.height*scl;
-    cx.drawImage(spr.img, Math.round(x-w/2), Math.round(y-h), w, h);
+    const w = spr.img.width*scl*s, h = spr.img.height*scl*s;
+    cx.drawImage(spr.img, Math.round(xf(x)-w/2), Math.round(yf(y)-h), w, h);
     cx.restore();
   }
-  // подпись и подсказка
-  cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(0, H-70, W, 44);
-  cx.fillStyle = "#fff"; cx.font = "9px " + F; cx.textAlign = "center";
-  cx.fillText(sc.caption, W/2, H-44);
-  cx.fillStyle = "rgba(255,255,255,0.45)"; cx.font = "6px " + F;
-  cx.fillText("нажми, чтобы пропустить", W/2, H-30);
+  // подпись и подсказка — всегда внизу экрана
+  const capH = Math.max(34, Math.round(44*s));
+  const capY = ch - capH;
+  cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(0, capY, cw, capH);
+  cx.fillStyle = "#fff"; cx.font = Math.max(9, Math.round(9*s)) + "px " + F;
+  cx.textAlign = "center";
+  cx.fillText(sc.caption, cw/2, capY + Math.max(16, Math.round(22*s)));
+  cx.fillStyle = "rgba(255,255,255,0.45)"; cx.font = Math.max(6, Math.round(6*s)) + "px " + F;
+  cx.fillText("нажми, чтобы пропустить", cw/2, ch - Math.max(8, Math.round(9*s)));
   cx.textAlign = "left";
 }
 
@@ -2937,7 +2959,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   showFinish, showFail, recordFinish,
   campaignSum,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput };
+  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, drwCut };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
