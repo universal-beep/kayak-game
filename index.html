@@ -190,7 +190,7 @@ let cutFull=false;   // канвас на весь экран, пока идёт
 function rs(){if(cutFull){c.width=innerWidth;c.height=innerHeight;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px";return;}const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.width=W;c.height=H;c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,vestUsed:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -233,6 +233,8 @@ const SPR = {
     "....kkkk...OOk..","..........kOOk..","..........kOnk..","..........kOnk..",
     "..........kOnk..","..........kOnk..","..........kOnk..","..........kOOk..",
     "..........kOOk..","..........kkkk.."]},
+  sun:{map:["....k.....","..k.kk.k..","...kYYk...",".kkYYYYkk.","kYYYYYYYYk",
+    ".kkYYYYkk.","...kYYk...","..k.kk.k..","....k....."],noOutline:true},
   boulder:{map:[".....kkkkk......","...kkGGGGGkk....","..kGGGGGGGGGkk..",".kGGGGGGjjjjGGkk",
     ".kGGGGjjjjjjjGk.","kGGGjjjjjjjjjGk.","kGGjjjjjjjjjjjGk","kGjjjjjggggjjjGk",
     "kGjjjjggggggjjGk","kGjjjggggggggjGk","kGjjggggggggggGk",".kjjgggggggggGk.",
@@ -419,6 +421,11 @@ const SPR = {
     "..krrrrrrk..",".krrrrrrrrk.","krrrrrrrrrrk","krrrrrrrrrrk",".krrrrrrrrk.",
     "..kZZZZZZk..","..kZZZZZZk..","...kZZkZZ...","...kZZkZZ...","...kZZkZZ...",
     ".kOOkkkkOOk.",".kkkkkkkkkk."],noOutline:true},
+  // Чайка-силуэт, два кадра маха (вверх/вниз) — цикл `cycle` в катсценах.
+  bird0:{map:["....kkkk....",".kkKKKKKKkk.","kKKKKKKKKKKk",".kkKKKKKKkk.",
+    "....kkkk....","...kk..kk...","..kk....kk.."],noOutline:true},
+  bird1:{map:["...kk...kk..","..kKKk.kKKk.",".kKKKKkKKKKk",".kKKKKKKKKk.",
+    "kkKKKKKKKKkk","..kkkkkkkk..","...kk...kk.."],noOutline:true},
   tower:{map:[".......kk.......","......kIIk......",".....kIIIIk.....","....kIIIIIIk....",
     "...kIIIIIIIIk...","..kIIIIIIIIIIk..",".kIIIIIIIIIIIIk.","kkkkkkkkkkkkkkkk",
     "kOwwwwwwwwwwwwOk","kOwkkwwkkwwkkwOk","kOwwwwwwwwwwwwOk","kOOOOOOOOOOOOOOk",
@@ -618,6 +625,14 @@ function sfx(kind){
     tone(900,  t + 0.10, 0.16, "triangle", 0.08);
   } else if (kind === "clean"){
     [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i*0.09, 0.18, "square", 0.08));
+  } else if (kind === "splash"){
+    // Переворот лодки: шум воды, а не «электронный удар» — падение в реку.
+    tone(150, t, 0.10, "sawtooth", 0.06);
+    tone(95,  t + 0.05, 0.28, "sine", 0.09);
+    tone(70,  t + 0.12, 0.30, "sine", 0.07);
+  } else if (kind === "bell"){
+    // Причал/финиш: чистый колокол поверх аккорда.
+    [880, 1174, 1568].forEach((f, i) => tone(f, t + i*0.10, 0.5, "sine", 0.05));
   }
 }
 
@@ -724,10 +739,15 @@ const CUTS = {
       { spr:"sil", keys:[[0,300,284,0.32,0],[0.74,300,284,0.32,0],[0.82,300,284,0.32,1],[1,300,284,0.32,1]] }
     ] },
   morning: { sky:"morning", ground:"#2c4a2f", caption:"Утро. Идём дальше",
+    fx:{ smoke:{ x:140, y:304, r0:4, r1:16, h:80, spreadX:4, n:5, per:12 } },
     actors:[
       { spr:"tent",   keys:[[0,300,290,0.8,1],[0.6,300,290,0.8,1],[1,300,290,0.8,0]] },
       { spr:"person", keys:[[0,150,300,0.9,1],[1,240,300,0.9,1]] },
-      { spr:"kayak_center", keys:[[0,120,330,1,1],[1,300,352,1,1]] }
+      { spr:"kayak_center", keys:[[0,120,330,1,1],[1,300,352,1,1]] },
+      // Вчерашний костёр ещё тлеет, от него идёт дымок — сцена не «разморожена»
+      { spr:"fire", cycle:{per:8,spr:["fire0","fire1","fire2"]}, keys:[[0,140,306,0.5,0],[0.2,140,306,0.5,0.7],[1,140,306,0.5,0.5]] },
+      { spr:"bird0", cycle:{per:6,spr:["bird0","bird1"]}, keys:[[0.3,400,84,0.5,0],[0.35,395,82,0.5,1],[0.8,150,94,0.5,1],[0.85,145,94,0.5,0]] },
+      { spr:"bird0", cycle:{per:7,spr:["bird0","bird1"]}, keys:[[0.5,520,150,0.35,0],[0.55,515,146,0.35,1],[1,330,160,0.35,0]] }
     ] },
   drive: { sky:"day", ground:"#3f6b33", caption:"Байдарка на крыше — и на другую реку",
     actors:[
@@ -836,7 +856,23 @@ function cutFx(sc, t){
       });
     }
   }
-  return { glow, sparks };
+  const smoke = [];
+  if (fx.smoke){
+    // Дымок вчерашней стоянки: клубы поднимаются, расплываются и тают.
+    // Детерминировано, как и искры: p цикл n*per кадров, sway на синусе номера.
+    const m0 = fx.smoke;
+    const n = m0.n || 5, per = m0.per || 12;
+    for (let i = 0; i < n; i++){
+      const p = ((t - i * per) % (n * per) + (n * per)) % (n * per) / (n * per);
+      const x = m0.x + Math.sin(i * 7.31 + p * 9) * (m0.spreadX || 2) * p;
+      const y = m0.y - p * m0.h;
+      const a = Math.max(0, Math.min(1, p * 8, (1 - p) * 2.2));
+      if (a <= 0.02) continue;
+      smoke.push({ x: Math.round(x), y: Math.round(y),
+        r: Math.round(m0.r0 + p * (m0.r1 - m0.r0)), a });
+    }
+  }
+  return { glow, sparks, smoke };
 }
 
 // Небо на весь экран, земля прижата к низу, актёры — по сцене, подпись — по
@@ -872,6 +908,18 @@ function drwCut(){
     cx.fillRect(xf(fx.glow.x)-r, yf(fx.glow.y)-r, r*2, r*2);
     cx.restore();
   }
+  // дым вчерашнего костра — под актёрами, как и свет
+  for (const sm of fx.smoke || []){
+    if (sm.a <= 0.02) continue;
+    const rad = Math.max(2, sm.r * s);
+    cx.save(); cx.globalAlpha = sm.a * 0.45;
+    const grd = cx.createRadialGradient(xf(sm.x), yf(sm.y), 0, xf(sm.x), yf(sm.y), rad);
+    grd.addColorStop(0, "rgba(225,220,208,0.6)");
+    grd.addColorStop(1, "rgba(225,220,208,0)");
+    cx.fillStyle = grd;
+    cx.fillRect(xf(sm.x)-rad, yf(sm.y)-rad, rad*2, rad*2);
+    cx.restore();
+  }
   if (sc.sky === "evening"){                 // перрон
     cx.fillStyle = "#5a5f66"; cx.fillRect(0, gy + 24*s, cw, 10*s);
     cx.fillStyle = "#2b2f34"; cx.fillRect(0, gy + 34*s, cw, 8*s);
@@ -882,12 +930,15 @@ function drwCut(){
     if (!spr || !spr.img || st.al <= 0.01) continue;
     cx.save(); cx.globalAlpha = st.al;
     const w = spr.img.width*st.scl*s, h = spr.img.height*st.scl*s;
-    // Тень-эллипс под опорой фигуры: без неё силуэты будто висят над землёй.
-    // Рисуем в том же save/alpha-блоке, что и спрайт, — тень гаснет вместе с ним.
-    cx.fillStyle = "rgba(0,0,0,0.22)";
-    cx.beginPath();
-    cx.ellipse(xf(st.x), yf(st.y)+2*s, Math.max(2, w*0.46), Math.max(1, 3*s), 0, 0, Math.PI*2);
-    cx.fill();
+    // Тень-эллипс под опорой — только если фигура стоит на земле/перроне
+    // (yf(st.y) ≥ gy). Летящие птицы и дальние силуэты тень не получают:
+    // она «парила» бы под ними в небе.
+    if (yf(st.y) >= gy){
+      cx.fillStyle = "rgba(0,0,0,0.22)";
+      cx.beginPath();
+      cx.ellipse(xf(st.x), yf(st.y)+2*s, Math.max(2, w*0.46), Math.max(1, 3*s), 0, 0, Math.PI*2);
+      cx.fill();
+    }
     cx.drawImage(spr.img, Math.round(xf(st.x)-w/2), Math.round(yf(st.y)-h), w, h);
     cx.restore();
   }
@@ -1113,7 +1164,7 @@ function paddleStrike(){
     addBonus(75); g.shake = 9; g.parries++; sfx("parry");
     popText("ПАРИРОВАЛ +" + award(75), "#ffd54f");
     // Перевернувшийся соперник роняет своё снаряжение.
-    const kind = ["bread","whisky","medkit","axe"][Math.floor(Math.random()*4)];
+    const kind = ["bread","whisky","medkit","axe","sun"][Math.floor(Math.random()*5)];
     g.bns.push({ t:o.t, wy:o.wy, type:kind, visHalf:spriteSize(BN_SPRITE[kind]).w/2 });
     return;
   }
@@ -1472,7 +1523,7 @@ function drwBg(){
 }
 // Соответствие внутренних типов препятствий именам спрайтов.
 const OB_SPRITE = { log:"log", shallows:"shallows", seaweed:"seaweed", kayaker:"rower", snag:"snag", barge:"barge" };
-const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe" };
+const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun" };
 
 function drwKy(){
   const x = screenXOf(g.t, g.pwy), y = g.py;
@@ -1749,7 +1800,9 @@ const GEAR = [
   { id:"drybag", name:"ГЕРМОМЕШОК",      price:400, stars:12,
     note:"Удар не сбивает батон и виски" },
   { id:"ration", name:"СУХПАЁК",         price:500, stars:18,
-    note:"Четвёртое сердце на старте" }
+    note:"Четвёртое сердце на старте" },
+  { id:"vest", name:"СПАСЖИЛЕТ",         price:520, stars:24,
+    note:"Раз в день спасает от опрокидывания" }
 ];
 function hasGear(id){ return save.gear.indexOf(id) >= 0; }
 
@@ -1881,7 +1934,8 @@ function drwHUD(){
   // Снаряжение видно всю дорогу: купил — носишь. Раньше «запасное весло»
   // и «гермомешок» действовали молча, и покупки казались пустыми.
   const GEAR_BADGES = [["helmet","К","#4fc3f7"],["paddle","В","#7fd67f"],
-                       ["drybag","Г","#ffd54f"],["ration","С","#e53935"]];
+                       ["drybag","Г","#ffd54f"],["ration","С","#e53935"],
+                       ["vest","Ж","#8fb4e0"]];
   let gi = 0;
   for (const [ge,ch,col] of GEAR_BADGES){
     if (!hasGear(ge)) continue;
@@ -1963,6 +2017,7 @@ function finishLevel(){
 
   g.s = "finish";
   sfx("clean");
+  sfx("bell");
   showFinish(L, stars, total);
 }
 
@@ -2509,7 +2564,7 @@ function spOb(){
 function spBn(){
   const wy=spawnWy();
   if(rapidBlend(wy)>0.5)return;            // на порогах бонусов нет
-  const t=["bread","whisky","medkit","axe"],w=bonusWeights();
+  const t=["bread","whisky","medkit","axe","sun"],w=bonusWeights();
   let r=Math.random(),c=0,ty="bread";
   for(let i=0;i<t.length;i++){c+=w[i];if(r<c){ty=t[i];break;}}
   const bVis=spriteSize(BN_SPRITE[ty]||"bread").w/2;
@@ -2647,7 +2702,7 @@ function addBonus(n){ g.bsc += award(n); }
 // Шанс аптечки удваивается при низкой прочности. Игрок этого не замечает,
 // но получает ощущение «на грани вытянул».
 function bonusWeights(){
-  const base = [0.40, 0.15, 0.25, 0.20];     // батон, виски, аптечка, топор
+  const base = [0.34, 0.14, 0.22, 0.18, 0.12];     // батон, виски, аптечка, топор, солнце
   if (g.hp >= 3) return base;
   const b = base.slice(); b[2] *= 2;
   const sum = b.reduce((x,y)=>x+y,0);
@@ -2670,6 +2725,13 @@ function damage(){
   g.sp = Math.max(1.8, g.sp*0.55);
   g.obs = g.obs.filter(o => Math.abs(o.wy - g.pwy) > 150);
   if (g.hp > 0){ sfx("hit"); popText("-1 СЕРДЦЕ","#ff5252"); return; }
+  // Спасажилет — второй шанс: раз в день не даёт опрокинуться и потерять попытку.
+  if (hasGear("vest") && !g.vestUsed){
+    g.vestUsed = true; g.hp = 1;
+    g.inv = INV_FRAMES;
+    sfx("life"); popText("ЖИЛЕТ СПАС!","#7fd67f");
+    return;
+  }
   loseAttempt();
 }
 
@@ -2677,6 +2739,7 @@ function damage(){
 function loseAttempt(){
   g.lives -= 1;
   g.livesLost++;
+  sfx("splash");                      // лодка перевернулась — всплеск воды
   if (g.lives <= 0){ sfx("over"); gmO(); return; }
   sfx("life");
   g.s = "continue";
@@ -2701,6 +2764,12 @@ function crush(){
   g.sp = Math.max(1.8, g.sp*0.5);
   g.obs = g.obs.filter(o => Math.abs(o.wy - g.pwy) > 200);
   popText("БАРЖА!","#ff5252");
+  if (hasGear("vest") && !g.vestUsed){
+    g.vestUsed = true; g.hp = 1;
+    g.inv = INV_FRAMES;
+    sfx("life"); popText("ЖИЛЕТ СПАС!","#7fd67f");
+    return;
+  }
   loseAttempt();
 }
 
@@ -2748,6 +2817,12 @@ function apBn(b){
       else { g.sh = true; popText("ЩИТ НА ОДИН УДАР","#4fc3f7"); }
       addBonus(15);
       explain("medkit","АПТЕЧКА: возвращает сердце. Если все целы — даёт щит, который гасит один удар");
+      break;
+    case "sun":                         // солнечный день: лёгкие очки без таймеров
+      g.comboT = Math.max(g.comboT, 90);
+      addBonus(80);
+      popText("СОЛНЦЕ +" + award(80) + " · КОМБО","#ffd54f");
+      explain("sun","СОЛНЦЕ: не хлеб и не виски, просто жаркий выходной на реке. Очки идут в счёт");
       break;
     case "axe": {                       // расчистка пути
       // Цель выбирается не по близости, а по тому, насколько она стоит
@@ -2813,7 +2888,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
