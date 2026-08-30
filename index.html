@@ -21,7 +21,7 @@
 html,body { width:100%;height:100%;background:#1a1a2e;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none; }
 canvas { display:block;margin:0 auto; }
 #ui { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none; }
-#mapScreen,#finishScreen,#failScreen,#diaryScreen,#campScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px; }
+#mapScreen,#finishScreen,#failScreen,#diaryScreen,#campScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 .maph { font-family:"Press Start 2P",monospace;font-size:16px;color:#4fc3f7;margin-bottom:10px;letter-spacing:3px; }
 .finh { font-family:"Press Start 2P",monospace;font-size:20px;color:#7fd67f;margin-bottom:6px; }
 .wallet { font-family:"Press Start 2P",monospace;font-size:8px;color:#ffd54f;margin-bottom:12px; }
@@ -45,7 +45,7 @@ canvas { display:block;margin:0 auto; }
 .board { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#bbb;width:100%;max-width:300px;margin:6px 0 4px; }
 .brow { display:flex;justify-content:space-between;padding:3px 4px;line-height:1.6; }
 .brow.mine { color:#ffd54f;background:rgba(255,213,79,0.12); }
-#endScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,10,20,0.97);pointer-events:all;padding:16px; }
+#endScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.97);pointer-events:all;padding:16px;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 .endgrid { display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin:14px 0;font-family:"Press Start 2P",monospace;font-size:9px;color:#ddd; }
 .endgrid b { color:#ffd54f;font-weight:normal; }
 #campCanvas { image-rendering:pixelated;width:300px;height:120px;margin-bottom:10px;border-radius:6px; }
@@ -59,7 +59,7 @@ canvas { display:block;margin:0 auto; }
 .gitem.owned { border:1px solid rgba(127,214,127,0.45); }
 #campToast { position:fixed;left:50%;top:16%;transform:translateX(-50%);background:rgba(14,20,30,0.95);color:#ffd54f;border:1px solid #ffd54f;padding:10px 16px;border-radius:8px;font-family:"Press Start 2P",monospace;font-size:9px;letter-spacing:1px;opacity:0;transition:opacity .3s;z-index:60;pointer-events:none;white-space:nowrap; }
 #campToast.show { opacity:1; }
-#continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;pointer-events:all; }
+#continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:#000;pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 #continueScreen h1 { font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;margin-bottom:22px;letter-spacing:2px; }
 #continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
 #continueScreen .score { font-family:"Press Start 2P",monospace;font-size:11px;color:#fff;margin:4px 0; }
@@ -69,7 +69,7 @@ canvas { display:block;margin:0 auto; }
 #startScreen .key { color:#4fc3f7; }
 #startScreen .btn,#startScreen .btn:hover,.hidden { display:none !important; }
 #pauseBtn { position:absolute;top:8px;right:8px;width:34px;height:34px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
-#pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,10,20,0.92);pointer-events:all; }
+#pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.92);pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 #mobileControls { position:absolute;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:0;right:0;display:none;justify-content:space-between;padding:0 calc(16px + env(safe-area-inset-right,0px)) 0 calc(16px + env(safe-area-inset-left,0px));pointer-events:none; }
 #mobileControls .ctrlgroup { display:flex;gap:10px; }
 #mobileControls .ctrl { width:66px;height:66px;background:rgba(79,195,247,0.2);border:3px solid rgba(79,195,247,0.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#4fc3f7;pointer-events:all; }
@@ -1081,18 +1081,27 @@ addEventListener("keydown",e=>{
 addEventListener("keyup",e=>{keys[e.key]=false;});
 // Потеря фокуса (Alt+Tab, другое окно) — клавиши не должны «залипать».
 addEventListener("blur",()=>{for(const k in keys)keys[k]=false;});
-let tapX=0,tapY=0,tapT=0;
+let tapX=0,tapY=0,tapT=0,tapMoved=false;
+// Решает, можно ли считать прикосновение ударом веслом. Отдельная функция,
+// чтобы удар был тестируемым, а не зашитым в обработчик.
+function isStrikeTap(ms, dx, dy){
+  return ms < 260 && Math.abs(dx) < 12 && Math.abs(dy) < 12;
+}
 c.addEventListener("touchstart",e=>{e.preventDefault();const r=c.getBoundingClientRect();
   mt=(e.touches[0].clientX-r.left)*(W/r.width);
-  tapX=e.touches[0].clientX;tapY=e.touches[0].clientY;tapT=Date.now();
+  tapX=e.touches[0].clientX;tapY=e.touches[0].clientY;tapT=Date.now();tapMoved=false;
   if(g.s=="cutscene"){endCut();return;}
   if(g.s=="start"||g.s=="over"||g.s=="continue")hs();},{passive:false});
-c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();mt=(e.touches[0].clientX-r.left)*(W/r.width);},{passive:false});
+c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();
+  mt=(e.touches[0].clientX-r.left)*(W/r.width);
+  // Палец поехал — это руление, а не замах: подняв палец там же, где начал,
+  // игрок не должен случайно ударить веслом.
+  if(Math.abs(e.touches[0].clientX-tapX)>12||Math.abs(e.touches[0].clientY-tapY)>12)tapMoved=true;},{passive:false});
 c.addEventListener("touchend",e=>{e.preventDefault();
   // Короткий тап без ведения — удар веслом. Ведение пальцем занято рулением.
   const t=e.changedTouches[0];
-  if(g.s=="playing"&&Date.now()-tapT<260&&
-     Math.abs(t.clientX-tapX)<12&&Math.abs(t.clientY-tapY)<12)paddleStrike();
+  if(g.s=="playing"&&!tapMoved&&isStrikeTap(Date.now()-tapT, t.clientX-tapX, t.clientY-tapY))
+    paddleStrike();
   mt=null;},{passive:false});
 for(const[id,fld]of[["btnFwd","btnFwd"],["btnBack","btnBack"]]){
   const el=document.getElementById(id);
@@ -2859,7 +2868,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   showFinish, showFail, recordFinish,
   campaignSum,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult, save, sg };
+  ensureBoard, addResult, save, sg, isStrikeTap };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined") lp();
 </script>
