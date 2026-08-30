@@ -956,10 +956,11 @@ const SWING_FRAMES = 50, PARRY_WINDOW = 20, STRIKE_REACH = 100;
 function paddleStrike(){
   if (g.s !== "playing") return;
   g.strikeT = 12;
+  let windingUp = false;
   for (let i = g.obs.length - 1; i >= 0; i--){
     const o = g.obs[i];
     if (o.type !== "kayaker" || o.swingT < 0) continue;
-    if (o.swingT > PARRY_WINDOW) continue;          // рано, замах ещё идёт
+    if (o.swingT > PARRY_WINDOW){ windingUp = true; continue; }  // рано, замах ещё идёт
     const ox = screenXOf(o.t, o.wy), oy = screenYOf(o.wy);
     spPt(ox, oy, "#ffd54f", 26);
     g.obs.splice(i, 1);
@@ -970,6 +971,12 @@ function paddleStrike(){
     g.bns.push({ t:o.t, wy:o.wy, type:kind, visHalf:spriteSize(BN_SPRITE[kind]).w/2 });
     return;
   }
+  // Удар в пустоту или слишком рано: без отклика игрок не понимает, что
+  // нажатие сработало. Даём плеск, звук и подсказку про тайминг.
+  spPt(screenXOf(g.t,g.pwy), g.py + 8, "#cfe8f5", 10);
+  sfx("swing");
+  if (windingUp)
+    g.hint = { text: "РАНО — ЖДИ ВСПЫШКУ", life: 70 };
 }
 
 function flowMul(t){ return 1.18 - 0.34*t*t; }
@@ -1034,6 +1041,10 @@ function speedMulAt(w){ return 1 + 0.4*rapidBlend(w); }
 
 const keys={};let mt=null;
 addEventListener("keydown",e=>{
+  // Удержание не должно дёргать тумблеры и автопарировать пробелом:
+  // только одиночные нажатия.
+  if(e.repeat&&(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь"||
+     e.key=="Escape"||e.key=="p"||e.key=="P"||e.key=="з"||e.key=="З"||e.key==" "))return;
   keys[e.key]=true;
   if(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь")toggleMusic();
   if(g.s=="cutscene"){ e.preventDefault(); endCut(); return; }
@@ -1042,9 +1053,20 @@ addEventListener("keydown",e=>{
   if(g.s=="playing"){
     if(e.key==" "){e.preventDefault();paddleStrike();}
     if(e.key=="ArrowUp"||e.key=="ArrowDown")e.preventDefault();
-  } else if(e.key==" "||e.key=="Enter")hs();
+  } else if(e.key==" "||e.key=="Enter"){
+    if(g.s=="finish"){
+      // Enter/пробел на экране результата = кнопка «Дальше». Раньше Enter
+      // здесь был мёртвой клавишей, и результат без введённого имени просто
+      // не записывался — имя просили заново каждый день.
+      e.preventDefault();
+      recordFinish();
+      nextDay();
+    } else hs();
+  }
 });
 addEventListener("keyup",e=>{keys[e.key]=false;});
+// Потеря фокуса (Alt+Tab, другое окно) — клавиши не должны «залипать».
+addEventListener("blur",()=>{for(const k in keys)keys[k]=false;});
 let tapX=0,tapY=0,tapT=0;
 c.addEventListener("touchstart",e=>{e.preventDefault();const r=c.getBoundingClientRect();
   mt=(e.touches[0].clientX-r.left)*(W/r.width);
@@ -1072,18 +1094,21 @@ for(const[id,k]of[["btnLeft","ArrowLeft"],["btnRight","ArrowRight"]]){
   el.addEventListener("touchend",e=>{e.preventDefault();keys[k]=false;},{passive:false});
   el.addEventListener("mousedown",()=>keys[k]=true);
   el.addEventListener("mouseup",()=>keys[k]=false);
+  el.addEventListener("mouseleave",()=>keys[k]=false);
 }
 function hs(){startMusic();if(g.s=="continue"){resumeRun();return;}if(g.s=="start")showMap();}
 document.getElementById("startBtn").addEventListener("click",()=>{startMusic();showMap();});
 document.getElementById("contBtn").addEventListener("click",()=>{startMusic();resumeRun();});
-document.getElementById("saveNameBtn").addEventListener("click",()=>{
-  const nm = (document.getElementById("finName").value || "").trim().slice(0,12);
-  if (!nm) return;
-  save.name = nm; commitSave();
-  addResult(level().day, nm, g.pendingScore || 0);
-  renderBoard(level().day, g.pendingScore || 0);
-});
-document.getElementById("nextBtn").addEventListener("click",()=>{
+function recordFinish(){
+  const L = level(), total = g.pendingScore || 0;
+  if (!save.name){
+    const v = (document.getElementById("finName").value || "").trim().slice(0,12);
+    save.name = v || "ПУТНИК"; commitSave();
+  }
+  addResult(L.day, save.name, total);
+  renderBoard(L.day, total);
+}
+function nextDay(){
   // После последнего дня — финал с вокзалом и электричкой.
   if(g.day>=LEVELS.length-1){ playCut("finale", showCampaignEnd); return; }
   const wasRiver = LEVELS[g.day].river;
@@ -1092,9 +1117,23 @@ document.getElementById("nextBtn").addEventListener("click",()=>{
   // Ночёвка внутри реки, переезд — когда река меняется.
   if (nowRiver !== wasRiver) playCut("drive", showCamp);
   else playCut("night", showCamp);
+}
+document.getElementById("saveNameBtn").addEventListener("click",()=>{
+  const nm = (document.getElementById("finName").value || "").trim().slice(0,12);
+  if (!nm) return;
+  // Переименование заменяет строку-заглушку «ПУТНИК», а не плодит вторую.
+  const prev = save.name || "ПУТНИК";
+  save.name = nm; commitSave();
+  const L = level(), total = g.pendingScore || 0;
+  addResult(L.day, nm, total, prev);
+  renderBoard(L.day, total);
+});
+document.getElementById("nextBtn").addEventListener("click",()=>{
+  recordFinish();
+  nextDay();
 });
 document.getElementById("goBtn").addEventListener("click",()=>{ leaveCamp(); playCut("morning", ()=>startDay(g.day)); });
-document.getElementById("againBtn").addEventListener("click",()=>startDay(g.day));
+document.getElementById("againBtn").addEventListener("click",()=>{ recordFinish(); startDay(g.day); });
 document.getElementById("retryBtn").addEventListener("click",()=>startDay(g.day));
 document.getElementById("toMapBtn").addEventListener("click",showMap);
 document.getElementById("diaryBtn").addEventListener("click",showDiary);
@@ -1420,6 +1459,8 @@ function commitSave(){
 function resetSave(){
   save = JSON.parse(JSON.stringify(SAVE_DEFAULT));
   commitSave();
+  // Иначе музыка «возвращалась» при перезагрузке: сохранялось старое.
+  musicOn = save.music !== false;
 }
 // Максимум сердец зависит от снаряжения. Раньше тройка была вбита в трёх
 // местах — лечение, отрисовка HUD и восстановление после попытки, — и
@@ -1467,13 +1508,19 @@ function ensureBoard(dayNo){
   return rows;
 }
 
-function addResult(dayNo, name, score){
+// prevName — прежнее имя того же игрока (например, строка-заглушка
+// «ПУТНИК» до переименования): заменяем её, а не плодим вторую запись.
+function addResult(dayNo, name, score, prevName){
   const rows = ensureBoard(dayNo);
-  const row = { name: name || "Без имени", score: score, mine: true, ts: Date.now() };
+  const isMe = r => r.mine && (r.name === name || (prevName && r.name === prevName));
   // свой прошлый результат за этот день заменяем, а не плодим строки
-  const idx = rows.findIndex(r => r.mine && r.name === row.name);
-  if (idx >= 0){ if (rows[idx].score >= score){ commitSave(); return rows; } rows.splice(idx,1); }
-  rows.push(row);
+  const idx = rows.findIndex(isMe);
+  if (idx >= 0){
+    const prev = rows[idx];
+    if (prev.name === name && prev.score >= score){ commitSave(); return rows; }
+    rows.splice(idx, 1);
+  }
+  rows.push({ name: name || "Без имени", score, mine: true, ts: Date.now() });
   rows.sort((a,b) => b.score - a.score);
   save.board[dayNo] = rows.slice(0, 12);
   commitSave();
@@ -1677,16 +1724,16 @@ function showFinish(L, stars, total){
     (goalMet() ? "★ " : "☆ ") + L.goalText;
   document.getElementById("nextBtn").textContent = (g.day >= LEVELS.length-1) ? "К МАРШРУТУ" : "ДАЛЬШЕ";
   g.pendingScore = total;
-  // Имя спрашиваем только один раз за поход: дальше результат
-  // записывается сам.
+  // Имя спрашиваем один раз за поход; результат пишется сразу — даже если
+  // игрок ушёл дальше, не вписав имя, запись появится под «ПУТНИК».
   const row = document.querySelector(".namerow");
   if (save.name){
     row.classList.add("hidden");
-    addResult(L.day, save.name, total);
   } else {
     row.classList.remove("hidden");
     document.getElementById("finName").value = "";
   }
+  addResult(L.day, save.name || "ПУТНИК", total);
   renderBoard(L.day, total);
   document.getElementById("finishScreen").classList.remove("hidden");
 }
@@ -1695,7 +1742,9 @@ function showFail(L, total){
   hideAllScreens();
   document.getElementById("failPlace").textContent = "не дошли до: " + L.place;
   document.getElementById("failDist").textContent = Math.floor(g.dist);
-  document.getElementById("failWallet").textContent = Math.floor(total/3);
+  // Раньше здесь показывали треть очков, а начисляли девятую часть —
+  // экран врал игроку про награду.
+  document.getElementById("failWallet").textContent = "за этот заход: " + Math.floor(total/9);
   document.getElementById("failScreen").classList.remove("hidden");
 }
 
@@ -2585,8 +2634,8 @@ function upd(){
   if (g.frame % (g.breadT > 0 ? 9 : 14) === 0)
     spPt(screenXOf(g.t,g.pwy) + (Math.sin(g.frame*0.3)>0?26:-26), g.py + 6, "#dff0fa", 3);
   let input = 0;
-  if (keys["ArrowLeft"] || keys["a"] || keys["A"]) input = -1;
-  if (keys["ArrowRight"] || keys["d"] || keys["D"]) input = 1;
+  if (keys["ArrowLeft"] || keys["a"] || keys["A"] || keys["ф"] || keys["Ф"]) input = -1;
+  if (keys["ArrowRight"] || keys["d"] || keys["D"] || keys["в"] || keys["В"]) input = 1;
   if (mt !== null){
     const px = screenXOf(g.t, g.pwy);
     if (Math.abs(mt - px) > 4) input = Math.sign(mt - px);
@@ -2627,15 +2676,27 @@ function upd(){
       o.wy+=g.sp*sm*0.4;
       if(o.aggro){
         const ahw=widthAt(o.wy)/2;
+        // Дальность замаха привязана к руслу, а не фиксирована: 100px были
+        // шире полуширины рукава в порогах, и агрессор «перекрывал реку».
+        // Теперь в узости достаточно отгрести к другому берегу.
+        const reach=Math.min(STRIKE_REACH, ahw*0.8);
         const lat=Math.abs(o.t-g.t)*ahw;
-        const alongside=Math.abs(o.wy-g.pwy)<75 && lat<STRIKE_REACH;
+        const alongside=Math.abs(o.wy-g.pwy)<75 && lat<reach;
         if(o.swingT<0 && alongside && g.inv<=0 && g.whiskyT<=0){
           o.swingT=SWING_FRAMES; sfx("swing");
           if(!g.taughtParry){ g.taughtParry=true; popText("ПРОБЕЛ — ВЕСЛОМ!","#ff5252"); }
         }
         if(o.swingT>=0){
           o.swingT--;
-          if(o.swingT===0){ damage(); o.swingT=-1; o.aggro=false; }
+          if(o.swingT===0){
+            // Удар попадает, только если игрок всё ещё борт о борт. Раньше
+            // повреждение выдавалось безусловно, и «объехать агрессора»
+            // (комментарий выше) было невозможно: замах догонял на любой
+            // дистанции. Выскользнувший в момент удара не получает урон.
+            if(Math.abs(o.wy-g.pwy)<75 && Math.abs(o.t-g.t)*ahw<reach)
+              damage();
+            o.swingT=-1; o.aggro=false;
+          }
         }
       }
       const hw=widthAt(o.wy)/2;
@@ -2733,6 +2794,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
+  showFinish, showFail, recordFinish,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult };
 prerenderAll();
