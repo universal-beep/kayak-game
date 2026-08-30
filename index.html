@@ -68,7 +68,7 @@ canvas { display:block;margin:0 auto; }
 #startScreen p { font-family:"Press Start 2P",monospace;font-size:9px;color:#bbb;margin:5px 0;line-height:2; }
 #startScreen .key { color:#4fc3f7; }
 #startScreen .btn,#startScreen .btn:hover,.hidden { display:none !important; }
-#pauseBtn { position:absolute;top:8px;right:8px;width:34px;height:34px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
+#pauseBtn { position:absolute;top:40%;right:6px;width:42px;height:42px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:14px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
 #pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.92);pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 #mHint { position:absolute;top:14%;left:50%;transform:translateX(-50%);background:rgba(4,10,20,0.82);border:2px solid #4fc3f7;border-radius:8px;padding:10px 14px;font-family:"Press Start 2P",monospace;font-size:7px;color:#cfd8c5;line-height:2;text-align:center;z-index:6;pointer-events:none;opacity:1;transition:opacity .8s; }
 #mHint b { color:#4fc3f7;font-weight:normal; }
@@ -739,8 +739,10 @@ const CUTS = {
   finale: { sky:"evening", ground:"#3a3f45", caption:"Вокзал в Твери. Домой, в Москву",
     actors:[
       { spr:"station", keys:[[0,210,250,1,1],[1,210,250,1,1]] },
-      { spr:"person",  keys:[[0,80,330,1,1],[0.35,190,330,1,1],[0.55,190,330,1,1],[0.6,190,330,1,0]] },
-      { spr:"train",   keys:[[0,-260,330,1,1],[0.4,210,330,1,1],[0.62,210,330,1,1],[1,760,330,1,1]] }
+      // Перрон рисуется на gy+24 (=344 в арт-координатах): раньше поезд и
+      // пассажир стояли на y=330 и «парили» в 14px над краем перрона.
+      { spr:"person",  keys:[[0,80,344,1,1],[0.35,190,344,1,1],[0.55,190,344,1,1],[0.6,190,344,1,0]] },
+      { spr:"train",   keys:[[0,-260,344,1,1],[0.4,210,344,1,1],[0.62,210,344,1,1],[1,760,344,1,1]] }
     ] }
 };
 
@@ -880,6 +882,12 @@ function drwCut(){
     if (!spr || !spr.img || st.al <= 0.01) continue;
     cx.save(); cx.globalAlpha = st.al;
     const w = spr.img.width*st.scl*s, h = spr.img.height*st.scl*s;
+    // Тень-эллипс под опорой фигуры: без неё силуэты будто висят над землёй.
+    // Рисуем в том же save/alpha-блоке, что и спрайт, — тень гаснет вместе с ним.
+    cx.fillStyle = "rgba(0,0,0,0.22)";
+    cx.beginPath();
+    cx.ellipse(xf(st.x), yf(st.y)+2*s, Math.max(2, w*0.46), Math.max(1, 3*s), 0, 0, Math.PI*2);
+    cx.fill();
     cx.drawImage(spr.img, Math.round(xf(st.x)-w/2), Math.round(yf(st.y)-h), w, h);
     cx.restore();
   }
@@ -1261,6 +1269,12 @@ c.addEventListener("touchend",e=>{e.preventDefault();ptrEnd(tapX,tapY);},{passiv
 c.addEventListener("mousedown",e=>{if(e.button!==0)return;e.preventDefault();mDown=true;const p=ptrClientPos(e);ptrStart(p.x,p.y);});
 c.addEventListener("mousemove",e=>{if(!mDown)return;e.preventDefault();const p=ptrClientPos(e);ptrMove(p.x,p.y);});
 c.addEventListener("mouseup",e=>{if(e.button!==0)return;e.preventDefault();mDown=false;const p=ptrClientPos(e);ptrEnd(p.x,p.y);});
+// Обрыв жеста: палец «унесло» (touchcancel), систему утащила жест (pointercancel),
+// мышь уехала за канвас. Без этих обработчиков руль залипал в последнем
+// направлении — лодка «сама рулила», пока снова не коснёшься экрана.
+c.addEventListener("touchcancel",e=>{e.preventDefault();ptrEnd(tapX,tapY);},{passive:false});
+c.addEventListener("pointercancel",()=>{ptrEnd(tapX,tapY);});
+c.addEventListener("mouseleave",()=>{if(mDown){mDown=false;ptrEnd(tapX,tapY);}});
 // Обучающий оверлей для мобильной версии — что какой тап делает.
 function showMobileHint(){
   if(typeof matchMedia==="undefined")return;
@@ -1318,7 +1332,24 @@ document.getElementById("helpBtn").addEventListener("click",showHelp);
 document.getElementById("diaryBack").addEventListener("click",showMap);
 document.getElementById("endMapBtn").addEventListener("click",showMap);
 document.getElementById("campBtn").addEventListener("click",showCamp);
-document.getElementById("pauseBtn").addEventListener("click",togglePause);
+// Пауза: мышь — мгновенно, тач — только удержанием. Кнопка теперь в середине
+// правого края (39..62% — полоса инерции, там гребли нет), но короткий тык
+// всё равно не должен вышибать из забега.
+const PAUSE_HOLD = 200;   // мс удержания, после которых тап по кнопке — пауза
+function pauseGate(pointerType, holdMs){
+  return pointerType === "mouse" || holdMs >= PAUSE_HOLD;
+}
+let pauseHoldT = 0, pausePointer = null;
+document.getElementById("pauseBtn").addEventListener("pointerdown", e => {
+  pauseHoldT = Date.now(); pausePointer = e.pointerId;
+  if (e.pointerType === "mouse") togglePause();
+});
+document.getElementById("pauseBtn").addEventListener("pointerup", e => {
+  if (e.pointerId !== pausePointer) return;
+  pausePointer = null;
+  if (e.pointerType !== "mouse" && pauseGate("touch", Date.now() - pauseHoldT)) togglePause();
+});
+document.getElementById("pauseBtn").addEventListener("pointercancel", () => { pausePointer = null; });
 document.getElementById("resumeBtn").addEventListener("click",togglePause);
 document.getElementById("pauseMusicBtn").addEventListener("click",()=>{
   toggleMusic();
@@ -1674,7 +1705,7 @@ const SAVE_KEY = "kayak_campaign";
 // Версия схемы сохранения. Без неё любое изменение структуры дней молча
 // ломало бы чужой прогресс.
 const SAVE_VERSION = 1;
-const SAVE_DEFAULT = { v:SAVE_VERSION, day:0, stars:{}, wallet:0, gear:[], diary:[],
+const SAVE_DEFAULT = { v:SAVE_VERSION, day:0, stars:{}, wallet:0, gear:[], diary:[], failPaid:[],
                        best:{}, name:"", board:{}, music:true, seen:{} };
 let save = loadSave();
 musicOn = save.music !== false;
@@ -1938,13 +1969,17 @@ function finishLevel(){
 function failLevel(){
   const L = level();
   const total = Math.floor(g.dist) + g.bsc + g.sc;
-  // За провал платим втрое меньше, чем за прохождение. Раньше ставка была
-  // одинаковой, и самым выгодным способом копить очки было намеренно
-  // разбиваться на длинном дне.
-  save.wallet += Math.floor(total / 9);
+  save.failPaid = save.failPaid || [];   // старое сохранение без поля — совместимо
+  // Провал платит /9 только один раз за день. Повторный провал того же дня —
+  // ноль: иначе самый выгодный способ копить очки — намеренно разбиваться
+  // на длинном дне, не доходя до финиша.
+  const paidToday = save.failPaid.indexOf(L.day) >= 0;
+  const credit = paidToday ? 0 : Math.floor(total / 9);
+  save.wallet += credit;
+  if (!paidToday) save.failPaid.push(L.day);
   commitSave();
   g.s = "fail";
-  showFail(L, total);
+  showFail(L, total, credit);
 }
 
 const DIARY = {
@@ -2009,13 +2044,14 @@ function showFinish(L, stars, total){
   document.getElementById("finishScreen").classList.remove("hidden");
 }
 
-function showFail(L, total){
+function showFail(L, total, credit){
   hideAllScreens();
   document.getElementById("failPlace").textContent = "не дошли до: " + L.place;
   document.getElementById("failDist").textContent = Math.floor(g.dist);
   // Раньше здесь показывали треть очков, а начисляли девятую часть —
-  // экран врал игроку про награду.
-  document.getElementById("failWallet").textContent = "за этот заход: " + Math.floor(total/9);
+  // экран врал игроку про награду. Теперь показываем ровно то, что начислено
+  // (с анти-фармом повторный провал того же дня — ноль).
+  document.getElementById("failWallet").textContent = "за этот заход: " + (credit || 0);
   document.getElementById("failScreen").classList.remove("hidden");
 }
 
@@ -3083,8 +3119,8 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX,
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
-  startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
-  showFinish, showFail, recordFinish, nextDay,
+  startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
+  showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
   campaignSum,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, drwCut, ptrStart, ptrMove, ptrEnd, award };
