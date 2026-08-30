@@ -26,6 +26,7 @@ canvas { display:block;margin:0 auto; }
 .finh { font-family:"Press Start 2P",monospace;font-size:20px;color:#7fd67f;margin-bottom:6px; }
 .wallet { font-family:"Press Start 2P",monospace;font-size:8px;color:#ffd54f;margin-bottom:12px; }
 .days { display:flex;flex-direction:column;gap:4px;width:100%;max-width:360px;margin-bottom:14px; }
+.totals { font-family:"Press Start 2P",monospace;font-size:7px;color:#ffd54f; }
 .dayrow { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#ddd;background:rgba(255,255,255,0.06);border:2px solid transparent;padding:7px 8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer; }
 .dayrow.locked { color:#555;cursor:default; }
 .dayrow.cur { border-color:#4fc3f7;color:#fff; }
@@ -69,10 +70,18 @@ canvas { display:block;margin:0 auto; }
 #startScreen .btn,#startScreen .btn:hover,.hidden { display:none !important; }
 #pauseBtn { position:absolute;top:8px;right:8px;width:34px;height:34px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
 #pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,10,20,0.92);pointer-events:all; }
-#mobileControls { position:absolute;bottom:16px;left:0;right:0;display:none;justify-content:space-between;padding:0 16px;pointer-events:none; }
+#mobileControls { position:absolute;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:0;right:0;display:none;justify-content:space-between;padding:0 calc(16px + env(safe-area-inset-right,0px)) 0 calc(16px + env(safe-area-inset-left,0px));pointer-events:none; }
 #mobileControls .ctrlgroup { display:flex;gap:10px; }
 #mobileControls .ctrl { width:66px;height:66px;background:rgba(79,195,247,0.2);border:3px solid rgba(79,195,247,0.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#4fc3f7;pointer-events:all; }
 @media (max-width:768px),(hover:none) and (pointer:coarse) { #mobileControls { display:flex; } }
+/* Альбомная ориентация телефона: раньше кнопки ложились горизонтально друг
+   на друга по всей ширине и перекрывали лодку. Теперь они стоят по углам
+   колонками, а середина реки — где ходит байдарка — остаётся открытой. */
+@media (orientation:landscape) and (max-height:560px) {
+  #mobileControls { bottom:0; }
+  #mobileControls .ctrlgroup { flex-direction:column; }
+  #mobileControls .ctrl { width:46px;height:46px;font-size:22px;border-radius:8px;background:rgba(79,195,247,0.14); }
+}
 </style>
 </head>
 <body>
@@ -123,6 +132,7 @@ canvas { display:block;margin:0 auto; }
     <h1 class="maph">МАРШРУТ</h1>
     <div class="wallet">Рюкзак: <span id="mapWallet">0</span> &nbsp;|&nbsp; Звёзд: <span id="mapStars">0</span>/27</div>
     <div class="days" id="mapDays"></div>
+    <div class="totals" id="mapTotals"></div>
     <div class="maprow">
       <button class="btn small" id="campBtn">ЛАГЕРЬ</button>
       <button class="btn small" id="diaryBtn">ДНЕВНИК</button>
@@ -807,8 +817,8 @@ const LEVELS = [
     goalText:"Пройти 3 порога чисто",        aggro:0.55, arrive:"camp",   dens:0.016 },
   { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:20,
     goalText:"Набрать комбо 20",             aggro:0.55, arrive:"camp",   dens:0.018 },
-  { day:9, river:3, place:"УСТЬЕ ОСУГИ",        len:1200, goal:"nolives",     need:0,
-    goalText:"Пройти без потери попыток",    aggro:0.60, arrive:"camp",   dens:0.019 }
+  { day:9, river:3, place:"УСТЬЕ ОСУГИ",        len:1200, goal:"parries",     need:4,
+    goalText:"Парировать 4 удара веслом",    aggro:0.60, arrive:"camp",   dens:0.019 }
 ];
 
 function level(){ return LEVELS[Math.min(g.day, LEVELS.length-1)]; }
@@ -1490,6 +1500,14 @@ function hasGear(id){ return save.gear.indexOf(id) >= 0; }
 
 function starsOf(day){ return save.stars[day] || 0; }
 
+// Суммарный рекорд похода по всем дням — показывается на карте, чтобы
+// общий результат был виден всегда, а не только на финальном экране.
+function campaignSum(){
+  let s = 0;
+  for (const L of LEVELS) s += save.best[L.day] || 0;
+  return s;
+}
+
 // Соперники по таблице. Настоящего сервера у игры нет, поэтому имена
 // генерируются один раз на день и дальше живут в сохранении — это соперники
 // из похода, а не результаты реальных игроков.
@@ -1666,7 +1684,6 @@ function goalMet(){
     case "hearts":      return g.hp         >= L.need;
     case "cleanrapids": return g.cleanRapids>= L.need;
     case "combo":       return g.maxCombo   >= L.need;
-    case "nolives":     return g.livesLost  === 0;
   }
   return false;
 }
@@ -1679,7 +1696,12 @@ function finishLevel(){
 
   if (stars > starsOf(L.day)) save.stars[L.day] = stars;
   if (total > (save.best[L.day] || 0)) save.best[L.day] = total;
-  save.wallet += Math.floor(total / 3);
+  // Первый проход дня платит полную ставку, повтор — треть: иначе самый
+  // выгодный способ копить очки — крутить один и тот же лёгкий день.
+  const already = save.diary.indexOf(L.day) >= 0;
+  // Сколько реально зачислено — показываем на экране результата ровно это.
+  g.walletCredit = Math.floor(total / (already ? 9 : 3));
+  save.wallet += g.walletCredit;
   if (save.diary.indexOf(L.day) < 0) save.diary.push(L.day);
   if (g.day + 1 > save.day) save.day = Math.min(g.day + 1, LEVELS.length - 1);
   commitSave();
@@ -1718,6 +1740,8 @@ function showMap(){
   g.s = "map";
   document.getElementById("mapWallet").textContent = save.wallet;
   document.getElementById("mapStars").textContent = totalStars();
+  document.getElementById("mapTotals").textContent =
+    "Сумма похода: " + campaignSum() + " очков";
   document.getElementById("musicBtn").textContent = musicOn ? "МУЗЫКА: ВКЛ" : "МУЗЫКА: ВЫКЛ";
   const box = document.getElementById("mapDays");
   box.innerHTML = "";
@@ -1740,7 +1764,8 @@ function showFinish(L, stars, total){
   document.getElementById("finStars").textContent = "★".repeat(stars) + "☆".repeat(3-stars);
   document.getElementById("finDist").textContent = Math.floor(g.dist);
   document.getElementById("finScore").textContent = total;
-  document.getElementById("finWallet").textContent = Math.floor(total/3);
+  document.getElementById("finWallet").textContent =
+    (g.walletCredit != null ? g.walletCredit : Math.floor(total/3));
   document.getElementById("finGoal").innerHTML =
     (g.livesLost === 0 ? "★ без потери попыток" : "☆ потеряно попыток: " + g.livesLost) + "<br>" +
     (goalMet() ? "★ " : "☆ ") + L.goalText;
@@ -2832,6 +2857,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish,
+  campaignSum,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg };
 prerenderAll();
