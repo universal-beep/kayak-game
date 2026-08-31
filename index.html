@@ -369,28 +369,29 @@ const SPR = {
     "......kKKKk......kKKKk......",
     "......kKgKk......kKgKk......",
     ".......kKk........kKk......."]},
-  // Поезд — состав по ходу вправо: за головным ПАРОВОЗОМ (локомотив красно-жёлтый с
-  // фарой и кабиной, едет ПЕРВЫМ справа) следуют 4 серых вагона с окнами. Высота 18 —
-  // выше человека (person 16). Ширина 120 — полноценный состав из паровоза + 4 вагонов.
+  // Поезд — длинный состав по ходу вправо: за головным ПАРОВОЗОМ (красно-жёлтый с фарой y и
+  // лобовым окном кабины WW, едет ПЕРВЫМ справа) следуют 9 серых вагонов с окнами. Высота 18 —
+  // выше человека (person 16). Ширина 240 — паровоз + 9 вагонов (длиннее кадра: виден паровоз
+  // и первые вагоны, остальные уходят за левый край — реалистичный длинный состав).
   train:{map:[
-    "................................................................................................kkkkkkkkkkkkkkkkkkkkkkkk",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkrrrrrrrrrrrrrrrrrrrrrrk",
-    "................................................................................................krrrrrrrrrrrrrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrWWrrrrrrrrrrrrrrk",
-    "kWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkrrrrrrrrrrrrrrrrrrrrrrk",
-    "kwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkrrrrrrrrrrrrrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrrrrrrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrrrrrrrrrrrrrrrk",
-    "kWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkrrrrrrrrrrrrrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrrrrrrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrryyykkrrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkKKKKKKKKKKKKKKKKKKKKKKk",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
-    "kkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkk",
-    ".kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk.",
-    ".kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk.",
-    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
-    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
+    "........................................................................................................................................................................................................................kkkkkkkkkkkkkkkkkkkkkkkk",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkrrrrrrrrrrrrrrrrrrrrrrk",
+    "........................................................................................................................................................................................................................krrrrrrrrrrrrrrrrrrrrrrk",
+    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrWWrrrrrrrrrrrrrrk",
+    "kWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkrrrrrrrrrrrrrrrrrrrrrrk",
+    "kwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkrrrrrrrrrrrrrrrrrrrrrrk",
+    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrrrrrrrrrrrrrrrk",
+    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrrrrrrrrrrrrrrrk",
+    "kWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkrrrrrrrrrrrrrrrrrrrrrrk",
+    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrrrrrrrrrrrrrrrk",
+    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrryyykkrrrrrrrrrrrk",
+    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkKKKKKKKKKKKKKKKKKKKKKKk",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "kkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkk",
+    ".kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk.",
+    ".kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk.",
+    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
   ]},
   station:{map:[
     "......kkkkkkkkkkkkkkkk......",
@@ -879,10 +880,16 @@ const CUTS = {
   finale: { sky:"evening", ground:"#3a3f45", caption:"Вокзал в Твери. Домой, в Москву",
     actors:[
       { spr:"station", keys:[[0,210,250,1,1],[1,210,250,1,1]] },
-      // Перрон рисуется на gy+24 (=344 в арт-координатах): раньше поезд и
-      // пассажир стояли на y=330 и «парили» в 14px над краем перрона.
-      { spr:"person",  keys:[[0,80,344,1,1],[0.35,190,344,1,1],[0.55,190,344,1,1],[0.6,190,344,1,0]] },
-      { spr:"train",   keys:[[0,-260,344,1,1],[0.4,210,344,1,1],[0.62,210,344,1,1],[1,760,344,1,1]] }
+      // Человечек стоит на перроне (x=340, y=344). Сначала (t 0..~0.12) перрон пуст —
+      // поезд ещё за кадром слева, это «секунда пустоты»: человечек виден. Когда
+      // поезд подъезжает и останавливается, человек остаётся перед паровозом
+      // (виден при стоянке). При отправлении поезда (t 0.6) человек ИСЧЕЗАЕТ (al→0).
+      { spr:"person",  keys:[[0,340,344,1,1],[0.6,340,344,1,1],[0.63,340,344,1,0],[1,340,344,1,0]] },
+      // Поезд: в t=0 далеко за кадром слева (перрон пуст), подъезжает к 0.45 и
+      // ОСТАНАВЛИВАЕТСЯ на x=-30 (0.45..0.6) — паровоз-голова на [258..330] в кадре,
+      // человечек стоит перед ним на 340. В 0.6 отправляется вправо (x→600),
+      // человечек в этот момент исчезает. Длинный состав (паровоз+9 вагонов).
+      { spr:"train",   keys:[[0,-760,344,1,1],[0.45,-30,344,1,1],[0.6,-30,344,1,1],[1,600,344,1,1]] }
     ] },
   // Первый чистый пролёт моста за день: байдарка под мостом, фермы и тень
   // проносятся мимо, где-то сверху — поезд. Игра продолжается с того же места.
@@ -1064,6 +1071,19 @@ function drwCut(){
   if (sc.sky === "evening"){                 // перрон
     cx.fillStyle = "#5a5f66"; cx.fillRect(0, gy + 24*s, cw, 10*s);
     cx.fillStyle = "#2b2f34"; cx.fillRect(0, gy + 34*s, cw, 8*s);
+    // Ж/д пути в нижней пустой зоне: 2 ряда параллельных путей (шпалы + рельсы).
+    // Балластный слой, светлые рельсы по краям, тёмные шпалы-бруски через шаг.
+    for (const rw of [ { y: 388, w: 22, rs: 2.2 }, { y: 372, w: 18, rs: 1.8 } ]){
+      const yy = yf(rw.y), wd = rw.w * s;
+      cx.fillStyle = "#1c1f23"; cx.fillRect(0, yy - wd/2, cw, wd);       // балласт
+      cx.fillStyle = "#2b2d31";                                           // шпалы
+      for (let tx = 6*s; tx < cw; tx += 18*s){
+        cx.fillRect(tx, yy - wd/2 + 1*s, 4*s, wd - 2*s);
+      }
+      cx.fillStyle = "#aab0b6";
+      cx.fillRect(0, yy - wd/2 - 1*s, cw, rw.rs*s);                       // верхний рельс
+      cx.fillRect(0, yy + wd/2, cw, rw.rs*s);                             // нижний рельс
+    }
   }
   for (const a of sc.actors){
     const st = cutState(a, g.cut.t);
