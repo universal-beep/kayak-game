@@ -1114,15 +1114,13 @@ function drwCut(){
     cx.fillRect(Math.round(xf(sp.x)), Math.round(yf(sp.y)), d, d);
     cx.restore();
   }
-  // подпись и подсказка — всегда внизу экрана
+  // подпись — всегда внизу экрана
   const capH = Math.max(34, Math.round(44*s));
   const capY = ch - capH;
   cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(0, capY, cw, capH);
   cx.fillStyle = "#fff"; cx.font = Math.max(9, Math.round(9*s)) + "px " + F;
   cx.textAlign = "center";
   cx.fillText(sc.caption, cw/2, capY + Math.max(16, Math.round(22*s)));
-  cx.fillStyle = "rgba(255,255,255,0.45)"; cx.font = Math.max(6, Math.round(6*s)) + "px " + F;
-  cx.fillText("нажми, чтобы пропустить", cw/2, ch - Math.max(8, Math.round(9*s)));
   cx.textAlign = "left";
 }
 
