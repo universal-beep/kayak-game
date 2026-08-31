@@ -528,10 +528,25 @@ const SPR = {
   // Тёмный силуэт туриста внутри освещённой палатки.
   sil:{map:["...kk...","..kKKk..","..kKKk..","..kkkk..",".kKKKKk.",
     ".kKKKKk.",".kKKKKk.",".kkkkkk."],noOutline:true},
-  // Ель-силуэт: ряд таких по горизонту даёт полосу дальнего леса в ночной сцене.
-  fir:{map:["....kkk....","...kKKKk...","..kKKKKKk..",".kKKKKKKKk.","kKKKKKKKKKk",
-    ".kKKKKKKKk.","..kKKKKKk..","...kKKKk...","....kKk....","..kKKKKKk..",
-    "..kKKKKKk..","..kkkkkkk.."],noOutline:true},
+  // Ель-силуэт: ярусная ёлка с сужающимся остриём и «полками» нижних лап.
+  // Прежняя была сплошным толстым ромбом на стволе и на горизонте читалась
+  // как чёрные столбики; теперь силуэт узкий и ступенчатый, как настоящая ель,
+  // и плотный ряд таких по горизонту даёт лесную кромку, а не набор фигур.
+  fir:{map:[
+    ".....k.....",
+    "....kKk....",
+    "...kKKKk...",
+    "...kKKKk...",
+    "..kKKKKKk..",
+    "..kKKKKKk..",
+    ".kKKKKKKKk.",
+    "..kKKKKKk..",
+    "..kKKKKKk..",
+    ".kKKKKKKKk.",
+    "kKKKKKKKKKk",
+    "kKKKKKKKKKk",
+    ".kkkkkkkkk.",
+    "..kk...kk.."],noOutline:true},
   // Кадры покачивания туриста-гитариста: вторая фаза — голова на пиксель ниже.
   sitter_b:{map:["..............",".....kkkk.....","....kttttk....","....kttttk....",
     "....kkttkk....","...krrrrrrk...","..krrrrrrrrk..",".krrrrrrrrrrk.",
@@ -943,16 +958,24 @@ const CUTS = {
          sparks:{ x:210, y:302, n:9, h:74, spread:15, life:66 } },
     actors:[
       // Дальний лес елей — плотная полоса по всему горизонту (y<320), разные
-      // густота и масштаб, чтобы край леса не был ровной «линией».
-      { spr:"fir", keys:[[0,18,288,0.5,1],[1,18,288,0.5,1]] },
-      { spr:"fir", keys:[[0,58,282,0.62,1],[1,58,282,0.62,1]] },
-      { spr:"fir", keys:[[0,96,290,0.46,1],[1,96,290,0.46,1]] },
-      { spr:"fir", keys:[[0,150,278,0.78,1],[1,150,278,0.78,1]] },
-      { spr:"fir", keys:[[0,196,292,0.5,1],[1,196,292,0.5,1]] },
-      { spr:"fir", keys:[[0,262,286,0.72,1],[1,262,286,0.72,1]] },
-      { spr:"fir", keys:[[0,330,278,0.85,1],[1,330,278,0.85,1]] },
-      { spr:"fir", keys:[[0,372,292,0.5,1],[1,372,292,0.5,1]] },
-      { spr:"fir", keys:[[0,422,284,0.62,1],[1,422,284,0.62,1]] },
+      // густота и масштаб, чтобы край леса не был ровной «линией». Ели мельче
+      // и стоят вплотную — читаются как лесная кромка, а не ряд столбиков.
+      { spr:"fir", keys:[[0,10,300,0.34,1],[1,10,300,0.34,1]] },
+      { spr:"fir", keys:[[0,38,292,0.42,1],[1,38,292,0.42,1]] },
+      { spr:"fir", keys:[[0,66,302,0.34,1],[1,66,302,0.34,1]] },
+      { spr:"fir", keys:[[0,94,290,0.48,1],[1,94,290,0.48,1]] },
+      { spr:"fir", keys:[[0,122,300,0.36,1],[1,122,300,0.36,1]] },
+      { spr:"fir", keys:[[0,150,284,0.5,1],[1,150,284,0.5,1]] },
+      { spr:"fir", keys:[[0,178,300,0.36,1],[1,178,300,0.36,1]] },
+      { spr:"fir", keys:[[0,204,292,0.44,1],[1,204,292,0.44,1]] },
+      { spr:"fir", keys:[[0,232,302,0.34,1],[1,232,302,0.34,1]] },
+      { spr:"fir", keys:[[0,260,288,0.5,1],[1,260,288,0.5,1]] },
+      { spr:"fir", keys:[[0,290,302,0.36,1],[1,290,302,0.36,1]] },
+      { spr:"fir", keys:[[0,318,292,0.44,1],[1,318,292,0.44,1]] },
+      { spr:"fir", keys:[[0,346,302,0.34,1],[1,346,302,0.34,1]] },
+      { spr:"fir", keys:[[0,374,290,0.46,1],[1,374,290,0.46,1]] },
+      { spr:"fir", keys:[[0,402,300,0.36,1],[1,402,300,0.36,1]] },
+      { spr:"fir", keys:[[0,428,292,0.4,1],[1,428,292,0.4,1]] },
       // Байдарки на берегу — боком (профиль kayak_side), БЕЗ людей. Лежат КУЧНО у
       // самой воды (низ у кромки 468): две на границе берег/река, три чуть выше,
       // вплотную друг к другу — будто их вытащили из воды и бросили на берегу.
@@ -1101,6 +1124,8 @@ function playCut(name, then){
   g.cut = { name, t: 0, then };
   g.s = "cutscene";
   hideAllScreens();
+  // Плашка-подсказка «ВЕДИ ПАЛЕЦ — РУЛЬ» не должна лезть поверх мультов.
+  showMobileHint(false);
   cutFull = true; rs();                  // канвас на весь экран
   setMusic(name === "night" ? "camp" : "river");
 }
@@ -1762,13 +1787,20 @@ c.addEventListener("touchcancel",e=>{e.preventDefault();ptrEnd(tapX,tapY);},{pas
 c.addEventListener("pointercancel",()=>{ptrEnd(tapX,tapY);});
 c.addEventListener("mouseleave",()=>{if(mDown){mDown=false;ptrEnd(tapX,tapY);}});
 // Обучающий оверлей для мобильной версии — что какой тап делает.
-function showMobileHint(){
-  if(typeof matchMedia==="undefined")return;
-  if(!matchMedia("(hover:none) and (pointer:coarse)").matches)return;
-  const el=document.getElementById("mHint");
+// showMobileHint(false) прячет его сразу (используется при старте катсцены).
+function showMobileHint(show){
+  if (typeof document === "undefined" || !document.getElementById) return;
+  const el = document.getElementById("mHint");
+  if (!el || !el.classList) return;
+  if (typeof clearTimeout === "function") clearTimeout(g._mhT);
+  if (show === false){
+    el.classList.add("hide");
+    return;
+  }
+  if (typeof matchMedia === "undefined" || typeof matchMedia !== "function") return;
+  if (!matchMedia("(hover:none) and (pointer:coarse)").matches) return;
   el.classList.remove("hide");
-  clearTimeout(g._mhT);
-  g._mhT=setTimeout(()=>el.classList.add("hide"), 8000);
+  if (typeof setTimeout === "function") g._mhT = setTimeout(() => el.classList.add("hide"), 8000);
 }
 function hs(){startMusic();if(g.s=="continue"){resumeRun();return;}if(g.s=="start")showMap();}
 document.getElementById("startBtn").addEventListener("click",()=>{startMusic();showMap();});
