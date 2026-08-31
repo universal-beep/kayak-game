@@ -579,6 +579,9 @@ function shearMap(map, dir){
 SPR.kayak_center = { map: swapPalette(SPR.rower.map, { r:"w", z:"r", p:"u", x:"Y" }) };
 SPR.kayak_left   = { map: shearMap(SPR.kayak_center.map, -1) };
 SPR.kayak_right  = { map: shearMap(SPR.kayak_center.map,  1) };
+// Байдарка на прицепе — жёлтая, как игровая: корпус в тёплый жёлтый (был тёмный O),
+// тёмный кокпит (K) оставляем для контраста и читаемости корпуса.
+SPR.kayak_side   = { map: swapPalette(SPR.kayak_side.map, { O:"Y" }) };
 // Палатка с освещённым изнутри входом: вся тёмная лента входа становится
 // тёплой, силуэт туриста внутри — отдельный спрайт сверху.
 SPR.tent_lit = { map: swapPalette(SPR.tent.map, { K:"A" }), noOutline:true };
@@ -867,7 +870,7 @@ const CUTS = {
       { spr:"bird0", cycle:{per:6,spr:["bird0","bird1"]}, keys:[[0.3,400,84,0.5,0],[0.35,395,82,0.5,1],[0.8,150,94,0.5,1],[0.85,145,94,0.5,0]] },
       { spr:"bird0", cycle:{per:7,spr:["bird0","bird1"]}, keys:[[0.5,520,150,0.35,0],[0.55,515,146,0.35,1],[1,330,160,0.35,0]] }
     ] },
-  drive: { sky:"day", ground:"#3f6b33", caption:"Байдарка на прицепе — и на другую реку",
+  drive: { sky:"day", ground:"#3f6b33", road:true, caption:"Байдарка на прицепе — и на другую реку",
     actors:[
       // Лес по обочине: деревья проносятся мимо и задают движение, больше ничего.
       { spr:"tree",  keys:[[0,470,300,1,1],[1,-90,300,1,1]] },
@@ -1058,6 +1061,18 @@ function drwCut(){
   }
   const gy = Math.round(320*s);
   cx.fillStyle = sc.ground; cx.fillRect(0, gy, cw, ch-gy);
+  // Дорога для drive: асфальтовая полоса, по которой едет машина/прицеп/лодка.
+  // Колёса машины на y≈362, прицеп 368, лодка 347 — дорога от 352 до 416 арт.
+  if (sc.road){
+    const rTop = 352, rBot = 416;
+    cx.fillStyle = "#2c3138"; cx.fillRect(0, yf(rTop), cw, (rBot-rTop)*s);          // асфальт
+    cx.fillStyle = "#1f242a"; cx.fillRect(0, yf(rTop-3), cw, 3*s);                  // верхний бортик
+    cx.fillRect(0, yf(rBot), cw, 3*s);                                               // нижний бортик
+    cx.fillStyle = "#a9adb6"; cx.fillRect(0, yf(rTop-1), cw, 1.5*s);                 // кромка
+    cx.fillRect(0, yf(rBot-1.5), cw, 1.5*s);
+    cx.fillStyle = "#cdccc0";                                                        // пунктирная разметка по оси
+    for (let x = 3*s, k = 0; x < cw; x += 10*s, k++) cx.fillRect(x, yf(384), 4.5*s, 2*s);
+  }
   // тёплое свечение костра — под актёрами, чтобы не перекрывать силуэты
   const fx = cutFx(sc, g.cut.t);
   if (fx.glow){
