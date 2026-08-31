@@ -296,7 +296,10 @@ const SPR = {
     "..krrrrrrk..",".krrrrrrrrk.","krrrrrrrrrrk","krrrrrrrrrrk",
     ".krrrrrrrrk.","..kZZZZZZk..","..kZZZZZZk..","..kZZkkZZk..",
     "..kZZkkZZk..","..kZZkkZZk..",".kOOkkkkOOk.",".kkkkkkkkkk."],
-    variants:[{},{r:"N",Z:"q"}],noOutline:true},
+    // Варианты одежды пассажиров — (куртка r, штаны Z): 0 красная куртка/синие штаны,
+    // 1 зелёная куртка/оранжевые штаны, 2 оранжевая куртка/серые штаны,
+    // 3 жёлтая куртка/синие штаны, 4 тёмно-жёлтая куртка/голубые штаны.
+    variants:[{},{r:"N",Z:"q"},{r:"p",Z:"g"},{r:"A",Z:"Z"},{r:"D",Z:"I"}],noOutline:true},
   sitter:{map:[".....kkkk.....","....kttttk....","....kttttk....","....kkttkk....",
     "...krrrrrrk...","..krrrrrrrrk..",".krrrrrrrrrrk.",".krrrrrrrrrrk.",
     "kZZZkrrrrkZZZk","kZZZZkkkkZZZZk","kOOZZZZZZZZOOk","kkkkkkkkkkkkkk"],noOutline:true},
@@ -890,10 +893,11 @@ const CUTS = {
       // Пассажиры на перроне (x на 344) ЗА вагонами (порядок: person до train — поезд спереди,
       // толпа позади; пока поезд в кадре — люди за вагонами). В начале (секунда пустоты) поезда
       // нет, пассажиры видны у вокзала. В 0.6 при отправлении ВСЕ садятся и исчезают (al→0).
+      // Одежда разная (var), рост почти одинаковый — герой (var 0, scl=1) лишь на ~6-8% крупнее.
       { spr:"person",  keys:[[0,340,344,1,1],[0.6,340,344,1,1],[0.63,340,344,1,0],[1,340,344,1,0]] },
-      { spr:"person",  keys:[[0,150,344,0.7,1],[0.6,150,344,0.7,1],[0.63,150,344,0.7,0],[1,150,344,0.7,0]] },
-      { spr:"person",  keys:[[0,245,344,0.7,1],[0.6,245,344,0.7,1],[0.63,245,344,0.7,0],[1,245,344,0.7,0]] },
-      { spr:"person",  keys:[[0,395,344,0.8,1],[0.6,395,344,0.8,1],[0.63,395,344,0.8,0],[1,395,344,0.8,0]] },
+      { spr:"person", var:1, keys:[[0,150,344,0.94,1],[0.6,150,344,0.94,1],[0.63,150,344,0.94,0],[1,150,344,0.94,0]] },
+      { spr:"person", var:2, keys:[[0,245,344,0.92,1],[0.6,245,344,0.92,1],[0.63,245,344,0.92,0],[1,245,344,0.92,0]] },
+      { spr:"person", var:3, keys:[[0,395,344,0.95,1],[0.6,395,344,0.95,1],[0.63,395,344,0.95,0],[1,395,344,0.95,0]] },
       // Поезд: в t=0 далеко за кадром слева (перрон пуст — «секунда пустоты»), подъезжает к 0.45
       // и ОСТАНАВЛИВАЕТСЯ на center=484 (0.45..0.6): вагон 3 = [268..340], вагон 4 = [340..412] —
       // у места человека оказывается стык 3-4 вагона. В 0.6 отправляется вправо (center→840).
@@ -981,7 +985,7 @@ function cutState(a, t){
   if (a.cycle && a.cycle.spr.length)
     spr = a.cycle.spr[Math.floor(t / a.cycle.per) % a.cycle.spr.length];
   return { spr, x: lerp(k0[1],k1[1],u), y: lerp(k0[2],k1[2],u),
-    scl: lerp(k0[3],k1[3],u), al: lerp(k0[4],k1[4],u) };
+    scl: lerp(k0[3],k1[3],u), al: lerp(k0[4],k1[4],u), var: a.var || 0 };
 }
 
 // Эффекты сцены по времени: свет (glow) и искры. Всё детерминировано, без
@@ -1079,6 +1083,27 @@ function drwCut(){
     cx.restore();
   }
   if (sc.sky === "evening"){                 // перрон
+    // Город за вокзалом: зелень (тёмные кроны) + силуэты зданий с жёлтыми окнами.
+    // Вдалеке, выше перрона; вокзал и поезд рисуются позже поверх нижней части.
+    const zBase = 262;                       // арт-основание застройки (line горизонта города)
+    // кромка зелени — волнистый силуэт холмов/деревьев позади зданий
+    cx.fillStyle = "#23321f";
+    cx.beginPath(); cx.moveTo(0, yf(zBase));
+    for (let i = 0; i <= 42; i++){ const xx = i*10; cx.lineTo(xf(xx), yf(zBase - 8 - ((i*13)%7))); }
+    cx.lineTo(cw, yf(zBase)); cx.lineTo(cw, ch); cx.lineTo(0, ch); cx.closePath(); cx.fill();
+    // здания: детерминированный ряд (хеш-константы), верхняя часть будет видна над вокзалом
+    for (let i = 0; i < 42; i++){
+      const h = 12 + ((i*37) % 20);          // высота 12..31 арт
+      const wt = 11 + ((i*53) % 9);          // ширина 11..19 арт
+      const x0 = i*10;
+      cx.fillStyle = "#241f2e";
+      cx.fillRect(xf(x0), yf(zBase - h), wt*s, h*s);
+      // светящиеся окна (жёлтые) — редкие, детерминированные
+      cx.fillStyle = "rgba(255,214,120,0.55)";
+      for (let wy = zBase - h + 3; wy < zBase - 2; wy += 4)
+        for (let wx = x0 + 2; wx < x0 + wt - 2; wx += 3)
+          if ((wx*7 + wy*13 + i) % 5 === 0) cx.fillRect(xf(wx), yf(wy), 2*s, 2*s);
+    }
     cx.fillStyle = "#5a5f66"; cx.fillRect(0, gy + 24*s, cw, 10*s);
     cx.fillStyle = "#2b2f34"; cx.fillRect(0, gy + 34*s, cw, 8*s);
     // Ж/д пути в нижней пустой зоне: 2 ряда параллельных путей (шпалы + рельсы).
@@ -1100,7 +1125,8 @@ function drwCut(){
     const spr = SPR[st.spr];
     if (!spr || !spr.img || st.al <= 0.01) continue;
     cx.save(); cx.globalAlpha = st.al;
-    const w = spr.img.width*st.scl*s, h = spr.img.height*st.scl*s;
+    const img = spr.imgs && spr.imgs[st.var] ? spr.imgs[st.var] : spr.img;
+    const w = img.width*st.scl*s, h = img.height*st.scl*s;
     // Тень-эллипс под опорой — только если фигура стоит на земле/перроне
     // (yf(st.y) ≥ gy). Летящие птицы и дальние силуэты тень не получают:
     // она «парила» бы под ними в небе.
