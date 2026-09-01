@@ -3803,7 +3803,42 @@ function rndr(){
     cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
   }
 }
-function lp(){if(g.s!="paused")upd();rndr();requestAnimationFrame(lp);}
+// Сколько кадров симуляции нужно отыграть за dtMs реального времени.
+// Фиксированный шаг 60Гц: 1000мс = 60 кадров независимо от FPS экрана.
+// Чистая функция (состояние аккумулятора acc передаётся/возвращается) — её
+// держат тесты. Аккумулятор копит доли кадра: на 30fps экрана одним тиком
+// в 33.3мс отыгрывается ровно 2 шага симуляции.
+function simPlan(dtMs, acc){
+  const STEP = 1000 / 60;
+  const total = acc + (dtMs > 0 ? dtMs : 0);
+  const steps = Math.floor(total / STEP);
+  return { steps, acc: total - steps * STEP };
+}
+let _lpLast = 0, _lpAcc = 0;
+// Главный цикл на реальном времени: RAF-тик несёт момент времени (мс), симуляция
+// шагает фиксированно 60 раз в секунду, сколько бы кадров экрана ни отрисовалось.
+// На мобиле (30fps) за один RAF-тик отыгрывается 2 шага — сцены и звук идут
+// синхронно, а не «звук быстрее, анимация дольше». Пока игра паузится, время не
+// копится: сброс аккумулятора (иначе после паузы сцена «догоняла» бы всё разом).
+function nowMs(t){
+  if (typeof t === "number") return t;
+  if (typeof performance !== "undefined" && typeof performance.now === "function") return performance.now();
+  return Date.now();
+}
+function lp(t){
+  const now = nowMs(t);
+  if (_lpLast === 0) _lpLast = now;
+  let dt = now - _lpLast;
+  _lpLast = now;
+  if (g.s === "paused"){ _lpAcc = 0; rndr(); requestAnimationFrame(lp); return; }
+  const plan = simPlan(dt, _lpAcc);
+  _lpAcc = plan.acc;
+  let n = plan.steps;
+  if (n > 4) n = 4;            // защита от спирали смерти на слабых устройствах
+  while (n-- > 0) upd();
+  rndr();
+  requestAnimationFrame(lp);
+}
 
 /* ===== 13. Экспорт для тестов ===== */
 globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secondDiff,
@@ -3815,7 +3850,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, baseWidthAt, widthAt, curvAt, secon
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
   campaignSum,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset };
+  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined"){
   // Режим просмотра катсцен без прохождения игры: ?cut=night|morning|drive|finale (или all — по кругу).
