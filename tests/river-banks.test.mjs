@@ -8,7 +8,7 @@
 //      в конце дистанции было не подгрести («слева не пускает»).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadGame, setupWorld } from "./harness.mjs";
+import { loadGame } from "./harness.mjs";
 
 // День 1 — Волга (ruslo 0, len 800), эталон широкой реки, где жаловались.
 const W = 420;
@@ -58,49 +58,4 @@ test("старт финишной рампы: снос рампа не пере�
   const c = K.centerAt(w), hw = K.widthAt(w) / 2;
   assert.ok(K.screenXOf(K.G.t, w) - half <= c - hw + 8,
     "корпус дотягивается до левого уреза: x=" + K.screenXOf(K.G.t, w).toFixed(1) + " edgL=" + (c - hw).toFixed(1));
-});
-
-// Прибережная полоса «трава-песок» в drwBg. Структурный тест: на ОБОИХ берегах
-// в полосах без тумана (y ≥ 320, цвета затуманивания не влияют) рисуется
-// мокрый песок шириной 14px от уреза + сухая трава до ПОЛ-ЛОДКИ (31px).
-// До фикса песок был 6px — «берег срезан», лодка стояла на голом крае.
-function recordingCtx(raw) {
-  const calls = [];
-  raw.fillRect = function (x, y, w, h) {
-    calls.push({ kind: "rect", x, y, w, h, color: raw.fillStyle, alpha: raw.globalAlpha });
-  };
-  return calls;
-}
-
-test("берег с травой-песком: с каждого берега песок 14px + трава до пол-лодки (31px)", () => {
-  const { K, ctx } = loadGame();
-  K.G.df = 0;
-  // Кадр в СЕРЕДИНЕ курса (scroll 700 → wy 194..590, далеко от финишной рампы
-  // len-120=680), где банки заведомо шире 31px — полоса должна быть полной.
-  setupWorld(K, { wy: 700, t: 0, rWidth: 1 });
-  const calls = recordingCtx(ctx);
-  K.drwBg();
-  const rects = calls.filter(c => c.kind === "rect");
-  assert.ok(rects.length > 0, "drwBg наполнила кадр");
-  assert.ok(rects.some(r => Number.isNaN(parseInt(String(r.color).replace(/\D/g, ""), 10)) === false),
-    "нет NaN-цветов в заливках берега");
-  // y ≥ 320 → fy = 0: полосы вдали не размыты туманом. Проверяем КАЖДУЮ такую
-  // полосу: и слева, и справа есть песок (14px у уреза) и трава-остаток (до 31px).
-  let bandsChecked = 0;
-  for (let y = 320; y < 716; y += 4) {
-    const wy = K.worldYOf(y);
-    const c = K.centerAt(wy), hw = K.widthAt(wy) / 2;
-    const L = c - hw, R = c + hw;
-    if (L < 31) continue;    // только полосы с полным берегом
-    bandsChecked++;
-    const at = (x, w) => rects.some(r => r.y === y && r.h === 4
-      && Math.abs(r.x - x) < 0.01 && Math.abs(r.w - w) < 0.01);
-    assert.ok(at(L - 14, 14), "левый берег: песок 14px от уреза (y=" + y + ", L=" + L.toFixed(1) + ")");
-    assert.ok(at(R, 14), "правый берег: песок 14px от уреза (y=" + y + ", R=" + R.toFixed(1) + ")");
-    assert.ok(at(L - 31, 17), "левый берег: трава до пол-лодки (31px, y=" + y + ")");
-    assert.ok(at(R + 14, 17), "правый берег: трава до пол-лодки (31px, y=" + y + ")");
-  }
-  assert.ok(bandsChecked >= 50, "проверено достаточно полос с полным берегом: " + bandsChecked);
-  // Узкий песок прошлой версии (6px) нигде не остался.
-  assert.ok(!rects.some(r => Math.abs(r.w - 6) < 0.01), "узкая 6px песчаная кайма удалена");
 });

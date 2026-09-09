@@ -2413,36 +2413,14 @@ function drwBg(){
     const water = mixHex(g.rWater || "#1565c0", "#d8e9f5", fog);
     const sand  = mixHex("#d2b674", "#dfe3c8", fog*0.9);
     const edge  = mixHex("#0d47a1", "#d8e9f5", fog);
-    // Трава прибрежной полосы: сухой выгоревший тон между травой и песком.
-    // Нельзя подавать в mixHex уже смиксованный grass (rgb-строка) —
-    // mixHex парсит только #hex, получался NaN. Смешиваем в HEX до тумана:
-    const shoreGrass = mixHex(mixHex(g.rGrass || "#3f8f43", "#d2b674", 0.16), "#dfe3c8", fog*0.9);
 
     cx.fillStyle = grass;
     cx.fillRect(0, y, Math.max(0, L), BAND);
     cx.fillRect(Math.min(W, R), y, W - R, BAND);
 
-    // Прибережная полоса «трава-песок» суммарной шириной ПОЛ-ЛОДКИ (~31px):
-    // мокрый песок у кромки + сухая трава дальше вглубь. Полоса рисуется на
-    // ОБОИХ берегах на весь сплав, поэтому причаленная байдарка (половина
-    // корпуса ~31px) «встаёт» на настоящий берег, а не на голый край — нет
-    // ощущения, что экран срезан. Где суша уже полосы — рисуем сколько есть.
-    const shoreD = 14, shoreTotal = 31;
-    const wl = Math.min(L, shoreD);               // песок слева
-    const wr = Math.min(W - R, shoreD);           // песок справа
-    const gl = Math.min(L, shoreTotal) - wl;      // трава слева (остаток полосы)
-    const gr = Math.min(W - R, shoreTotal) - wr;  // трава справа
     cx.fillStyle = sand;
-    cx.fillRect(Math.max(0, L - shoreD), y, wl, BAND);
-    cx.fillRect(R, y, wr, BAND);
-    if (gl > 0){
-      cx.fillStyle = shoreGrass;
-      cx.fillRect(Math.max(0, L - shoreTotal), y, gl, BAND);
-    }
-    if (gr > 0){
-      cx.fillStyle = shoreGrass;
-      cx.fillRect(R + wr, y, gr, BAND);
-    }
+    cx.fillRect(L - 6, y, 6, BAND);
+    cx.fillRect(R, y, 6, BAND);
 
     cx.fillStyle = water;
     cx.fillRect(L, y, R - L, BAND);
