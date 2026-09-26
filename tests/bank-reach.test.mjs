@@ -37,6 +37,10 @@ for (const day of [0, 2, 4, 6]) {
         const x = K.screenXOf(K.G.t, wy);
         const gap = side * (c + side * hw - (x + side * hull));   // >0 — вода между бортом и берегом
         if (gap > 2) bad.push((side < 0 ? "левый" : "правый") + " зазор " + gap.toFixed(0) + " px на " + Math.round(wy / 25) + " м");
+        // Лодка заходит к берегу глубоко: борт на песке не меньше чем на 10 px —
+        // кроме мест, где дальше не пускает край кадра.
+        const roomLeft = side < 0 ? x - half : 420 - (x + half);
+        if (gap > -10 && roomLeft > 3) bad.push((side < 0 ? "левый" : "правый") + " мелко: борт на песке " + (-gap).toFixed(0) + " px на " + Math.round(wy / 25) + " м");
         if (x - half < -1 || x + half > 421) bad.push("спрайт за кадром на " + Math.round(wy / 25) + " м");
       }
     }

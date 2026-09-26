@@ -21,11 +21,11 @@ export const INDEX = fileURLToPath(new URL("../index.html", import.meta.url));
 // Группы для редактора и листа спрайтов. Спрайт, которого здесь нет,
 // попадает в «Катсцены и прочее».
 export const GROUPS = [
-  ["Река: препятствия", ["log", "branch", "snag", "boulder", "fang", "slab", "barge", "shallows"]],
+  ["Река: препятствия", ["log", "branch", "snag", "boulder", "fang", "slab", "barge", "boat", "shallows"]],
   ["Бонусы", ["bread", "whisky", "medkit", "axe", "sun"]],
-  ["Лодки", ["kayak_center", "kayak_left", "kayak_right", "rower", "rower_wind", "rower_strike", "rower_flip", "oar"]],
-  ["Берег и финиш: природа", ["tree", "sfir", "sbirch", "sbush", "bush", "bear", "duck", "duckfly0", "duckfly1", "fish"]],
-  ["Берег и финиш: люди и лагерь", ["person", "girl", "sitter", "guitarist", "guitarist_b", "sitter_guitar", "sitter_guitar_b", "note", "fisher", "tent", "tent2", "pack", "fire", "tower", "church", "house"]],
+  ["Лодки", ["kayak_center", "kayak_left", "kayak_right", "rower", "rower_flip", "oar"]],
+  ["Берег и финиш: природа", ["tree", "sfir", "sbirch", "sbush", "bush", "bear", "bear_b", "duck", "duckfly0", "duckfly1", "fish"]],
+  ["Берег и финиш: люди и лагерь", ["person", "girl", "sitter", "guitarist", "guitarist_b", "night_guitar", "night_guitar_b", "note", "fisher", "tent", "tent2", "pack", "fire", "tower", "church", "house"]],
   ["Пляж", ["sunbather", "sunbather_f", "towel", "umbrella", "swimmer0", "swimmer1"]],
   ["Мосты", ["bridge", "truss", "deck", "pier", "shadow"]],
 ];

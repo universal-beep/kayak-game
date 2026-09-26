@@ -81,7 +81,7 @@ test("replaceMap в файле с CRLF пишет CRLF", async () => {
 
 test("findMapSpan находит карты, собранные выражениями rep(...)", () => {
   const src = readFileSync(INDEX, "utf8");
-  for (const n of ["rower_wind", "barge", "log", "fire0"]) {
+  for (const n of ["rower_flip", "barge", "log", "fire0"]) {
     const s = findMapSpan(src, n);
     assert.ok(s, n + " не найден");
     assert.equal(src[s.start], "[");

@@ -190,7 +190,7 @@ let cutFull=false;   // канвас на весь экран, пока идёт
 function rs(){if(cutFull){c.width=innerWidth;c.height=innerHeight;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px";return;}const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.width=W;c.height=H;c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={weeds:[],s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,vestUsed:false,bridgeCinema:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
+const g={weeds:[],waves:[],s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,vestUsed:false,bridgeCinema:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
   t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
@@ -216,10 +216,91 @@ const PAL = {
 const rep = (ch,n) => ch.repeat(n);
 
 const SPR = {
+  // Катер сверху, носом вниз (идёт навстречу): белый корпус с красной полосой
+  // по борту, кокпит с водителем, лобовое стекло, подвесной мотор на корме.
+  boat:{map:["....kKKKKk....",
+    "....kKggKk....",
+    ".kkkkKggKkkkk.",
+    "krwwwKKKKwwwrk",
+    "krwiiiiiiiiwrk",
+    "krwiIICCIIiwrk",
+    "krwiIttttIiwrk",
+    "krwiIZZZZIiwrk",
+    "krwiIZZZZIiwrk",
+    "krwiIZZZZIiwrk",
+    "krwiIZZZZIiwrk",
+    "krwiIIIIIIiwrk",
+    "krwiiiiiiiiwrk",
+    "krwfiiiiiifwrk",
+    "krwffffffffwrk",
+    "krwwwwwwwwwwrk",
+    "krwwwwwwwwwwrk",
+    "krwwwwwwwwwwrk",
+    "krwwwwwwwwwwrk",
+    "krwwwwwwwwwwrk",
+    "krwwwwwwwwwwrk",
+    "kWwwwwwwwwwwWk",
+    ".kwwwwwwwwwwk.",
+    ".kwwwwWWwwwwk.",
+    "..kwwwWWwwwk..",
+    "...kwwWWwwk...",
+    "....kwWWwk....",
+    ".....kWWk.....",
+    "......kk......"]},
+  // Гитарист ночного мульта: в профиль, сидит на чурбаке лицом к костру (огонь
+  // слева), гитара перед грудью, гриф с колками влево-вверх, левая рука на
+  // грифе; night_guitar_b — правая рука ударила по струнам.
+  night_guitar:{map:[".............kkkkk...",
+    "............kCCCCCk..",
+    "...........kCCCCCCk..",
+    "...........ktttCCk...",
+    "..........ktKtttCk...",
+    "k.........ktttttCk...",
+    "Wkk........kTttCk....",
+    "bbWk.......kvvvvvk...",
+    "bbkkk....kkkvvvvVVk..",
+    "bbeBtkkkkvvvvvvVVVk..",
+    "kBBetvvvvMMMvVVvVVk..",
+    ".kkkBeeeLLLttvvvVVk..",
+    "....kkBeeLbbLMvvVVk..",
+    "......kMBLbbLMvvVVk..",
+    "......kMMLLLMMvvVVk..",
+    "......kZMMMMMvvvVVk..",
+    "......kZZZZZZZZZkk...",
+    "......kZZZZZZZZZk....",
+    "......kZZkkkkZZZkkkk.",
+    "......kZZooooZZZooook",
+    ".....kOOOOOOOZZZbOOOk",
+    ".....kOOOOObOOOOOOOOk",
+    "......kkkOOOOOOOOOOOk",
+    ".........kkkkkkkkkkk."]},
+  night_guitar_b:{map:[".............kkkkk...",
+    "............kCCCCCk..",
+    "...........kCCCCCCk..",
+    "...........ktttCCk...",
+    "..........ktKtttCk...",
+    "k.........ktttttCk...",
+    "Wkk........kTttCk....",
+    "bbWk.......kvvvvvk...",
+    "bbkkk....kkkvvvvVVk..",
+    "bbeBtkkkkvvvvvvVVVk..",
+    "kBBetvvvvMMMvvVvVVk..",
+    ".kkkBeeeLLLLMvVvVVk..",
+    "....kkBeeLbbLVvvVVk..",
+    "......kMBLbbLVvvVVk..",
+    "......kMMLLttMvvVVk..",
+    "......kZMMMMMvvvVVk..",
+    "......kZZZZZZZZZkk...",
+    "......kZZZZZZZZZk....",
+    "......kZZkkkkZZZkkkk.",
+    "......kZZooooZZZooook",
+    ".....kOOOOOOOZZZbOOOk",
+    ".....kOOOOObOOOOOOOOk",
+    "......kkkOOOOOOOOOOOk",
+    ".........kkkkkkkkkkk."]},
   // Гитарист на берегу (игра): сидит по-турецки в штормовке, гитара-«восьмёрка»
   // по диагонали на коленях — дека с отверстием, гриф с колками влево-вверх,
   // левая рука на грифе. guitarist_b — второй кадр: правая рука ударила по струнам.
-  // В ночном мульте остаётся sitter_guitar.
   guitarist:{map:[".........kCCk.......",
     "........kCCCCk......",
     ".......kCCCCCCk.....",
@@ -560,29 +641,11 @@ const SPR = {
     "......."+"kk"+"ppp"+"kk"+".......",rep(".",9)+"kkk"+rep(".",9)],
     // Соперники — синий, зелёный и серый. Жёлтый корпус зарезервирован
     // за игроком, чтобы своя байдарка узнавалась мгновенно.
-    variants:[{},{z:"N",p:"v",x:"V"},{r:"K",z:"g",p:"j",x:"g"}]},
-  // Кадры драки вёслами: замах, удар и перевёрнутая лодка. Корпус общий с
-  // rower (те же варианты одежды), отличается фигурой гребца и весла над ним.
-  rower_wind:{map:[
-    rep(".",9)+"kYYk"+rep(".",8), rep(".",9)+"kYYk"+rep(".",8),
-    rep(".",8)+"kyyk"+rep(".",9), rep(".",8)+"krrk"+rep(".",9),
-    rep(".",7)+"kkttkk"+rep(".",8),
-    rep(".",6)+"k"+"zzzzzzz"+"k"+rep(".",6), rep(".",5)+"k"+"zzzzzzzzz"+"k"+rep(".",5),
-    rep(".",5)+"k"+"zzwwwwwzz"+"k"+rep(".",5), rep(".",5)+"k"+"zzzzzzzzz"+"k"+rep(".",5),
-    ".."+"k"+rep("p",15)+"k"+"..", ".."+"k"+"pppxxxxxxxxxppp"+"k"+"..",
-    ".."+"k"+rep("p",15)+"k"+"..", "..."+"k"+rep("p",13)+"k"+"...",
-    "....."+"k"+rep("p",9)+"k"+".....", "......."+"kk"+"ppp"+"kk"+".......", rep(".",9)+"kkk"+rep(".",9)],
-    variants:[{},{z:"N",p:"v",x:"V"},{r:"K",z:"g",p:"j",x:"g"}]},
-  rower_strike:{map:[
-    rep(".",5)+"kkttkk"+rep(".",10), rep(".",4)+"krrrrrrk"+rep(".",9),
-    "YYYY"+rep("y",13)+"YYYY",
-    rep(".",3)+"krrrrrrrrk"+rep(".",8), rep(".",2)+"kkkkkkkkkkk"+rep(".",8),
-    rep(".",6)+"k"+"zzzzzzz"+"k"+rep(".",6), rep(".",5)+"k"+"zzzzzzzzz"+"k"+rep(".",5),
-    rep(".",5)+"k"+"zzwwwwwzz"+"k"+rep(".",5), rep(".",5)+"k"+"zzzzzzzzz"+"k"+rep(".",5),
-    ".."+"k"+rep("p",15)+"k"+"..", ".."+"k"+"pppxxxxxxxxxppp"+"k"+"..",
-    ".."+"k"+rep("p",15)+"k"+"..", "..."+"k"+rep("p",13)+"k"+"...",
-    "....."+"k"+rep("p",9)+"k"+".....", "......."+"kk"+"ppp"+"kk"+".......", rep(".",9)+"kkk"+rep(".",9)],
-    variants:[{},{z:"N",p:"v",x:"V"},{r:"K",z:"g",p:"j",x:"g"}]},
+    // Вариант 3 (AGGRO_VARIANT) — только у злых: чёрная куртка на
+    // тёмно-красной байдарке с чёрной полосой, видно издалека.
+    variants:[{},{z:"N",p:"v",x:"V"},{r:"K",z:"g",p:"j",x:"g"},{z:"K",p:"R",x:"k"}]},
+  // Перевёрнутая лодка после парирования. Замах и удар — не кадры, а
+  // анимация весла (paddlePose): корпус общий с rower.
   rower_flip:{map:[
     // Перевёрнутая байдарка: киль вверх, гребец в воде, пена.
     rep(".",7)+"kkkkkkk"+rep(".",7), rep(".",6)+"k"+rep("p",7)+"k"+rep(".",6),
@@ -594,7 +657,9 @@ const SPR = {
     rep(".",7)+"kkttkk"+rep(".",8), rep(".",6)+"krrrrkk"+rep(".",8),
     rep(".",3)+"ww"+rep("y",9)+"ww"+rep(".",5), rep(".",2)+"ww"+rep("y",13)+"ww"+rep(".",2),
     rep(".",3)+"ww"+rep("y",11)+"ww"+rep(".",3)],
-    variants:[{},{z:"N",p:"v",x:"V"},{r:"K",z:"g",p:"j",x:"g"}]},
+    // Вариант 3 (AGGRO_VARIANT) — только у злых: чёрная куртка на
+    // тёмно-красной байдарке с чёрной полосой, видно издалека.
+    variants:[{},{z:"N",p:"v",x:"V"},{r:"K",z:"g",p:"j",x:"g"},{z:"K",p:"R",x:"k"}]},
   // Утка-кряква в профиль, клюв влево: зелёная голова, белая щёчка и ожерелье,
   // оранжевый клюв, коричневая спина (D), светлое брюхо (a). Раньше утки
   // читались как тёмные комки — теперь силуэт светлый и узнаваемый.
@@ -606,11 +671,49 @@ const SPR = {
     ".kaaaaaaDk.",
     "..kkDDDDk..",
     "....kkkk..."],noOutline:true},
-  bear:{map:["...kkk......kkk...","..kBBBk....kBBBk..","..kBmBkkkkkkBmBk..",
-    "..kkBBBBBBBBBBkk..","..kBBBBBBBBBBBBk..","..kBBwwBBBBwwBBk..","..kBBwKBBBBKwBBk..",
-    "..kBBBBmmmmBBBBk..","..kBBBmmmmmmBBBk..","..kBBBmKKKKmBBBk..","...kBBmmmmmmBBk...",
-    "....kkBBBBBBkk....","..kkkBBBBBBBBkkk..",".kBBBBmmmmmmBBBBk.",".kBBBBmmmmmmBBBBk.",
-    ".kBBBBBBBBBBBBBBk.","..kkkkkkkkkkkkkk.."]},
+  // Медведь анфас, «плюшевый», как был, но аккуратнее: светотень по шерсти,
+  // уши с внутренней стороной, глаза с бликом, светлые морда и брюхо;
+  // bear_b — второй кадр: лапы переступают.
+  bear:{map:["..kkk........kkk..",
+    ".kBBBkkkkkkkkBBBk.",
+    "kBBmmBBBBBBBBmmBBk",
+    ".kBmmBBBBBBBBmmBk.",
+    ".kBBBBBBBBBBBBBBk.",
+    "..kBBBBBBBBBBBBk..",
+    "..kBBBwBBBBBwbBk..",
+    "..kBBBKBmmBBKbbk..",
+    "..kBBBmmKKmmBbbk..",
+    "..kBBBmmKKmmBbbk..",
+    "...kBBmmmmmmbbk...",
+    "..kBBBBBmbbbbbbk..",
+    ".kBBBBmBBBBmbbbBk.",
+    ".kBBBmmmmmmmmbbBk.",
+    ".kBBBmmmmmmmmbbbk.",
+    ".kBBBmmmmmmmmbbBk.",
+    "..kBBmmmmmmmBBBk..",
+    "..kBBBBmmmmmbbbbk.",
+    "..kbbbbBBBBbbbbbk.",
+    "..kbbbbkkkkkkkkk.."]},
+  bear_b:{map:["..kkk........kkk..",
+    ".kBBBkkkkkkkkBBBk.",
+    "kBBmmBBBBBBBBmmBBk",
+    ".kBmmBBBBBBBBmmBk.",
+    ".kBBBBBBBBBBBBBBk.",
+    "..kBBBBBBBBBBBBk..",
+    "..kBBBwBBBBBwbBk..",
+    "..kBBBKBmmBBKbbk..",
+    "..kBBBmmKKmmBbbk..",
+    "..kBBBmmKKmmBbbk..",
+    "...kBBmmmmmmbbk...",
+    "..kBBBBBmbbbbbbk..",
+    ".kBBBBmBBBBmbbbBk.",
+    ".kBBBmmmmmmmmbbBk.",
+    ".kBBBmmmmmmmmbbbk.",
+    ".kBBBmmmmmmmmbbBk.",
+    "..kBBBBmmmmmmbbk..",
+    "..kbbbbmmmmmBBBk..",
+    "..kbbbbBBBBbbbbbk.",
+    "...kkkkkkkkkbbbbk."]},
   fisher:{map:[rep(".",5)+"kkkk"+rep(".",7),rep(".",4)+"k"+"yyyy"+"k"+rep(".",6),
     rep(".",3)+"kk"+"yyyyyy"+"kk"+rep(".",3),rep(".",5)+"k"+"tt"+"k"+rep(".",7),
     rep(".",5)+"k"+"tt"+"k"+rep(".",7),rep(".",4)+"k"+"rrrr"+"k"+rep(".",6),
@@ -1235,54 +1338,7 @@ const SPR = {
     "kppxxxxxxk",
     "kpppppxxxk",
     ".kkkkkkkk."],noOutline:true},
-  // Гитара у сидящего у костра: корпус-«восьмёрка» с тёмной декой и резонаторным
-  // отверстием, гриф уходит вбок с ладами. Рисуется ПЕРЕД гитаристом отдельным
-  // актёром, чтобы он мог качаться вместе с человеком (лодка-то тоже живая).
-  // Сидящий гитарист одним спрайтом: голова+туловище, руки к грифу, гитара
-  // ПОПЕРЁК на коленях — корпус с резонатором справа, гриф со струнами влево.
-  // Рисуется как единая фигура, чтобы гитара не «плавала» поверх человека.
-  sitter_guitar:{map:[
-    "......kkkk......",
-    ".....kBBBBk.....",
-    ".....kttttk.....",
-    ".....kttttk.....",
-    ".....kkttkk.....",
-    "....krrrrrrk....",
-    "..kkrrrrrrrrk...",
-    "..krrrrrrrrrrk..",
-    "..krrrrrrrrrrk..",
-    "..kkkkkkkkkkkk..",
-    "..kkkkkkkkkkkk..",
-    ".knnnnnnnnnnkooo",
-    "kkwnwnwnwnwnkOOO",
-    ".knnnnnnnnnnkooo",
-    "..kkkkkkkkkkkk..",
-    "......krrrrrkk..",
-    "......kkkkkkk...",
-    "................"
-  ],noOutline:true},
-  // Второй кадр: гитарист двигает рукой по струнам — кисть (t) появляется
-  // на грифе. Циклится с sitter_guitar.
-  sitter_guitar_b:{map:[
-    "......kkkk......",
-    ".....kBBBBk.....",
-    ".....kttttk.....",
-    ".....kttttk.....",
-    ".....kkttkk.....",
-    "....krrrrrrk....",
-    "..kkrrrrrrrrk...",
-    "..krrrrrrrrrrk..",
-    "..krrrrrrrrrrk..",
-    "..kkkkkkkkkkkk..",
-    "..kkkkkkkkkkkk..",
-    ".knnnnnnnnnnkooo",
-    "kktttwnwnwnkOOO",
-    ".knnnnnnnnnnkooo",
-    "..kkkkkkkkkkkk..",
-    "......krrrrrkk..",
-    "......kkkkkkk...",
-    "................"
-  ],noOutline:true}
+
 };
 
 function swapPalette(map, table){
@@ -1411,6 +1467,9 @@ function setMusic(mode){
 // tools/add-sound.mjs («Звук батона.bat», «Звук виски.bat» — перетащить файл).
 // Пустое гнездо — играет общий звон бонуса.
 const SOUNDS = {
+  voice_turclub: "data:audio/mpeg;base64,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",
+  voice_chapalah: "data:audio/mpeg;base64,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",
+  voice_batony: "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYyLjEyLjEwMAAAAAAAAAAAAAAA//sowAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAlAAAauAANDRQUFBoaGiEhKCgoLy8vNTU8PDxDQ0NKSkpQUFdXV15eXmVla2trcnJyeXmAgICGhoaNjY2UlJqamqGhoaior6+vtbW1vLzDw8PKysrQ0NDX197e3uXl5evr8vLy+fn5//8AAAAATGF2YzYyLjI4AAAAAAAAAAAAAAAAJAYEAAAAAAAAGrhSR0fDAAAA//soxAAACFxzGAewxYEgC2ikxhgvEzUZKz7IIcGBIBg7AHH9sQwrGgDBLNLnB4sWiWmJiYDTz3ZiBQRlsgeuL2PdkydxCAIXA/D8HAwUdrf7pfoonJ/6nAuBNNcgIYJgmO6ocAOGCAVFhwYGBgQgIBx0RGYncZT666c4s+6dwIIfq7hweInAEn8I/5k4GIL0h8sCNhm7/47/AD/Mzk/5NgDKSHOlIwABULwLsXoIRJyFBXPd//soxAoAC2CJRaw9MiE6ECiph6XU1WAuupsGQCqVXxVm6PAkKBazDE015OK4yYgDwTknRZhFFJMUA+AodKVUUg+AcbSOtGEZRyiypMGBtEyTkBw89iLCBxOxjekRgBwEIwAIkg+b1hfYThH1hEWbxXad4GMHYLVKcK8ZOqUeBkTqVqVS7ZEsfzGWiufspbVSMMPJKU7BYicopmJOT6A44UIHIHqO/ZayheEK50CslOWABfEm//soxASACfCFX0ekxzE8FqqpgwnSCAhDweDMQKbUKAGhWK1TAsZBASKk8IWD0ntRh+5ZRWv96YHm62PfiijHPvEJ6pACPKby44cR1LcFEm1sHIGCcFyjmmEEmoAQBIEu2gD2rEAJcRQg6Lw58uJQNDSigWVs0ctrQMEAIFdE43UlHqvLPILNSJDs/RtlI5i2MHGd7On+zISqoyhzoNNyOvZuSEjJxoWIuPmqAgBopORgDrZ///soxASASeSrX0eYqzk4ka0qnmAHGgL18oYkyZVxxhICCxoQkOKGImAUIwXG3GUbmlsBhwfO1EaruNUefDqVVkfsf2GMKiZ3pGZrXCP++riE0ETJy1dcCi88taGANpKPMCGrFGnB8gwRCzaQssiUMLSxTOwVapHZNMCCz4YDY52NQ2c2iy1U8tc/Pr/fjm1806YUKbrEf1QWX/dETRV3N/5p3UXYf38k1qokEAgVKRJJuW0A//soxAUACgyhbbj3gBk+jKrPs4ACAAAABfOGVfa3QkTIcAYJBnoOcX4uJJi/k3Lqk1OlQ62d3I8bWJzjxNeA8rBhZg+0N+yTf/11r/MSHenzbH+P+zfPzrOn4eAVIABVmmq0zlvqqUWsEBA0aTSoOvuRCp8MHCqxhzAcRdh1ZTTXqemuVL2eud//oY3GL0vuUl+mg2N0l6/CzeDoODVJF8QA6TqwG5G2pGiQkAAEFPX4DnSb//soxASACcRfY0eZMlFFnq3o9Kl+M8DCwDnDGJIS+zkp0OVadHMcJISwLaxO/lnQpUMqGGgai5pPvGbQAUeba7hE/9ILEQ2WJDmoX/jECz5zPrUk23+PARIKTBIiA4LAB1c2vH7JKbpTGSb6si2Md6USVDDE3JtiMiEiNbt9CxOnTWYbqUU//sryeeGb3iDEsJAhD3Wif///unrRX6nmHlGJDyAjJjgZRjU+us0GgBc2/AkU//soxAQACZSFb0YkaVFCpGxdhgk78gFMKQPEAMoOOwenFEs01Fmqu5RNBdeclQMgbJGcGax7NSn/eZKFEN+4dUVSRaxxp50OjDrywhUVBYKnT/6WgqDQaIi0AAApMAMngkkMtzmCJLYlfQ0aG8qufdmOGa5vap9BDhBQi7idCUaiV4T8VmHq8+miF/9xkGOc7/0IS7pTZJLIyHFiHb/73TUhyKR6//VGcWRqgBqggy3gDofc//soxASACajJa0ehTVFHk62o9ij/1yrQormJ5lZgubyw8qkzmtreNChHFQoO0pVWmYpkY5pljf/JyYeAdOeds1EOIknInX+x7Ex4J/bGESwNpmAmlI0cEXIwV/xBR2ADJPcmQZpFmzcu5zBsJbNmujv2TXctP7RpKJgkCXBCtjLSsl1ZLEHqvywoBkey4hx+UKlceQ8qNpt3UpVmwGLO9b/YuwC2/u9///iBVQAAwADuwAye//soxAQACbyjW0yh50E1mm108Ypeh8BQUsGlcLOHzAczlSQ9aKhqJzMebvzuOydSPu8fNDSs3i2tWksC9t01vO84+bYjkwSZ5MMKXH+raxBfVFr/sgUezuJsIMApOSAtFyADmXkfxGyPH08VE6PfqhTvlKh6+j1NDSyoUqXXEf1RhQoBCs37tFsZWdS0bljeace3/PaVq0/6GUpWQUq5YanhKEn9mksHVUAEVG2mlKwBBIKU//soxAWACQSJYaekaXEokaedpJkoI5SUppDEOjFuBIeksJ0Quh6FChZpXKSRuTemUcjwqubNv7qXXZ76tniwon4KOARgobxssDR0FZJ72IERVwHgEJgAJICVQ7DHogh1j5V/C5Y0RZcS0SgiJj+FpIhdt6BJJEiRdMGXAHM3u0nFp3r5++Zew05m0xuDXxTmOGhLqYxlcJjar2XllQAWtWuAPUTEdQc0sghwcmKwBHn/p4cX//soxAuACKCjSywwbLGeGyhNrKC9+8gFK89gwOBGKruN7N0QMIH12d6WR7sanYQqaUETPTAj4c//DDEyznizalPd6kCHQALoqAHLJMCMwBArs89wMmZiB7qpfGAwbhBo3nO6cM4tEZgDiF13+ksSfz7l69T37zhyccH5ZBg1pdXejg4GniAAoKCgwUxTGCnkA0BoKaTf//oiVpU3FIuk+lTaPBhYu6P6GeEV9nIoDgomMGBj//soxASACYyHSA28UIkbmS10l4z/Bx8VWDiU01lMOtBjIxsGIgoJgrgMfBgGCk3kKD5fVFBNZaodRgwYTfCemwdZ4GkHSll/ErydYAgEIccrmsFX3/UgqEgAABGWm3AAO1bWjLIHFEKo611ZajuCBOgUwG6T881RWP4OM7xlTqsslQhi+/keV0VHNNx4Sb//maIr30//OG0/n/TRTgBiFZQAEAjSgA7prclYvtpgkwGedLYx//soxAoACLyNaUeg0PEbiinJnCThLixwl+UZisW9Roy9RMFhrqe6i+O55h2HjDcv7z1SUXm4HIhV/icDtfxdDP+iVd8mFzYL4Biy5usyFxyElL4RxAXRxkY3IPBllLlYC2IWCX8MhX3YK00q5M+wakvDSYkI7F0nolXQvgBTt/fSU9lr7ltpJP4+Xb/akQADAANJeyhZKn2gqavqFzBjRoidZZlmrTTmKksKedsDmNNKLEGH//soxBMACNxrTmw8zEEdGiso9I0PwJEFAJ9PBB5jmGpd6MPVfRllkQGhZAwOTKipUW/PCwWfJgrRRSiAC6FiV0aKuFIhymLQE8XQ8BRhEcmOiRQZ+MGCyhY8MLrI26tt0+lwyI0BhAKtqvHIyaxul/5zsFKZbAJ1P4jcf00qEAC+qsA6zdkVSmupFMM0vFXy1GnjyhoHlCqmjYMoqZPQHkVlmmumY24HvAzVuJ7g63yjolcu//soxBsACGSHSzT0ADILHWn3MYAA0Sknj/UGkBplkiEmzzZAFpjFoZFQrAlAAAAEXZXGXJhoUIwx7WwQkIwmyXQRqe1TlNteERrrPYYPSFk3akZaCrAo+GLYe0urTy+nyZ8rA19EAVQZEi45DXp//ivK9SIP5iPbTBLtxd5H/+n7b//+WUMvl/52PfyW5SLne6///////DWHd9//91KlBLPz7nu35EAAAC4ADxZz2P43bibl//soxAeACPCJXVz0gAEYiSvcvBhqvRzAumtDZVCnmZMBTxvNQkJKs+rjlS8kQ0uoCQqaV82zU4xjFaW/P/1UKuLPq4hMlg6V9bnes6JuFglTYAUIQklFNWAKlFlJAW25LJUqSAV+7kk2LSy68k82N7THILB0JCVICACGp6FAIMu+xDKhMHCInOSQFi6VBsFSP/h4igCHaAMlHq4hix0AYOCWGBAsNKhdMUZQoYAQqpi2GORc//soxBADCOBfVmxpBRESEGnNownYWEXfY+rn5FSFCEOXd1jgqhsthRnfUOV1rp9JgyWDoZ8w5SfVdDOTAIuoAyQKmQo7LjGByGTNm9elBEEEh4OYJsZsGdkUXDadA79CFFA0eSGXlvBvSwp7tzrMMKvtV+xtXBChv1AZPwM7/0EqQABkJJAwjUsFDMyVRJfpDMMX6MLVYLRTDXFdgaIS2P1MY5IK2L/sAxVtGYDEoABO8xO8//soxBmACFSLWywE0rEUECvo9I2ezPFgQ0ECyZAv//+3+AwRWAABaKUbAHSa8fJfAIwG0pTueqZTEmKN8MIp5PaQp4z0K+Qtr3MywJO0zqN/IeSxmMEFSn7H22JvdrU9cItuvvlUQwHwxYBZrp/gOubE0LoKeZpFt8qteAnHLDH/0VRRlNBj1pq9A8WMzk57KHIj1n+edXsSKsOf9PR/KA+nSIDIIM3IjwbCjloCi0ilMGE9//soxCUASFSHYSwwTLEVD+yo9himC4RDMZEwpojgL15J4CCVSBTwMLRhBr+o2Y9TB9Tro+G/93DlBZhG5PgvvEKEeEUubLiBB529CekYlc0EUyKAQIG2AHqVxg0pi4DmYTsBUUdtjq7G/YNQPrDcwofTPxeHCBjdg285noSelT3sEhBYshITz/8bUTLvYsMXaZQNuWC4YWQQsAaAMcAHYbiOEbB7gyTXHvpxXnbb1rLptrr1//soxDCACNBvWOwYcAEdneyc8Irbsr2/cHH+t5c7bJ/tyyihrNCMk5ulEaFX/74jCbswk///JPIHdKQzvO/fPEfPAOwNM8jw6sdio4y0iUhMqjuPAygeEXT3eb5ps6S4dXd3pvFqR57+X+rKyijHSWwZRMqf+ndfZrMzf//5RrYNxbg7/cbGf05ADkAHu9KS7QiGX5Zk40ddCUPtLtdFGYMLXhDMQMninYGClvbX/ru7ud93//soxDkCCMjtWkwwSZkXHmtdgYmyc+tnO//ITOf9/q8hKP0s0pUQzMMxj+0XEpNHm/ySVGwLELqDRccOlBTiplrktRy5Im2XVvszNxl6pfGVVX9mUKqqR7S5FE4BEga7RCS/qnSVFYKgsDUFTv88DQKhrmABarkbgH5Ki/DmM0xFYzsvbok6vevM2EMdj5Z0iCDQW0TTwYgCgiJxURPQSSQeeHG80lIiMyFzc61k90jxhwAB//soxEKACJiNZ0SM0vEXCenmnmAGBg71y17VACYSicTUjcNiIQAAAADElzQCJ+ExVZk01wuKrbeCELLjVG2xqQAkQmrBNhOYyEgF3n/mGsyxSyPv24Nhwm3l2VC/MFq8jdHMT0Ymb0vms5K/1unaw7j+L3ghtIBhupG5PWv6yxq2sedr0GV5+JRROJKOf+t///j//////8syw5T55jyCwIBAGBAGBAI0IwAAPienkpldRtS9//soxEyAEFjjPbmMAAoHmWu3MYAArymT1VQqEHPkyXT+SMtYqqshTGZp0f09TbFrbYX+k1bAFrbu0/il4YZ62avk2NltKgDSvhcff+7QckM7jJZVqSVcYrRQ/D8ld+H6GjeNi81nley1qQ8p983zlupY7//z6vL+xapBXZ+l7fECggABExAAQXuAOJbZRFSXCyqFRJp9soM8l9mEM8UIgJ3RmYWE7EmipVipyPE8/EVUNtLC//soxBmACGiHafyUAAEZlC508wz+o7DA4QioAD7jH99/XCvR5WkApJEkoqMAGRGXA3DomU7tQOAwIgWDvoA5MAEUAWwUGs0Ei3TadkzdpEvrTk7AR5w88sl+l8uYYSHHWeWC6wwfNanmXEyVwFYEFJSAARCtBh+hwRj8ExdCCIlYfIQs+8WRNfp7m1aFVDGWHhJgiQoDKDsqCwuGg1yoLKSx3wZB0FgZBSRJPWo8CtX8iCSq//soxCQACLRJZUS9IDEbmylNkw2jABTQCZnqtrECzTjzDDtzEPxyayJUne4cOaWE99DYwKjNw9UyqAtlD4KLKa+trBV1OH5fG2WKXe//nhnBB1pTE/cTbUi1EFpAmsAqph3jzV0Qx3KC2ub6RUPeplWzI5EnGnU4Z8qU7rXdip3Gabem/ZtndZWu6RrZLfw/9h0Kh4blruZAYCSmm9bFOAAIhEAgBAYGQEQJAAA9gW2dPoAE//soxC0ACLivSTTzADIMmyl3MYAARX0xMQ4pESNQ88DiIzjAJW3JdbrgOLVGZT8MP2g+wc0iUXEAtapOZuBLKVmKpn6T1pLHKTDBYkgr458VXXSzWU0kohjG3hnXxzfeN3NWbVJjDNjKpayq1///////l9XPPdax3tJdER8Sv/gjb1PWwCAAAYAaS0q8WmMPHNAGElx1Ix+khwg55WhD9OGhNMmMylMQVDJybQSgN4JSTp0c//soxBgACsBlTz2ngAEgGewphA3fasPk4Vcr3TW6Pg+j76vdNbU1zPv3s0nerCR0FTuWLBr8iLP27pqAQBCnHAAMd6hiNbngzaLKjTOGJR9xExVDla4cAX37PhyY1qlBaJaWY8o57ERbRk6SKuxYOpsNK0P5FoSqHBcln/qXQq8TufsEl3gD7skRHuP4a6EbMCKgThbAKFEMdoirfRGAyUQSVB5yYKGhARh4IpFH8popF4o4//soxBiAS6SvTm1haUEODiy09iVdkXBwHo1I2orn0zeyhlGm0kHDn1cf+/tO5l7Gezin1KlQoG/So4a//ymXeSVoAAAGC7HmRWGVAU5+ibgDwfpB00WBW6cHpycIL40BuBUKi4lYVnJmwPHGCZS3wc3uX25KaF302l6n/Hw6zS0ZfHooVbAAAASUwA+RYjlaTzQ0BUA1QFZoJzOX6QPpu/VpEiTckgT/RIxCJRE7v/Utl29Q//soxBeACGBtY0ekbREWlKy08wk6EE9n+VBoJn1mx4ynY6iib5QYa+qMAAoAApOXASOpwVSwzkJDDMhWABAOBgYCAw2758y2nFnC2WaQpc1uGfKju1Tdhk0//92QowIEgKmWpbS3/2v//ySW/UlKgAaQJNzADLP2ecmiIV4SHCcAVM5KjZRNrHt6gIZsJTjZrQa7tbQ9Vtbf8r2//ZM5XBQYOAXAz0LnIjRwiVc8wpYqygAE//soxCKACFCrYUeYZxEbFSu08yEYm0Auv8AZJZDNIDYeJpJGGsCVoKLo2CyUnzUYz5nVgzCR/Ni7mCkCKMgdHenp2k3RpBYQNXEWsewoPo99SpC0yk0y0eTqZARdUQBRcAEgtUGAqirCqQesCcBCMGxPfIKne1u7KFjk81trpRl1ng5pTsVvXoyt61ZVFZkd/+5noiOiGbs2tFFBnAW95vxQK/0hN2gCS+hGo1jY3KZsYEtG//soxC0ACOj3aaYYSfkXnuxoxAnzJ8KxCulEkrJjQ5PzQwYoUEZ4uvaIj/5qF2up/pbtg5KYi6qmeQpUd2//Tz0kZtfkVRzSVUAEiXAClNgBYkFK4Xh4AApDoP8MEO+sw8rEMDWLH7yBh4Os6SKx1Z2e6ojVdVf0DhXb/qoSDAdX/+8vWXuqWIkUlL8d7AAAKkQBJVwA+22Kec0kAblo6Kkd4kFQ6F1RMCAgIoJBfsOTRqIY//soxDWACKTvZaYYqtkSkWu1hIk4NBqRlC0OEjY9Zi2SbVVkKU7tRibK/BDAAY9F3//2qYLAACUAfSPhGmJoTguI53QrcdtHpKRuSEuSHY0KUKiMxJyfafNc63KEFCV0Oi+mqV/+yy////9ZJDsO4aklGh7+QMmQWEzkAMygAfK4tIHHaaAXFlwLRIOAWas1l0bgWYdoqBoBEkE5NjnT22EjyNI06zVI9dcuiahzlLbFxzW1//soxEAACOTTXOwwS1EZESrOsLAARWgqMcyHGkmvHCm5kqptkBBWS6tu2yy2gAAABcoN7AJsm/QKKou2UdopehnIBRA8GkZylkocK9XMnDTtelTSoKel/V1P9C36dOncOL3JmWT+NmA5VbcqIYXop8WuSqzP49gOKOzTazmO286mF+boqXV2Zl1j88c8akeu0u9c/P8OY48z7+G+dysXea1axq0GbRAAStdtlAAulJGjw2Ph//soxEiAEEzrX7mMABEaFSy3kmAHRRNS0i4rJbSf80xk5bNzNd/5I1Jas3ybtHypyZms0yjX65zO9f787ReCE0pSp/ZdIVJ0efTS2M9tAAJ2u2ygAeqFyhc4CIdaVRHRixE3jMryW9qM7qUa+V3mHxBOjcWGNMYQODh/vL/HhwyazTQQwLGBYZbiZO1Bpl3GIoACOxttuACXsonisBIjMu+tW4dFw+eK/nG1q8zla0gqtCTw//soxDOACGSvaaSM1rEaCit0Fhg22JRh6VOxKu9CsqGj0FQklT3Jw1X+AgqColGHgVcMDolUdIq62tsvKgqYMHkQYYmvHInhCFGCkJQeA0HDBJ7VeKBtcACApCRTTqTSsXQKuVMEQpGEaWlMve7OYuxgztBYtK267WT1+kASEmn+f6XtgAoYyqw48w+VHJZyokGBBQVAkis/bOQ5EiAUZYlrzlc0jlSVZFESgq+0ShLgqe/7//soxD4DCIh5GA2kTsEAimDJrJjYV////9l3//0VAwACElBMhijcXlEJBRozIUuDOkPBHUzUNoQyCB6dCt5VmAh6UEwpWTSSXg+Mo0mnQOGjQNC3///4sL//////6xUWTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//soxEsDyEBMmKw9LgAAADSAAAAEVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
   crunch: "data:audio/mpeg;base64,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qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqv/7UsTqgQvMoSTsMG1BV5GiSPMh2Kqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tSxM+Dy4DusieM1MAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=",
   gulp: "data:audio/mpeg;base64,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uTE1X0svYIbuyY98LP/7UsRFAAvg92mnpGnxdqEtdPSNplB/qQmBiYCXyNCJtSli565zOo4CCvBiY+GX/////VLjoKClK3YOodChKgVJDgKVT+KglQASmnHN8KP4vAkqLVpvJxrCL6d/GIz7xO6/tLAvQwEcl1Ra0mW2x1IsXJKqtKta5XE4x8ZdvG+aLgMuAxQiJWBBIBOo+yk4mUJA+cdmaNcT0GmLAABu0t2lkkdjjTRDQBGVCZYGATEOaFDbT791nJgUvlC08S6g0dcI4nAsEsDYNFKlQZcV02Bc//tSxESACmCJVZWUADJqp2s3MQACEclUWkulwwLpobEMUblMmR5LpdUmbIGSCREzijCkTySjZIyoGZfOE+TaSBwyQJpSCaz7XL5Nl8zTpIoF5ku7Oq6/QQLho/uYmRRPf/HMPHz0+Xz8vyZNUaJxEvHwb//8JBqosLJBe7lphSASQMGYtlRUTlaCzhK6Q136rwPapHGpAi6YppmKJi2buoaLr/tPu8pq1hsYx4sFBQGjqS0TCqzJwFRgGDu/1sNlpkUcHU3qViQGiRLypEgAlC3/+1LEK4AKaH1NPZQAMU6Op3W0jRhBKTaATK6TIooDCRhBgiIhuCkKSLvYEYDNkbBhoQn4IGGDuTGm0JgTDBXnCl2uGXFAVFjJC405VGjFrU8JFTgFBMEwMWRbEzS5xLpAYA+rHwAAIXB9zAScAM3ABOMTy0yIIB54hA7HAAHBJOmRkYlHYVadoJvWlaOrZ/fxXKGlJvDQKtCGX1qjaoJMqHK/0iktI07w4h/mtWGwNYK/XSWW1rKCpZEw3JY4VPAyJP89qfhAiDiY2MdgQxED0v/7UsQ2AkpsvScOMGtBQY7jwd4gcKECalTfRRwqltukUeuJYGrUFTrlySEgwcaZezW0NdQxylizFEQeBrAqDZUtiNaDyzoKg37PW/StEAwZA6lg6qKzyRME20ZlWRn8bGKhWiCyyOLFf6mXU5UXrsOf7uQ2B7R8DVNNGGBCKkmrNdRCukpJIrPYpCm1io4KHgMMfKsf/f6vr0dPu/6DAxGN6yAz1To3fgI1JAIyEFFDBDimYyxOpE4IlrCGJIHbsGT35tVtoT05W0j4rOsnrnCJ//tSxEIDShCFFi1xAcEyieEBzrAgMOlgoBQV6j331hr8ryv5KVd//8753/+HSqoAoEuUxsFEo6KppLEASQQyMREQmJrr9BI6gDhIMITROLhaJxVqBkRgIiZFkCnUK//in/0hJnxUi7//4rt1N//1ilVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/+1LEUQPIJDzobCTKAAAANIAAAARVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==",
 };
@@ -1473,6 +1532,7 @@ function musicTick(){
 function sfx(kind){
   g.sfxLast = kind;                     // для проб: какой звук прозвучал последним
   if (!actx) return;
+  if (kind.startsWith("voice_")){ playSample(kind); return; }   // голос — только свой файл
   if (kind === "crunch" || kind === "gulp"){
     if (playSample(kind)) return;
     kind = "bonus";                     // своего файла нет — общий звон бонуса
@@ -1509,6 +1569,21 @@ function sfx(kind){
     tone(150, t, 0.10, "sawtooth", 0.06);
     tone(95,  t + 0.05, 0.28, "sine", 0.09);
     tone(70,  t + 0.12, 0.30, "sine", 0.07);
+  } else if (kind === "motor"){
+    // Мотор катера: низкое жужжание двух «пил» с дрожью, нарастает и уходит.
+    const f = actx.createBiquadFilter(), amp = actx.createGain();
+    f.type = "lowpass"; f.frequency.setValueAtTime(600, t);
+    amp.gain.setValueAtTime(0.0001, t);
+    amp.gain.exponentialRampToValueAtTime(0.07, t + 0.5);
+    amp.gain.setValueAtTime(0.07, t + 1.4);
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+    for (const hz of [62, 124.5]){
+      const o = actx.createOscillator();
+      o.type = "sawtooth"; o.frequency.setValueAtTime(hz, t);
+      o.frequency.linearRampToValueAtTime(hz*0.88, t + 2.4);   // уходит — тон ниже
+      o.connect(f); o.start(t); o.stop(t + 2.45);
+    }
+    f.connect(amp); amp.connect(actx.destination);
   } else if (kind === "horn"){
     // Гудок баржи: две расстроенные «пилы» (90 и 93 Гц дают биение, как у
     // настоящего тифона) через мягкий фильтр; тянется 2,5 с и затихает.
@@ -1610,8 +1685,9 @@ function centerSines(w){
   const b = g.rBend || 1;
   const amp = 70*b, lim = 210 - RIVER_WIDTH*(g.rWidth||1)/2 - 40;
   const a1 = Math.min(amp, Math.max(0, lim - 18));
-  return a1*Math.sin(w*0.0034)
-    + 12*Math.sin(w*0.0089 + 1.3)
+  const f = g.rFreq || 1;                     // частота изгибов реки (Тверца — 0,5)
+  return a1*Math.sin(w*0.0034*f)
+    + 12*Math.sin(w*0.0089*f + 1.3)
     + 6*Math.sin(w*0.0019 + 0.6);
 }
 
@@ -1635,7 +1711,7 @@ function centerAt(w){
 // падает на cut, ось уходит на cut/2 от сцены, дальний берег не двигается.
 // Жители Волги появляются дальше за верхней кромкой (BEV_AHEAD), так что
 // сужение в кадре не видно.
-const BEV_ROOM = { beach: 74, guitar: 66, camp: 120, fire: 56, fisher: 60, tower: 58, bear: 72, tree: 60, bush: 40 };
+const BEV_ROOM = { beach: 74, guitar: 66, camp: 120, fire: 56, fisher: 60, tower: 58, bear: 100, tree: 60, bush: 40 };
 const ROOM_FULL = 120, ROOM_TAPER = 150;
 function roomNeed(e){
   if (e.roomDef === undefined){
@@ -1789,9 +1865,9 @@ const CUTS = {
         keys:[[0,210,316,0.9,1],[.2141,216,314,0.9,1],[.3059,250,309,0.9,1],
               [.4435,330,304,0.9,1],[.5048,360,300,0.9,1],[.5353,360,300,0.9,0],[.7647,360,300,0.9,0]] },
       // Гитарист — визуальный центр группы, сидит ПО ЦЕНТРУ (не у самого огня),
-      // держит гитару поперёк. Единый спрайт sitter_guitar (человек + гитара).
-      { spr:"sitter_guitar", cycle:{ per:14, spr:["sitter_guitar","sitter_guitar_b"] },
-        keys:[[0,195,350,0.9,1],[.7647,195,350,0.9,1]] },
+      // сидит на чурбаке в профиль лицом к огню (night_guitar).
+      { spr:"night_guitar", cycle:{ per:14, spr:["night_guitar","night_guitar_b"] },
+        keys:[[0,192,352,0.65,1],[.7647,192,352,0.65,1]] },
       // Второй сидящий — слева от костра, по другую сторону огня.
       { spr:"sitter", keys:[[0,105,354,0.9,1],[.7647,105,354,0.9,1]] },
       // Люди, стоящие у палаток (разная одежда): после того как герой ушёл, они
@@ -2348,7 +2424,7 @@ const RIVERS = [
     grass:"#4b9c48", water:"#0f6bc4", note:"Большая вода, много туристов" },
   { name:"МЕДВЕДИЦА", width:0.85, bend:1.55, rocks:1.2, speed:1.10, rapids:true,
     grass:"#367f3c", water:"#125e9e", note:"Извилистая, лесная, топляк и мели" },
-  { name:"ТВЕРЦА",    width:1.00, bend:1.00, rocks:1.0, speed:1.05, rapids:true,
+  { name:"ТВЕРЦА",    width:1.25, bend:1.00, freq:0.5, rocks:1.0, speed:1.05, rapids:true,
     grass:"#47973f", water:"#136fb8", note:"Старый водный путь на Торжок" },
   { name:"ОСУГА",     width:0.72, bend:0.80, rocks:1.8, speed:1.20, rapids:true,
     grass:"#3f8f43", water:"#1565c0", note:"Малая река, пороги и камни" }
@@ -2368,7 +2444,7 @@ const LEVELS = [
   { day:5, river:2, place:"ДЕРЕВНЯ",            len:1000, goal:"bridges",     need:4,
     goalText:"Пройти 4 моста в пролёт",      aggro:0.45, rain:0.55, bridges:true, arrive:"village", dens:0.017 },
   { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:1,
-    goalText:"Дойти, сохранив сердце",       aggro:0.45, rain:0.85, bridges:true, arrive:"town", dens:0.016 },
+    goalText:"Дойти, сохранив сердце",       aggro:0.45, rain:0.85, bridges:true, boats:true, arrive:"town", dens:0.016 },
   { day:7, river:3, place:"ПОРОГ ПЕРВЫЙ",       len:1200, goal:"cleanrapids", need:3,
     goalText:"Пройти 3 порога чисто",        aggro:0.55, arrive:"camp",   dens:0.016 },
   { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:20,
@@ -2533,30 +2609,119 @@ const SWING_FRAMES = 50, PARRY_WINDOW = 20, STRIKE_REACH = 100;
 const FLIP_FRAMES = 60;
 
 // Кадр драки по состоянию соперника. Возвращает имя спрайта или null,
-// если гребец спокоен (рисуем как обычно с веслом в руках).
+// если гребец спокоен (рисуем как обычно с веслом в руках). В замахе корпус
+// обычный, а весло рисует paddlePose.
 function fightFrame(o){
   if (o.type !== "kayaker") return null;
   if (o.flipT > 0) return "rower_flip";
-  if (o.aggro && o.swingT >= 0)
-    return o.swingT > PARRY_WINDOW ? "rower_wind" : "rower_strike";
+  if (o.aggro && o.swingT >= 0) return "rower";
   return null;
+}
+// Фазы замаха: поднимает весло над головой → держит занесённым, дрожа от
+// злости → обрушивает на игрока (это и есть окно парирования).
+const RAISE_FRAMES = 15;
+const AGGRO_VARIANT = 3;
+// Злой, пока не дерётся, время от времени грозно трясёт веслом над головой.
+function brandishing(o){
+  return o.type === "kayaker" && o.aggro && o.swingT < 0 && !(o.flipT > 0) &&
+    (g.frame + (o.seed || 0)) % 120 < 34;
+}
+function fightPhase(o){
+  if (o.type !== "kayaker" || !o.aggro || o.swingT < 0 || o.flipT > 0) return null;
+  if (o.swingT > SWING_FRAMES - RAISE_FRAMES) return "raise";
+  return o.swingT > PARRY_WINDOW ? "hold" : "strike";
+}
+// Весло в драке. Угол phi — в поперечной вертикальной плоскости: 0° —
+// горизонтально в сторону цели, 90° — вертикально над головой, 125° —
+// занесено назад. grip: 0 — держит посередине (как при гребле), 1 — за конец
+// (так бьют). Высота z рисуется подъёмом по экрану, тень на воде — без z.
+const PADDLE_LEN = 60;
+// lift — насколько поднято всё весло (руки над головой).
+function paddleAt(px, py, s, phi, grip, lift){
+  const a = phi*Math.PI/180, u0 = -PADDLE_LEN/2*(1 - grip), u1 = PADDLE_LEN/2*(1 + grip);
+  const pt = u => ({ x: px + s*u*Math.cos(a), z: u*Math.sin(a) + (lift || 0) });
+  const A = pt(u0), B = pt(u1);
+  return { pivotX: px, pivotY: py, s, phi, grip, ax: A.x, az: A.z, tipX: B.x, tipZ: B.z };
+}
+function paddlePose(o){
+  const px = screenXOf(o.t, o.wy), py = screenYOf(o.wy) - 6;
+  const s = Math.sign(screenXOf(g.t, g.pwy) - px) || 1;
+  const ph = fightPhase(o) || "raise";
+  if (ph === "raise"){
+    const k = (SWING_FRAMES - o.swingT) / RAISE_FRAMES;
+    return paddleAt(px, py, s, 10 + 110*k*k*(3 - 2*k), k);
+  }
+  if (ph === "hold") return paddleAt(px, py, s, 125 + 6*Math.sin(g.frame*0.9), 1);
+  const k = 1 - o.swingT / PARRY_WINDOW;              // 0 → 1, удар ускоряется
+  return paddleAt(px, py, s, 125 - 145*k*k, 1);
+}
+// Рисует весло позы p: тень на воде, древко, лопасти на обоих концах,
+// кисти рук у хвата. trail — прозрачность белого следа (для быстрого удара).
+function drwFightPaddle(p, trail){
+  const pts = n => { const out = []; for (let i = 0; i <= n; i++){ const f = i/n; out.push([p.ax + (p.tipX - p.ax)*f, p.az + (p.tipZ - p.az)*f]); } return out; };
+  const line = pts(20);
+  if (trail){
+    cx.fillStyle = "rgba(255,255,255," + trail + ")";
+    for (const [x, z] of line) cx.fillRect(Math.round(x/3)*3, Math.round((p.pivotY - z*0.75)/3)*3, 3, 3);
+    return;
+  }
+  cx.fillStyle = "rgba(0,0,0,0.22)";                  // тень на воде — по ней видно высоту
+  for (const [x] of line) cx.fillRect(Math.round(x/3)*3, Math.round((p.pivotY + 14)/3)*3, 3, 3);
+  line.forEach(([x, z], i) => {
+    const blade = i <= 3 || i >= line.length - 4;
+    cx.fillStyle = blade ? PAL.W : PAL.n;
+    const X = Math.round(x/3)*3, Y = Math.round((p.pivotY - z*0.75)/3)*3;
+    cx.fillRect(X, Y, 3, 3);
+    if (blade) cx.fillRect(X, Y + 3, 3, 3);
+  });
+  cx.fillStyle = PAL.t;                               // кисти рук на древке
+  for (const u of p.grip > 0.5 ? [0.02, 0.2] : [0.35, 0.65]){
+    const x = p.ax + (p.tipX - p.ax)*u, z = p.az + (p.tipZ - p.az)*u;
+    cx.fillRect(Math.round(x/3)*3, Math.round((p.pivotY - z*0.75)/3)*3, 3, 3);
+  }
+}
+// Голоса злых соперников. Первая фраза уровня — всегда «турклуб», дальше
+// случайная из трёх, но не та же, что только что. Пока звучит одна — новая
+// не начинается.
+const VOICES = ["voice_turclub", "voice_chapalah", "voice_batony"];
+const VOICE_FRAMES = [135, 72, 80];
+function tauntVoice(){
+  let k = 0;
+  if (g.voiceCount){
+    const pool = [0, 1, 2].filter(i => i !== g.voiceLast);
+    k = pool[Math.floor(Math.random()*pool.length)];
+  }
+  g.voiceLast = k; g.voiceCount = (g.voiceCount || 0) + 1;
+  g.voiceUntil = g.frame + VOICE_FRAMES[k];
+  sfx(VOICES[k]);
+  return VOICES[k];
 }
 
 function paddleStrike(){
   if (g.s !== "playing") return;
   g.strikeT = 12;
-  let windingUp = false;
+  // Твоё весло бьёт в сторону ближайшего соперника, иначе — вправо.
+  const near = g.obs.filter(q => q.type === "kayaker" && Math.abs(q.wy - g.pwy) < 120)
+    .sort((a, b) => Math.abs(a.wy - g.pwy) - Math.abs(b.wy - g.pwy))[0];
+  g.strikeSide = near ? (Math.sign(screenXOf(near.t, near.wy) - screenXOf(g.t, g.pwy)) || 1) : 1;
   for (let i = g.obs.length - 1; i >= 0; i--){
     const o = g.obs[i];
-    if (o.type !== "kayaker" || o.swingT < 0) continue;
-    if (o.swingT > PARRY_WINDOW){ windingUp = true; continue; }  // рано, замах ещё идёт
+    if (o.type !== "kayaker" || !o.aggro || o.flipT > 0) continue;
+    // Бить можно злого, который рядом (в зоне удара), — не дожидаясь его
+    // замаха. Отбил удар в окне — «парировал» (больше очков), врезал раньше —
+    // «врезал первым».
+    const ahw = widthAt(o.wy)/2, reach = Math.min(STRIKE_REACH, ahw*0.8);
+    if (!(Math.abs(o.wy - g.pwy) < 75 && Math.abs(o.t - g.t)*ahw < reach + 10)) continue;
+    const parried = o.swingT >= 0 && o.swingT <= PARRY_WINDOW;
     const ox = screenXOf(o.t, o.wy), oy = screenYOf(o.wy);
     spPt(ox, oy, "#ffd54f", 26);
+    g.clash = { x: (ox + screenXOf(g.t, g.pwy))/2, y: (oy + g.py)/2 - 16, life: 14 };
     // Соперник не исчезает мгновенно: лодка переворачивается (кадр
     // rower_flip), дрейфует FLIP_FRAMES кадров и тонет.
     o.flipT = FLIP_FRAMES; o.swingT = -1; o.aggro = false;
-    addBonus(75); g.shake = 9; g.parries++; sfx("parry");
-    popText("ПАРИРОВАЛ +" + award(75), "#ffd54f");
+    const pts = parried ? 75 : 40;
+    addBonus(pts); g.shake = 9; g.parries++; sfx("parry");
+    popText((parried ? "ПАРИРОВАЛ +" : "ВРЕЗАЛ ПЕРВЫМ +") + award(pts), "#ffd54f");
     // Перевернувшийся соперник роняет своё снаряжение.
     const kind = ["bread","whisky","medkit","axe","sun"][Math.floor(Math.random()*5)];
     g.bns.push({ t:o.t, wy:o.wy, type:kind, visHalf:spriteSize(BN_SPRITE[kind]).w/2 });
@@ -2566,8 +2731,6 @@ function paddleStrike(){
   // нажатие сработало. Даём плеск, звук и подсказку про тайминг.
   spPt(screenXOf(g.t,g.pwy), g.py + 8, "#cfe8f5", 10);
   sfx("swing");
-  if (windingUp)
-    g.hint = { text: "РАНО — ЖДИ ВСПЫШКУ", life: 70 };
 }
 
 function flowMul(t){ return 1.18 - 0.34*t*t; }
@@ -2626,9 +2789,10 @@ function hullHalf(){
 // Кромка кадра — страховка на случай, если урез за кадром.
 function lateralBounds(wy){
   const c = centerAt(wy), hw = widthAt(wy)/2;
-  const half = spriteSize("kayak_center").w / 2, hull = hullHalf() - 1;
-  const xL = Math.max(c - hw + hull, half - 4);
-  const xR = Math.min(c + hw - hull, W - half + 4);
+  // Борт заходит на песок на 13 px — к берегу можно прижаться глубоко.
+  const half = spriteSize("kayak_center").w / 2, hull = hullHalf() - 14;
+  const xL = Math.max(c - hw + hull, half - 1);
+  const xR = Math.min(c + hw - hull, W - half + 1);
   return [(xL - c) / hw, (xR - c) / hw];
 }
 
@@ -3019,8 +3183,20 @@ function drwBg(){
   }
 }
 // Соответствие внутренних типов препятствий именам спрайтов.
-const OB_SPRITE = { log:"log", shallows:"shallows", kayaker:"rower", snag:"snag", branch:"branch", barge:"barge" };
+const OB_SPRITE = { boat:"boat", log:"log", shallows:"shallows", kayaker:"rower", snag:"snag", branch:"branch", barge:"barge" };
 const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun" };
+
+// Искра, где встретились вёсла при парировании.
+function drwClash(){
+  const c = g.clash;
+  if (!c || c.life <= 0) return;
+  const r = (14 - c.life)*2 + 4;
+  cx.fillStyle = c.life % 4 < 2 ? "#fff" : "#ffd54f";
+  for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1],[0.7,0.7],[-0.7,0.7],[0.7,-0.7],[-0.7,-0.7]])
+    cx.fillRect(Math.round((c.x + dx*r)/3)*3, Math.round((c.y + dy*r)/3)*3, 3, 3);
+  cx.fillRect(Math.round(c.x/3)*3 - 3, Math.round(c.y/3)*3 - 3, 9, 9);
+  c.life--;
+}
 
 function drwKy(){
   const x = screenXOf(g.t, g.pwy), y = g.py;
@@ -3031,10 +3207,10 @@ function drwKy(){
   drawShadow(x, y + sz.h/2 - 4, sz.w);
   drawSprite(name, x, y);
   if (g.strikeT > 0){
-    cx.fillStyle = "#fff";
-    cx.fillRect(x - 34, y - 4, 68, 6);
-    cx.fillStyle = PAL.W;
-    cx.fillRect(x - 40, y - 8, 12, 14); cx.fillRect(x + 28, y - 8, 12, 14);
+    // Взмах: весло взлетает над головой и обрушивается в сторону соперника.
+    const k = 1 - g.strikeT/12, s = g.strikeSide || 1;
+    drwFightPaddle(paddleAt(x, y - 6, s, 110 - 130*Math.min(1, (k + 0.16))**2, 1), 0.3);
+    drwFightPaddle(paddleAt(x, y - 6, s, 110 - 130*k*k, 1));
   } else {
     drwPaddle(x, y, g.frame * (g.rowing > 0 ? 11 : g.rowing < 0 ? 3 : 6));
   }
@@ -3081,13 +3257,26 @@ function drwOb(o){
       cx.fill();
     }
     if (fightFrame(o)){
-      // Кадр замаха/удара/переворота уже нарисован. Поверх — только мигающее
-      // окно парирования, процедурное «весло-палка» больше не нужно.
+      // Замах — анимация весла; переворот — кадр rower_flip. Поверх удара —
+      // мигающее окно парирования.
+      if (fightPhase(o)){
+        if (fightPhase(o) === "strike"){             // след быстрого удара
+          const s0 = o.swingT;
+          o.swingT = Math.min(PARRY_WINDOW, s0 + 3); drwFightPaddle(paddlePose(o), 0.18);
+          o.swingT = Math.min(PARRY_WINDOW, s0 + 1); drwFightPaddle(paddlePose(o), 0.35);
+          o.swingT = s0;
+        }
+        drwFightPaddle(paddlePose(o));
+      }
       if (o.aggro && o.swingT >= 0 && o.swingT <= PARRY_WINDOW){
         cx.strokeStyle = (Math.floor(g.frame/3)%2) ? "#fff" : "#ffd54f";
         cx.lineWidth = 3;
         cx.strokeRect(x - 26, y - 30, 52, 60);
       }
+    } else if (brandishing(o)){
+      const s = Math.sign(screenXOf(g.t, g.pwy) - x) || 1;
+      // Весло поднято над головой обеими руками и ходит вверх-вниз.
+      drwFightPaddle(paddleAt(x, y - 6, s, 14*Math.sin(g.frame*0.45), 0, 26 + 5*Math.sin(g.frame*0.9)));
     } else {
       drwPaddle(x, y, o.wy);
     }
@@ -3178,9 +3367,17 @@ function drwBev(e){
   if (e.type === "bear"){
     const edg = ax + e.side*hw;
     if (!bankVisible(e.side, edg)) return;
-    const walk = Math.sin(g.frame*0.012 + ph)*22;
-    const bx = bankAnchor(edg, e.side, edg + e.side*(e.off + 14 + walk), 30);  // bear 54px, чтобы лапа не свисала в воду
-    drawSprite("bear", bx, by + Math.abs(Math.sin(g.frame*0.05 + ph))*2);
+    // Бродит туда-обратно только по суше: от кромки воды до края кадра.
+    // Под него русло отступает (BEV_ROOM.bear), так что места хватает.
+    const half = spriteSize("bear").w/2;
+    const land = e.side < 0 ? edg : W - edg;
+    const free = Math.max(0, land - 2*half - 6);
+    const dist = half + 3 + free*(0.5 + 0.5*Math.sin(g.frame*0.012 + ph));
+    const bx = edg + e.side*dist;
+    // На ходу переступает лапами и чуть переваливается; на развороте стоит.
+    const moving = free > 8 && Math.abs(Math.cos(g.frame*0.012 + ph)) > 0.25;
+    const step = moving && Math.floor((g.frame + ph*40)/14) % 2 ? "bear_b" : "bear";
+    drawSprite(step, bx, by + (moving ? Math.abs(Math.sin(g.frame*0.22 + ph)) : 0));
     return;
   }
 
@@ -3940,7 +4137,8 @@ function ensureBridges(untilW){
   if (!level().bridges) return;
   while (!g.bridges_.length || g.bridges_[g.bridges_.length-1].wy < untilW){
     const prev = g.bridges_.length ? g.bridges_[g.bridges_.length-1].wy : g.scroll + 600;
-    g.bridges_.push({ wy: prev + 1500 + Math.random()*700, passed:false });
+    // Мосты через 3000–4400 px (раньше вдвое чаще — 13 за день, теснило реку).
+    g.bridges_.push({ wy: prev + 3000 + Math.random()*1400, passed:false });
   }
   while (g.bridges_.length > 5) g.bridges_.shift();
 }
@@ -4189,13 +4387,44 @@ function separate(o){
   if (o.t < -lim) o.t = -lim;
 }
 
+// Проход для байдарки: камень не ставится, если поперёк реки не останется
+// щели хотя бы PASS_GAP px (корпус 33 px + запас на руль).
+const PASS_GAP = 70;
+function leavesPassage(t, wy, visHalf, visHalfY){
+  const vy = visHalfY || visHalf;
+  // Проверяются все строки по высоте нового камня: соседи чуть выше или ниже
+  // перекрываются с ним на промежуточных строках.
+  for (let y = wy - vy; y <= wy + vy; y += 6){
+    const c = centerAt(y), hw = widthAt(y)/2;
+    const iv = [[screenXOf(t, wy) - visHalf, screenXOf(t, wy) + visHalf]];
+    for (const o of g.obs){
+      if (o.type === "barge" || o.type === "boat") continue;
+      if (Math.abs(o.wy - y) > (o.visHalfY || 24)) continue;
+      const x = screenXOf(o.t, o.wy), h = o.visHalf || 24;
+      iv.push([x - h, x + h]);
+    }
+    const sh = forkShape(y);
+    if (sh && sh.h > 0.02) iv.push([c + (sh.c - sh.h)*hw, c + (sh.c + sh.h)*hw]);
+    iv.sort((p, q) => p[0] - q[0]);
+    let at = c - hw, best = 0;
+    for (const [p, q] of iv){ best = Math.max(best, p - at); at = Math.max(at, q); }
+    if (Math.max(best, c + hw - at) < PASS_GAP) return false;
+  }
+  return true;
+}
 function spaceFree(t, wy, visHalf){
   const hw = widthAt(wy)/2;
+  // У моста ничего не ставим: средний пролёт всегда свободен (и для катера).
+  for (const b of g.bridges_) if (Math.abs(b.wy - wy) < 120) return false;
   for (const o of g.obs){
     // Фарватер баржи: пока она на экране, она проходит вперёд ~600 px — всё,
     // что появится на её полосе в этом отрезке, она бы протаранила.
     if (o.type === "barge" && wy > o.wy - (o.visHalfY || 73) && wy - o.wy < 620 &&
         Math.abs(o.t - t)*hw < (o.visHalf || 40) + visHalf + 8) return false;
+    // Катер идёт навстречу через всё, что ниже него: на его полосе новое не
+    // ставится, иначе камень возникает прямо перед носом — не отвернуть.
+    if (o.type === "boat" && o.wy > wy - 40 &&
+        Math.abs(o.t - t)*hw < (o.visHalf || 21) + visHalf + 30) return false;
     if (Math.abs(o.wy - wy) > 130) continue;
     if (Math.abs(o.t - t)*hw < (o.visHalf || 24) + visHalf + 14) return false;
   }
@@ -4254,16 +4483,17 @@ function spOb(){
   for(let a=0;a<10;a++){
     const cand=(Math.random()*2-1)*lim;
     if(inIsland(cand,wy))continue;
-    if(spaceFree(cand,wy,visHalf)){t=cand;break;}
+    if(spaceFree(cand,wy,visHalf) && leavesPassage(cand,wy,visHalf,spriteSize(visName).h/2)){t=cand;break;}
   }
   if(t===null)return;
   // Двое соперников рядом толкают друг друга по кругу и всё равно
   // налезают — проще не выпускать второго вплотную к первому.
   if(ty=="kayaker"&&g.obs.some(o=>o.type=="kayaker"&&Math.abs(o.wy-wy)<300))return;
+  const aggro=ty=="kayaker"&&Math.random()<level().aggro;
   g.obs.push({t,wy,type:ty,size:sz,halfPx,sprite,vt:0,
               visHalf, visHalfY:spriteSize(visName).h/2,
-              variant:ty=="kayaker"?Math.floor(Math.random()*3):undefined,
-              aggro:ty=="kayaker"&&Math.random()<level().aggro, swingT:-1});
+              variant:ty=="kayaker"?(aggro?AGGRO_VARIANT:Math.floor(Math.random()*3)):undefined,
+              aggro, swingT:-1, seed:Math.floor(Math.random()*120)});
 }
 function spBn(){
   const wy=spawnWy();
@@ -4454,6 +4684,15 @@ function chkCl(){
     const o=g.obs[i];
     const hw=widthAt(o.wy)/2;
     const dx=(g.t-o.t)*hw,dy=g.pwy-o.wy;
+    if(o.type=="boat"){
+      // Катер длинный — столкновение по его прямоугольнику, а не по кругу.
+      if(Math.abs(dx)<o.visHalf+kr-6 && Math.abs(dy)<o.visHalfY+kr-6 && g.inv<=0 && g.whiskyT<=0){
+        spPt(screenXOf(g.t,g.pwy),screenYOf(g.pwy),"#ffffff",16);
+        damage();
+        return;
+      }
+      continue;
+    }
     if(Math.hypot(dx,dy)<kr+(o.halfPx||16)){
       const ox=screenXOf(o.t,o.wy),oy=screenYOf(o.wy);
       if(o.type=="barge"){
@@ -4796,11 +5035,11 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
-  g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks;
+  g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks; g.rFreq = r.freq || 1;
   g.rGrass = r.grass; g.rWater = r.water;
   g.signT = 260;
   // Снаряжение действует весь день.
@@ -4877,6 +5116,143 @@ function aheadPush(o, look){
 // Баржа идёт своим ходом (быстрее брёвен, медленнее лодок) и медленно
 // отворачивает от того, что впереди на её полосе. Раньше шла по прямой
 // сквозь камни, мели и бонусы.
+// ---------- Катер (день 6, Тверца) ----------
+// Мчится навстречу по своей полосе ближе к берегу, заранее обходит камни,
+// бонусы и лодки, у моста уходит в средний пролёт. За кормой — волны:
+// расходятся клином и раскачивают байдарку в сторону от хода катера.
+const BOAT_SPEED = 3.2, BOAT_LANE = 0.5, BOAT_TURN = 0.026;
+function spBoat(){
+  if (!level().boats || g.obs.some(o => o.type === "boat")) return false;
+  const wy = spawnWy() + 200, s = spriteSize("boat");
+  // Моторки по порогам не ходят: весь путь катера (он проходит ~700 px мира,
+  // пока не уйдёт за нижний край) — спокойная вода.
+  for (let w = wy - 600; w <= wy; w += 50) if (rapidBlend(w) > 0.15) return false;
+  const lane = (Math.random() < 0.5 ? -1 : 1) * BOAT_LANE;
+  g.obs.push({ type:"boat", t:lane, lane, wy, vt:0, ph:0,
+               visHalf:s.w/2, visHalfY:s.h/2, halfPx:s.w/2 });
+  return true;
+}
+// Плывущие по течению перед мостом уходят в средний пролёт — не сквозь опору.
+function bridgeGuard(o){
+  for (const b of g.bridges_){
+    const d = b.wy - o.wy;
+    if (d < -(o.visHalfY || 20) || d > 260) continue;
+    const hw = widthAt(b.wy)/2, lim = PIER_T - (PIER_HALF_PX + (o.visHalf || 20) + 4)/hw;
+    if (lim <= 0) continue;
+    const k = d > 140 ? 0.012 : 0.03;
+    if (o.t > lim) o.t -= Math.min(o.t - lim, k);
+    else if (o.t < -lim) o.t += Math.min(-lim - o.t, k);
+  }
+}
+function boatStep(o){
+  // Прямо перед носом камень, а в сторону ещё не ушёл — катер сбрасывает ход
+  // (стоит, пока отворачивает), а не наезжает.
+  const hwNow = widthAt(o.wy)/2;
+  const blocked = g.obs.some(q => q !== o && (q.type === "rock" || q.type === "snag") &&
+    o.wy - q.wy > 0 && o.wy - q.wy < o.visHalfY + (q.visHalfY || 20) + BOAT_SPEED*2 &&
+    Math.abs((o.t - q.t)*hwNow) < o.visHalf + (q.visHalf || 20) + 2);
+  if (!blocked) o.wy -= BOAT_SPEED;
+  o.ph = (o.ph || 0) + 1;
+  const hw = widthAt(o.wy)/2, lim = Math.max(0, 1 - (o.visHalf + 4)/hw);
+  let pref = o.lane;
+  for (const b of g.bridges_) if (Math.abs(o.wy - b.wy) < 320) pref = 0;   // в средний пролёт
+  // Полоса выбирается целиком: перебираем положения поперёк реки и берём
+  // ближайшее к текущему, где на 460 px вперёд нет ни одного препятствия.
+  // Раньше обходили по одному — объезд одного камня уводил в соседний.
+  const ahead = [...g.obs, ...g.bns].filter(q => q !== o && o.wy - q.wy > -o.visHalfY - 30 && o.wy - q.wy < 460);
+  let best = null, bestCost = Infinity;
+  for (let c = -lim; c <= lim + 1e-9; c += 0.02){
+    let hits = 0;
+    for (const q of ahead){
+      const need = (o.visHalf + (q.visHalf || q.halfPx || 16) + 8) / hw;
+      // Катер и препятствие перекрываются по длине не мгновенно, а на отрезке
+      // пути — всё это время катер может смещаться вбок. Проверяем весь
+      // отрезок: где катер будет в его начале и в конце.
+      const span = o.visHalfY + (q.visHalfY || 20);
+      const at = fr => { const m = Math.max(0, fr)*BOAT_TURN; return Math.abs(c - o.t) <= m ? c : o.t + Math.sign(c - o.t)*m; };
+      const tA = at((o.wy - q.wy - span) / BOAT_SPEED), tB = at((o.wy - q.wy + span) / BOAT_SPEED);
+      const lo = Math.min(tA, tB), hi = Math.max(tA, tB);
+      // Плывущее волна от носа отодвинет — «мягкое» препятствие; камень,
+      // коряга, мель — «жёсткое», их катер обязан объехать.
+      // Прижатое к берегу отодвинуть некуда — его тоже объезжаем.
+      const qlim = Math.max(0, 1 - ((q.visHalf || 20) + 4)/hw);
+      const outward = Math.sign(q.t - c) === Math.sign(q.t);
+      const pinned = outward && qlim - Math.abs(q.t) < need - Math.abs(q.t - c);
+      const soft = (q.type === "log" || q.type === "branch" || q.type === "kayaker") && !pinned;
+      if (q.t > lo - need && q.t < hi + need) hits += soft ? 0.3 : 1;
+    }
+    // Опоры моста — те же препятствия: вне среднего пролёта не пройти.
+    for (const b of g.bridges_){
+      const dy = o.wy - b.wy;
+      if (dy < -o.visHalfY || dy > 460) continue;
+      const bhw = widthAt(b.wy)/2, mid = PIER_T - (PIER_HALF_PX + o.visHalf + 6)/bhw;
+      const fr = Math.max(0, dy / BOAT_SPEED), m = fr*BOAT_TURN;
+      const tAt = Math.abs(c - o.t) <= m ? c : o.t + Math.sign(c - o.t)*m;
+      if (Math.abs(tAt) > mid) hits++;
+    }
+    const cost = hits*10 + Math.abs(c - o.t) + 0.3*Math.abs(c - pref);
+    if (cost < bestCost){ bestCost = cost; best = c; }
+  }
+  const tgt = best === null ? pref : best;
+  // Волна от носа отталкивает с пути всё плывущее (брёвна, ветки, лодки):
+  // объехать их не всегда можно — они сами сдвигаются, пока катер рядом.
+  for (const q of ahead){
+    if (q.type !== "log" && q.type !== "branch" && q.type !== "kayaker") continue;
+    const dy = o.wy - q.wy, need = (o.visHalf + (q.visHalf || 20) + 10) / hw;
+    if (dy > 200 || dy < -o.visHalfY - (q.visHalfY || 20)) continue;
+    const d = q.t - o.t;
+    if (Math.abs(d) >= need) continue;
+    const side = d !== 0 ? Math.sign(d) : (q.t > 0 ? -1 : 1);
+    const qlim = Math.max(0, 1 - ((q.visHalf || 20) + 4)/hw);
+    let nt = q.t + side*0.045;
+    if (Math.abs(nt) > qlim) nt = q.t - side*0.045;       // у берега — в другую сторону
+    q.t = Math.max(-qlim, Math.min(qlim, nt));
+  }
+  o.t += Math.max(-BOAT_TURN, Math.min(BOAT_TURN, (tgt - o.t)*0.5));
+  o.t = Math.max(-lim, Math.min(lim, o.t));
+  if (o.ph % 5 === 0) g.waves.push({ wy: o.wy + o.visHalfY - 6, t: o.t, d: o.visHalf*0.5, age: 0, hit: [false, false] });
+  if (!o.heard && screenYOf(o.wy) + o.visHalfY >= 0){ o.heard = true; sfx("motor"); }
+}
+const WAVE_LIFE = 170;
+function waveStep(){
+  const kx = screenXOf(g.t, g.pwy);
+  for (let i = g.waves.length - 1; i >= 0; i--){
+    const w = g.waves[i];
+    w.age++; w.d += 1.3;
+    const hw = widthAt(w.wy)/2;
+    if (w.age > WAVE_LIFE || w.d > 2*hw){ g.waves.splice(i, 1); continue; }
+    if (Math.abs(g.pwy - w.wy) > 26) continue;
+    const amp = 1 - w.age/WAVE_LIFE, c = centerAt(w.wy) + w.t*hw;
+    for (const sd of [-1, 1]){
+      const k = sd < 0 ? 0 : 1;
+      if (w.hit[k] || Math.abs(kx - (c + sd*w.d)) >= 7) continue;
+      w.hit[k] = true;
+      g.vt += sd * 0.02 * amp;                     // волна толкает прочь от хода катера
+      g.shake = Math.max(g.shake || 0, 4 * amp);   // и качает
+    }
+  }
+}
+// Гребни волн — косые белые чёрточки клином за кормой, тают со временем.
+function drwWaves(){
+  for (const w of g.waves){
+    const y = screenYOf(w.wy);
+    if (y < -20 || y > H + 20) continue;
+    const hw = widthAt(w.wy)/2, c = centerAt(w.wy) + w.t*hw, amp = 1 - w.age/WAVE_LIFE;
+    for (const sd of [-1, 1]){
+      const x = c + sd*w.d;
+      if (Math.abs(x - centerAt(w.wy)) > hw - 3) continue;   // до берега
+      cx.fillStyle = "rgba(10,40,90," + (0.25*amp).toFixed(2) + ")";
+      for (let j = 0; j < 4; j++) cx.fillRect(Math.round((x + sd*j*3)/3)*3, Math.round((y - j*3)/3)*3 + 3, 3, 3);
+      cx.fillStyle = "rgba(255,255,255," + (0.6*amp).toFixed(2) + ")";
+      for (let j = 0; j < 4; j++) cx.fillRect(Math.round((x + sd*j*3)/3)*3, Math.round((y - j*3)/3)*3, 3, 3);
+    }
+    if (w.age < 25){                                // пена прямо за кормой
+      cx.fillStyle = "rgba(255,255,255," + (0.5*(1 - w.age/25)).toFixed(2) + ")";
+      cx.fillRect(Math.round((c - 6)/3)*3, Math.round(y/3)*3, 12, 3);
+    }
+  }
+}
+
 // Баржа гудит один раз — когда въезжает в кадр сверху.
 function bargeHorn(){
   for (const o of g.obs){
@@ -5059,6 +5435,9 @@ function upd(){
   stepLateral(input);
   const sr=(level().dens||0.016)*g.df*(g.rRocks||1);if(Math.random()<sr)spOb();
   bargeHorn();
+  // Не вышло (порог, катер уже идёт) — пробуем снова через 10 м.
+  if (level().boats && g.dist >= (g.boatNext || 60)) g.boatNext = g.dist + (spBoat() ? 150 + Math.random()*120 : 10);
+  waveStep();
   if(Math.random()<0.003)spBn();
   if(g.dist>=g.ned)spBev();
   for(let i=g.obs.length-1;i>=0;i--){
@@ -5067,6 +5446,8 @@ function upd(){
     // Камни и мель неподвижны, поэтому их wy не меняется вовсе.
     // Баржа идёт своим ходом, медленнее течения — мы её нагоняем.
     if(o.type=="barge") bargeStep(o, g.sp*sm*DRIFT_SPEED.barge);
+    if(o.type=="boat") boatStep(o);
+    if(o.type=="log"||o.type=="branch"||o.type=="kayaker") bridgeGuard(o);
     if(o.type=="branch"){
       o.wy+=g.sp*sm*DRIFT_SPEED.branch;        // ветка легче — течение тащит быстрее
       o.t+=Math.sin(o.wy*0.028)*0.0009;        // рыскание заметнее, чем у бревна
@@ -5088,6 +5469,15 @@ function upd(){
         }
       } else if(o.aggro){
         const ahw=widthAt(o.wy)/2;
+        // Кричит один раз — когда уже близко, но чуть-чуть не достаёт до удара.
+        {
+          const r0=Math.min(STRIKE_REACH, ahw*0.8), dy=Math.abs(o.wy-g.pwy), lat=Math.abs(o.t-g.t)*ahw;
+          const inReach=dy<75 && lat<r0, near=dy<150 && lat<r0+70;
+          if(!o.taunted && o.swingT<0 && near && !inReach){
+            o.taunted=true;
+            if(!(g.voiceUntil>g.frame)) tauntVoice();
+          }
+        }
         // Дальность замаха привязана к руслу, а не фиксирована: 100px были
         // шире полуширины рукава в порогах, и агрессор «перекрывал реку».
         // Теперь в узости достаточно отгрести к другому берегу.
@@ -5339,10 +5729,11 @@ function rndr(){
   drwBg();
   for(const e of g.bev)drwBev(e);
   drwWeeds();                                   // трава лежит на воде, под всем
+  drwWaves();                                   // волны от катера
   for(const b of g.bridges_) drwBridgeAim(b);   // поплавки лежат на воде
   for(const o of drawOrderOf(g.obs))drwOb(o);
   for(const b of g.bns)drwBn(b);
-  drwWake();drwPt();drwKy();
+  drwWake();drwPt();drwKy();drwClash();
   // Мост рисуется ПОСЛЕ байдарки: под мостом проплывают, а не по нему.
   for(const b of g.bridges_) drwBridge(b);
   drwTape();
@@ -5394,9 +5785,9 @@ function lp(t){
 globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
-  SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
+  SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, SOUNDS, playSample, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,

@@ -32,7 +32,7 @@ test("борт-о-борт агрессивный замахивается, сп
   K.upd();
 
   assert.ok(angry.swingT >= 0, "агрессор должен начать замах борт-о-борт");
-  assert.equal(K.fightFrame(angry), "rower_wind", "в замахе показывается кадр rower_wind");
+  assert.equal(K.fightPhase(angry), "raise", "в замахе соперник поднимает весло");
   assert.equal(calm.swingT, -1, "мирный соперник не замахивается");
   assert.equal(calm.aggro, false, "мирный соперник остаётся мирным");
   assert.equal(K.fightFrame(calm), null, "у мирного нет боевого кадра");

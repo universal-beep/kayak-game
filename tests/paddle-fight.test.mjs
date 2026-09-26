@@ -20,13 +20,11 @@ function makeAggressor(K, { swingT = 50, aggro = true, flipT = 0, t = 0.2 } = {}
   return o;
 }
 
-test("SPR имеет пиксельные кадры драки (wind/strike/flip)", () => {
-  assert.ok(K.SPR.rower_wind, "нужен кадр замаха rower_wind");
-  assert.ok(K.SPR.rower_strike, "нужен кадр удара rower_strike");
+test("кадр переворота есть, застывших кадров замаха нет — весло анимируется", () => {
   assert.ok(K.SPR.rower_flip, "нужен кадр переворота rower_flip");
-  // Кадры должны отличаться от покоя
-  assert.notDeepEqual(K.SPR.rower_wind.map, K.SPR.rower.map);
-  assert.notDeepEqual(K.SPR.rower_strike.map, K.SPR.rower.map);
+  assert.equal(K.SPR.rower_wind, undefined, "застывший кадр замаха заменён анимацией весла");
+  assert.equal(K.SPR.rower_strike, undefined, "застывший кадр удара заменён анимацией весла");
+  assert.equal(typeof K.paddlePose, "function");
 });
 
 test("fightFrame() выбирает кадр по состоянию", () => {
@@ -34,12 +32,14 @@ test("fightFrame() выбирает кадр по состоянию", () => {
 
   // замах идёт (swingT > PARRY_WINDOW) → кадр замаха
   const wind = makeAggressor(K, { swingT: K.SWING_FRAMES });
-  assert.equal(K.fightFrame(wind), "rower_wind");
+  assert.equal(K.fightFrame(wind), "rower");
+  assert.equal(K.fightPhase(wind), "raise");
 
   // окно парирования (swingT <= PARRY_WINDOW) → кадр удара
   K.G.obs = [];
   const strike = makeAggressor(K, { swingT: K.PARRY_WINDOW });
-  assert.equal(K.fightFrame(strike), "rower_strike");
+  assert.equal(K.fightFrame(strike), "rower");
+  assert.equal(K.fightPhase(strike), "strike");
 
   // перевёрнутая лодка первенствует
   K.G.obs = [];

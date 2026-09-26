@@ -57,7 +57,11 @@ export function loadGame(htmlPath, opts = {}) {
     addEventListener() {},
     Image: function () { this.width = 0; this.height = 0; this.addEventListener = () => {}; },
     requestAnimationFrame: () => 0,
-    setInterval, clearInterval, setTimeout, clearTimeout,
+    // Таймеры игры (подсказки, мульты, музыка) не держат процесс пробы:
+    // иначе node --test «висит» после конца пробы, ожидая их.
+    setInterval: (...a) => { const t = setInterval(...a); t.unref?.(); return t; },
+    setTimeout: (...a) => { const t = setTimeout(...a); t.unref?.(); return t; },
+    clearInterval, clearTimeout,
     atob: (x) => Buffer.from(x, "base64").toString("binary"),
     AudioContext: function () { this.decodeAudioData = (a, cb) => { try { cb({}); } catch (e) {} }; this.createBufferSource = () => ({}); this.createGain = () => ({ connect() {} }); this.destination = {}; },
     Audio: function () { this.play = () => Promise.resolve(); },

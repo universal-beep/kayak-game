@@ -17,7 +17,7 @@ export function addSound(slot, file, htmlPath = INDEX) {
     " КБ. Обрежь до 1–2 секунд или сохрани в mp3 96 кбит/с.");
   const html = readFileSync(htmlPath, "utf8");
   const re = new RegExp("(\\n  " + slot + ": )\"[^\"]*\"(,)");
-  if (!re.test(html)) throw new Error("В игре нет гнезда «" + slot + "». Есть: crunch (батон), gulp (виски).");
+  if (!re.test(html)) throw new Error("В игре нет гнезда «" + slot + "». Есть: crunch (батон), gulp (виски), voice_turclub, voice_chapalah, voice_batony.");
   const url = "data:" + mime + ";base64," + readFileSync(file).toString("base64");
   writeFileSync(htmlPath, html.replace(re, (m, a, b) => a + JSON.stringify(url) + b));
   return { slot, bytes: size };
