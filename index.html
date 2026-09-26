@@ -550,25 +550,28 @@ const SPR = {
     ".kbbbbbbbbbbbbbbbbbbbbbbbdssk.",
     ".kbkbbbbbbbbbbbbbbbbbbbbbSSSk.",
     "..k.kkkkkkkkkkkkkkkkkkkkkkkk.."]},
-  // Заросли в воде (замедляют): тёмное пятно зарослей, кувшинки с вырезом и
-  // белым цветком, пряди водорослей по течению. Пятно показывает зону заранее.
-  seaweed:{map:["....kZZZZZ....",
-    "..kkFkkVVZZ...",
-    ".kFFvvvkZZZV..",
-    ".kFvvvVkZZZVZ.",
-    ".kvvvkkZZZZVV.",
-    ".ZkkVkVVkkkZV.",
-    ".VVZkZZkFwvkV.",
-    "ZVZZZZkFFwuvkV",
-    "ZVVZZZkFkwwwkV",
-    "ZZVkkkZkkeVkVZ",
-    ".ZkFFvkkVkkVV.",
-    ".kFFvvvVkZZVZ.",
-    ".kFvvvVVkZZVZ.",
-    "..kvvVVkZZZV..",
-    "...kkkkVZZZ...",
-    "....ZZVZZZ....",
-    ".....ZVZZ....."]},
+  // Заросли в воде (замедляют): кочка осоки сверху — тёмная середина с корнями
+  // в воде, веер листьев светлеет к кончикам, две соломенные метёлки. Синего
+  // нет: между листьями видна настоящая вода реки.
+  seaweed:{map:["........F..........",
+    ".....FF.F..........",
+    "SS....FF....F......",
+    "..d....vv...FFFFF..",
+    "...vvF.vv.F.vF.....",
+    "....vNFvNvFvvF.....",
+    "...FFNNvNvNNvv.....",
+    ".FFFvvNVVNVvvF.....",
+    "....vNNVVVNNvv.....",
+    "..FFFvNVVVVVNvFF.FF",
+    ".FFvNNVVVVVNvNvFFF.",
+    "FFFvNNVNVNVNFFvFF..",
+    ".FFv.FFvNvNNNNF.F..",
+    ".FF...vNNF.v.vv....",
+    ".F....FvvF..vvvd...",
+    "......Fvvv....FdSS.",
+    "......FF.F.......S.",
+    "........FFF........",
+    "........F.........."]},
   rower:{map:[rep(".",9)+"kkk"+rep(".",9),rep(".",8)+"k"+"rrr"+"k"+rep(".",8),
     rep(".",8)+"k"+"rrr"+"k"+rep(".",8),rep(".",8)+"k"+"ttt"+"k"+rep(".",8),
     rep(".",7)+"kk"+"ttt"+"kk"+rep(".",7),rep(".",6)+"k"+"zzzzzzz"+"k"+rep(".",6),
@@ -1464,6 +1467,7 @@ function musicTick(){
 // Короткие звуковые сигналы на том же контексте, что и музыка.
 // Не зависят от выключения музыки: это обратная связь, а не фон.
 function sfx(kind){
+  g.sfxLast = kind;                     // для проб: какой звук прозвучал последним
   if (!actx) return;
   const t = actx.currentTime;
   if (kind === "hit"){
@@ -1497,6 +1501,22 @@ function sfx(kind){
     tone(150, t, 0.10, "sawtooth", 0.06);
     tone(95,  t + 0.05, 0.28, "sine", 0.09);
     tone(70,  t + 0.12, 0.30, "sine", 0.07);
+  } else if (kind === "horn"){
+    // Гудок баржи: две расстроенные «пилы» (90 и 93 Гц дают биение, как у
+    // настоящего тифона) через мягкий фильтр; тянется 2,5 с и затихает.
+    // Рецепт Максима, громкость приведена к остальным звукам игры.
+    const f = actx.createBiquadFilter(), amp = actx.createGain();
+    f.type = "lowpass"; f.frequency.setValueAtTime(350, t);
+    amp.gain.setValueAtTime(0, t);
+    amp.gain.linearRampToValueAtTime(0.16, t + 0.15);
+    amp.gain.setValueAtTime(0.16, t + 2.5);
+    amp.gain.exponentialRampToValueAtTime(0.001, t + 3.5);
+    for (const hz of [90, 93]){
+      const o = actx.createOscillator();
+      o.type = "sawtooth"; o.frequency.setValueAtTime(hz, t);
+      o.connect(f); o.start(t); o.stop(t + 3.5);
+    }
+    f.connect(amp); amp.connect(actx.destination);
   } else if (kind === "bell"){
     // Причал/финиш: чистый колокол поверх аккорда.
     [880, 1174, 1568].forEach((f, i) => tone(f, t + i*0.10, 0.5, "sine", 0.05));
@@ -2579,14 +2599,29 @@ function stepLateral(input){
 // дожимается прямо к берегу — а ось русла сама зажата в [2+hw, W-2-hw], так
 // что причаливание держит корпус целиком в кадре. Где река шире кадра, предел
 // остаётся экранным, чтобы не отрезать бонусы у дальнего берега.
+// Полуширина КОРПУСА (без весла): самый широкий ряд спрайта, который не
+// тянется почти на всю ширину — такие ряды это весло поперёк.
+let HULL_HALF = 0;
+function hullHalf(){
+  if (HULL_HALF) return HULL_HALF;
+  const m = SPR.kayak_center.map, Wm = m[0].length;
+  let w = 0;
+  for (const r of m){
+    const a = r.search(/[^.]/), b = r.length - 1 - [...r].reverse().join("").search(/[^.]/);
+    if (a >= 0 && b - a + 1 < Wm*0.75) w = Math.max(w, b - a + 1);
+  }
+  return (HULL_HALF = w * SCALE / 2);
+}
+// Борт корпуса упирается прямо в урез воды (весло при этом ложится на песок).
+// Раньше предел считался по краю спрайта вместе с веслом и с запасом 18 px от
+// кадра: на узком берегу Волги корпус не доходил до песка на 2–13 px.
+// Кромка кадра — страховка на случай, если урез за кадром.
 function lateralBounds(wy){
   const c = centerAt(wy), hw = widthAt(wy)/2;
-  const half = spriteSize("kayak_center").w / 2;
-  const pad = 6;
-  const bankL = c - hw + pad, bankR = c + hw - pad;
-  const tL = (Math.min(18, bankL) + half - c) / hw;
-  const tR = (Math.max(W - 18, bankR) - half - c) / hw;
-  return [tL, tR];
+  const half = spriteSize("kayak_center").w / 2, hull = hullHalf() - 1;
+  const xL = Math.max(c - hw + hull, half - 4);
+  const xR = Math.min(c + hw - hull, W - half + 4);
+  return [(xL - c) / hw, (xR - c) / hw];
 }
 
 function leanOf(vt){
@@ -4833,6 +4868,15 @@ function aheadPush(o, look){
 // Баржа идёт своим ходом (быстрее брёвен, медленнее лодок) и медленно
 // отворачивает от того, что впереди на её полосе. Раньше шла по прямой
 // сквозь камни, мели и бонусы.
+// Баржа гудит один раз — когда въезжает в кадр сверху.
+function bargeHorn(){
+  for (const o of g.obs){
+    if (o.type !== "barge" || o.horned) continue;
+    if (screenYOf(o.wy) + (o.visHalfY || 40) >= 0){ o.horned = true; sfx("horn"); }
+  }
+}
+function setAudio(a){ actx = a; }
+
 function bargeStep(o, flow){
   o.wy += flow;
   const hw = widthAt(o.wy)/2;
@@ -5004,6 +5048,7 @@ function upd(){
   }
   stepLateral(input);
   const sr=(level().dens||0.016)*g.df*(g.rRocks||1);if(Math.random()<sr)spOb();
+  bargeHorn();
   if(Math.random()<0.003)spBn();
   if(g.dist>=g.ned)spBev();
   for(let i=g.obs.length-1;i>=0;i--){
@@ -5206,7 +5251,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
