@@ -1,0 +1,319 @@
+
+<title>Книга похода</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=PT+Sans:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --ground:#eef3f4; --surface:#ffffff; --ink:#15262e; --muted:#566b75; --line:#cfdde2;
+  --accent:#1f6fb8; --ok:#2f7a3a; --okbg:#e2f1e3; --todo:#8a5a12; --todobg:#f7ecd6; --wait:#9b2f5b; --waitbg:#f6e1ea;
+  --water:#1565c0; --grass:#4b9c48; --sand:#d2b674;
+  --pix:"Press Start 2P", ui-monospace, monospace; --body:"PT Sans", "Segoe UI", Arial, sans-serif; --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme:dark; --ground:#0d171c; --surface:#142229; --ink:#e2ecf0; --muted:#93a8b2; --line:#24363f;
+  --accent:#6aaef0; --ok:#7fd08a; --okbg:#173022; --todo:#e8b565; --todobg:#33260f; --wait:#ef8ab3; --waitbg:#35172a; }}
+:root[data-theme="dark"]{
+  color-scheme:dark; --ground:#0d171c; --surface:#142229; --ink:#e2ecf0; --muted:#93a8b2; --line:#24363f;
+  --accent:#6aaef0; --ok:#7fd08a; --okbg:#173022; --todo:#e8b565; --todobg:#33260f; --wait:#ef8ab3; --waitbg:#35172a; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.55 var(--body);padding-inline:16px;padding-block:24px 48px}
+main{max-width:1040px;margin:0 auto;display:grid;gap:48px}
+h1,h2{font-family:var(--pix);font-weight:400;letter-spacing:.02em;text-wrap:balance;margin:0}
+h1{font-size:clamp(22px,4vw,34px);line-height:1.3}
+h2{font-size:18px;line-height:1.5;margin-bottom:16px}
+h3{font-size:19px;margin:24px 0 10px;text-wrap:balance}
+h4{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px}
+code{font-family:var(--mono);font-size:.86em}
+.eyebrow{font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 10px}
+.lead{color:var(--muted);max-width:66ch;margin:12px 0 0}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin-top:20px}
+.toc a{color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--surface);padding:4px 10px;border-radius:4px;font-size:14px}
+.toc a:hover,.toc a:focus-visible{border-color:var(--accent);outline:none}
+.toc b{font-variant-numeric:tabular-nums;color:var(--ok)}
+.req{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.req li{display:grid;grid-template-columns:118px 1fr auto;gap:14px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.req .ask{margin:0;font-weight:700}
+.req .res{margin:2px 0 0;color:var(--muted)}
+.req time{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:3px;justify-self:start}
+.pill.ok{color:var(--ok);background:var(--okbg)} .pill.todo{color:var(--todo);background:var(--todobg)}
+.pill.wait,.pill.work{color:var(--wait);background:var(--waitbg)}
+#days{display:grid;gap:22px}
+.day{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;padding:0 20px 20px}
+.day>header{display:flex;gap:16px;align-items:center;margin:0 -20px 16px;padding:14px 20px;
+  background:linear-gradient(90deg,var(--grass) 0 10px,var(--river) 10px 22px,transparent 22px),var(--surface);padding-left:40px;border-bottom:1px solid var(--line)}
+.day .num{font-family:var(--pix);font-size:22px;color:var(--accent);min-width:1.4em}
+.day>header>div{min-width:0}
+.day h3{margin:0;font-size:20px;overflow-wrap:anywhere}
+.day>header p{margin:2px 0 0;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:10px 20px;margin:0}
+.facts dt{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.facts dd{margin:2px 0 0;font-variant-numeric:tabular-nums}
+.feat{margin:14px 0 0;padding-left:20px;max-width:72ch}
+.pool{margin:10px 0 0;color:var(--muted)}
+.none{color:var(--muted);font-style:italic;margin:14px 0 0}
+.sprites{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(210px,100%),1fr));gap:12px}
+.spr{margin:0;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;border:1px solid var(--line);border-radius:5px;padding:10px;background:var(--surface)}
+.spr canvas{image-rendering:pixelated;display:block;padding:6px;border-radius:3px;max-width:min(150px,40vw);height:auto}
+.spr.water canvas{background:var(--water)} .spr.grass canvas{background:var(--grass)} .spr.sand canvas{background:var(--sand)}
+.spr figcaption{display:grid;gap:3px;font-size:14px;line-height:1.4;min-width:0;overflow-wrap:anywhere}
+.spr figcaption code{font-weight:600}
+.spr figcaption span{color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:28px}
+.cols ul{padding-left:20px;margin:0} .cols li{margin:6px 0}
+.speeds{border-collapse:collapse;margin:0 0 12px;font-size:15px;max-width:100%}
+.speeds th,.speeds td{text-align:left;padding:6px 14px 6px 0;border-bottom:1px solid var(--line)}
+.speeds td:last-child{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.speeds th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+footer{max-width:1040px;margin:40px auto 0;color:var(--muted);font-size:13px}
+@media (max-width:560px){ .req li{grid-template-columns:1fr} .req time{order:-1} .spr{grid-template-columns:1fr} }
+</style>
+<main>
+<header class="top">
+  <p class="eyebrow">«Сплав на байдарке» · рабочая книга</p>
+  <h1>Книга похода</h1>
+  <p class="lead">Что ты просил поправить и что сделано; чем живёт каждый из девяти дней; общие спрайты и правила, по которым они работают. Собирается из самой игры командой <code>node tools/game-book.mjs</code>.</p>
+  <nav class="toc">
+    <a href="#requests">Просьбы <b>24/29</b></a>
+    <a href="#day1">День 1</a><a href="#day2">День 2</a><a href="#day3">День 3</a><a href="#day4">День 4</a><a href="#day5">День 5</a><a href="#day6">День 6</a><a href="#day7">День 7</a><a href="#day8">День 8</a><a href="#day9">День 9</a>
+    <a href="#common">Общее</a>
+    <a href="#rules">Правила</a>
+  </nav>
+</header>
+
+<section id="requests">
+  <h2>Просьбы и правки</h2>
+  <ol class="req">
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Брёвна не всегда похожи на брёвна — перерисовать</p><p class="res">Бревно вида сверху: кора, светлый спил с кольцом, сучок, обломанный конец.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Поискать скиллы и правила, как грамотно рисовать</p><p class="res">Готового скилла под формат игры нет. Сделаны редактор спрайтов, правила рисовки (docs/art-rules.md), скилл kayak-art и проверка единого размера пикселя.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Рассмотреть все объекты на берегу и на финише</p><p class="res">Разбор всех объектов с оценками — в docs/art-rules.md.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Корягу оставить — нравится</p><p class="res">Коряга не менялась.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Брёвна у песка и берега должны замедляться по углу касания</p><p class="res">На изгибах бревно сносит к внешнему берегу; удар в лоб почти останавливает, вскользь — чуть тормозит; трение о песок; летит песок.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Перерисовать батон</p><p class="res">Нарезной батон сбоку с косыми надрезами.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Батон в 1,5 раза меньше</p><p class="res">45×18 px вместо 72×27.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Перерисовать всё, что осталось</p><p class="res">Деревья, рюкзак, топор, ветка, баржа, рыба, дом, утки, костёр, виски, аптечка; единый пиксель ×3.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Покритиковать, что на берегах</p><p class="res">Найден баг: берега голые на 95% дня (исправлен). Остальная критика — в docs/art-rules.md.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Деревья «растут» по пути, на финише всё появляется внезапно</p><p class="res">Деревья выплывают из тумана, не пропадают у нижней кромки и не дёргаются; лента и лагерь выставляются заранее над экраном.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Перерисовать человечков с музыкой</p><p class="res">Компания вдоль берега: гитарист из ночного мульта, костёр, слушатель, ноты-спрайты.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Загорающих перерисовать, чтобы было понятно</p><p class="res">Загорающий на полосатом полотенце вид сверху, дети в воде машут.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Загорающие вдоль реки, 1 или 2, крупнее</p><p class="res">Лежат вдоль реки, 72 px — длиннее стоящего человека; один или двое на пляж.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Загорающие на траве — нужен песчаный берег нескольких видов</p><p class="res">Песок под всеми полотенцами (проверяется тестом), три вида пляжа, галька.</p></div><time>26.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Время от времени песчаные вставки по берегам</p><p class="res">Песчаные отмели примерно на каждом пятом участке берега; на них не растут деревья.</p></div><time>26.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">В паре, что идёт в палатку, одна — девушка с длинными волосами</p><p class="res">Спрайт girl: длинные волосы, сарафан; через раз блондинка.</p></div><time>26.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Среди загорающих иногда девушки — лиф и волосы</p><p class="res">Спрайт sunbather_f: волосы веером, купальник с лифом.</p></div><time>26.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Баржа: поверх неё оказываются камни, батоны</p><p class="res">Баржа обходит препятствия, на её полосе впереди ничего не появляется. В симуляции наложений 13 → 0.</p></div><time>26.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Перерисовать траву в воде, которая замедляет</p><p class="res">Заросли с кувшинками и белым цветком на тёмном пятне — зона видна заранее.</p></div><time>26.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Кто ещё плывёт с ошибками логики</p><p class="res">Бревно обходило камни позади себя, ветка не обходила ничего — исправлено общим правилом обхода.</p></div><time>26.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Брёвна и лодочники дёргаются и резко оказываются в другой части экрана</p><p class="res">Расталкивание плавное, у острова объект не перелетает. Самый большой рывок 43,9 → 6,1 px.</p></div><time>26.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Журнал правок в HTML; блок на каждый уровень со спрайтами, общее ниже, правила</p><p class="res">Эта книга: docs/game-book.html, собирается командой node tools/game-book.mjs.</p></div><time>26.09.2026</time></li>
+    <li class="todo"><span class="pill todo">не начато</span><div><p class="ask">Добавить звук в мульты</p></div><time>25.09.2026</time></li>
+    <li class="todo"><span class="pill todo">не начато</span><div><p class="ask">У каждого дня своё: ветер, катера с волной, новое на берегах; имя игрока в мультах</p><p class="res">Идеи разложены по дням в docs/ideas.md; к работе не приступали.</p></div><time>25.09.2026</time></li>
+    <li class="todo"><span class="pill todo">не начато</span><div><p class="ask">Берега разные у каждой реки, обрывы и отмели на поворотах (из критики)</p><p class="res">Рекомендовано следующим шагом.</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Поднять допуск размера index.html в проверке analyze (сейчас больше 5%)</p><p class="res">База поднята до 429099 байт с согласия Максима (26.09.2026).</p></div><time>25.09.2026</time></li>
+    <li class="ok"><span class="pill ok">сделано</span><div><p class="ask">Закоммитить сделанное</p><p class="res">Коммиты в ветке art-pipeline.</p></div><time>26.09.2026</time></li>
+    <li class="work"><span class="pill work">в работе</span><div><p class="ask">Перерисовать гитариста</p></div><time>26.09.2026</time></li>
+    <li class="work"><span class="pill work">в работе</span><div><p class="ask">Объекты не должны накладываться: человек на ёлке, «варенье» на палатке на финише</p></div><time>26.09.2026</time></li>
+  </ol>
+</section>
+
+<section id="days">
+  <h2>Дни похода</h2>
+  
+  <article class="day" id="day1" style="--river:#0f6bc4;--grass:#4b9c48">
+    <header>
+      <span class="num">1</span>
+      <div><h3>ВОЛГА · ПАЛАТОЧНЫЙ ГОРОДОК</h3><p>Большая вода, много туристов</p></div>
+    </header>
+    <dl class="facts">
+      <div><dt>Длина</dt><dd>800 м</dd></div>
+      <div><dt>Третья звезда</dt><dd>Собрать 5 бонусов</dd></div>
+      <div><dt>Прибытие</dt><dd>палаточный лагерь</dd></div>
+      <div><dt>Река</dt><dd>ширина ×1.35 · изгибы ×0.55 · камни ×0.8 · течение ×1</dd></div>
+    </dl>
+    <ul class="feat"><li>Порогов нет — большая спокойная вода.</li><li>Соперники мирные.</li><li>На берегах пляжи и компании с гитарой.</li></ul>
+    <p class="pool"><b>Жители берега:</b> beach, guitar, camp, fire, ducks, tower, fisher, bush, tree</p>
+    <h4>Пляж</h4><div class="sprites"><figure class="spr sand"><canvas data-spr="sunbather"></canvas><figcaption><code>sunbather</code><span>Загорающий на полотенце: лежит вдоль реки, целиком на песке.</span></figcaption></figure><figure class="spr sand"><canvas data-spr="sunbather_f"></canvas><figcaption><code>sunbather_f</code><span>Загорающая: волосы веером, купальник с лифом. Через раз вместо парня.</span></figcaption></figure><figure class="spr sand"><canvas data-spr="towel"></canvas><figcaption><code>towel</code><span>Пустое полотенце на классическом пляже.</span></figcaption></figure><figure class="spr sand"><canvas data-spr="umbrella"></canvas><figcaption><code>umbrella</code><span>Пляжный зонтик с тенью.</span></figcaption></figure><figure class="spr water"><canvas data-spr="swimmer0"></canvas><figcaption><code>swimmer0</code><span>Ребёнок в воде по плечи.</span></figcaption></figure><figure class="spr water"><canvas data-spr="swimmer1"></canvas><figcaption><code>swimmer1</code><span>Он же машет рукой.</span></figcaption></figure></div><h4>Компания с гитарой</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="sitter_guitar"></canvas><figcaption><code>sitter_guitar</code><span>Гитарист у костра (тот же, что в ночном мульте), перебирает струны.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="note"></canvas><figcaption><code>note</code><span>Ноты поднимаются от гитары вглубь берега.</span></figcaption></figure></div>
+  </article>
+  <article class="day" id="day2" style="--river:#0f6bc4;--grass:#4b9c48">
+    <header>
+      <span class="num">2</span>
+      <div><h3>ВОЛГА · СТАРИЦА</h3><p>Большая вода, много туристов</p></div>
+    </header>
+    <dl class="facts">
+      <div><dt>Длина</dt><dd>800 м</dd></div>
+      <div><dt>Третья звезда</dt><dd>Обогнать 6 байдарочников</dd></div>
+      <div><dt>Прибытие</dt><dd>у церкви</dd></div>
+      <div><dt>Река</dt><dd>ширина ×1.35 · изгибы ×0.55 · камни ×0.8 · течение ×1</dd></div>
+    </dl>
+    <ul class="feat"><li>Порогов нет — большая спокойная вода.</li><li>Баржи: идут своим ходом по фарватеру, столкновение — конец попытки.</li><li>Соперники мирные.</li><li>На берегах пляжи и компании с гитарой.</li></ul>
+    <p class="pool"><b>Жители берега:</b> beach, guitar, camp, fire, ducks, tower, fisher, bush, tree</p>
+    <h4>Пляж</h4><div class="sprites"><figure class="spr sand"><canvas data-spr="sunbather"></canvas><figcaption><code>sunbather</code><span>Загорающий на полотенце: лежит вдоль реки, целиком на песке.</span></figcaption></figure><figure class="spr sand"><canvas data-spr="sunbather_f"></canvas><figcaption><code>sunbather_f</code><span>Загорающая: волосы веером, купальник с лифом. Через раз вместо парня.</span></figcaption></figure><figure class="spr sand"><canvas data-spr="towel"></canvas><figcaption><code>towel</code><span>Пустое полотенце на классическом пляже.</span></figcaption></figure><figure class="spr sand"><canvas data-spr="umbrella"></canvas><figcaption><code>umbrella</code><span>Пляжный зонтик с тенью.</span></figcaption></figure><figure class="spr water"><canvas data-spr="swimmer0"></canvas><figcaption><code>swimmer0</code><span>Ребёнок в воде по плечи.</span></figcaption></figure><figure class="spr water"><canvas data-spr="swimmer1"></canvas><figcaption><code>swimmer1</code><span>Он же машет рукой.</span></figcaption></figure></div><h4>Компания с гитарой</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="sitter_guitar"></canvas><figcaption><code>sitter_guitar</code><span>Гитарист у костра (тот же, что в ночном мульте), перебирает струны.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="note"></canvas><figcaption><code>note</code><span>Ноты поднимаются от гитары вглубь берега.</span></figcaption></figure></div><h4>Баржи</h4><div class="sprites"><figure class="spr water"><canvas data-spr="barge"></canvas><figcaption><code>barge</code><span>Идёт своим ходом (0,30), медленно отворачивает от препятствий; на её полосе впереди ничего не появляется. Столкновение — сразу конец попытки, спасает только спасжилет.</span></figcaption></figure></div><h4>Место прибытия</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="church"></canvas><figcaption><code>church</code><span>Церковь у места прибытия.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="house"></canvas><figcaption><code>house</code><span>Дом у места прибытия.</span></figcaption></figure></div>
+  </article>
+  <article class="day" id="day3" style="--river:#125e9e;--grass:#367f3c">
+    <header>
+      <span class="num">3</span>
+      <div><h3>МЕДВЕДИЦА · СТОЯНКА В ЛЕСУ</h3><p>Извилистая, лесная, топляк и мели</p></div>
+    </header>
+    <dl class="facts">
+      <div><dt>Длина</dt><dd>1000 м</dd></div>
+      <div><dt>Третья звезда</dt><dd>Задеть не больше одной мели</dd></div>
+      <div><dt>Прибытие</dt><dd>палаточный лагерь</dd></div>
+      <div><dt>Река</dt><dd>ширина ×0.85 · изгибы ×1.55 · камни ×1.2 · течение ×1.1</dd></div>
+    </dl>
+    <ul class="feat"><li>Пороги: русло сужается, течение быстрее, бонусов на порогах нет.</li><li>Развилки: остров делит реку на широкий и узкий рукав, бонус — в узком.</li><li>Коряги: неподвижные препятствия.</li><li>Агрессивных соперников — около 30%: замахиваются веслом, удар можно парировать.</li><li>Лесной берег: бывает медведь.</li></ul>
+    <p class="pool"><b>Жители берега:</b> bear, camp, fire, ducks, tower, fisher, bush, tree</p>
+    <h4>Лесной берег</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="bear"></canvas><figcaption><code>bear</code><span>Медведь бродит вдоль берега (только лесные реки).</span></figcaption></figure></div><h4>Коряги</h4><div class="sprites"><figure class="spr water"><canvas data-spr="snag"></canvas><figcaption><code>snag</code><span>Коряга, стоит на месте. Удар — минус сердце.</span></figcaption></figure></div><h4>Агрессивные соперники</h4><div class="sprites"><figure class="spr water"><canvas data-spr="rower_wind"></canvas><figcaption><code>rower_wind</code><span>Агрессивный соперник замахивается веслом, когда ты борт о борт. Удар можно парировать.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_strike"></canvas><figcaption><code>rower_strike</code><span>Кадр удара веслом. Попадает, только если ты всё ещё рядом.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_flip"></canvas><figcaption><code>rower_flip</code><span>Парированный соперник переворачивается и тонет.</span></figcaption></figure></div>
+  </article>
+  <article class="day" id="day4" style="--river:#125e9e;--grass:#367f3c">
+    <header>
+      <span class="num">4</span>
+      <div><h3>МЕДВЕДИЦА · ЛАГЕРЬ НА МЕДВЕДИЦЕ</h3><p>Извилистая, лесная, топляк и мели</p></div>
+    </header>
+    <dl class="facts">
+      <div><dt>Длина</dt><dd>1000 м</dd></div>
+      <div><dt>Третья звезда</dt><dd>Парировать 3 удара веслом</dd></div>
+      <div><dt>Прибытие</dt><dd>палаточный лагерь</dd></div>
+      <div><dt>Река</dt><dd>ширина ×0.85 · изгибы ×1.55 · камни ×1.2 · течение ×1.1</dd></div>
+    </dl>
+    <ul class="feat"><li>Пороги: русло сужается, течение быстрее, бонусов на порогах нет.</li><li>Развилки: остров делит реку на широкий и узкий рукав, бонус — в узком.</li><li>Коряги: неподвижные препятствия.</li><li>Агрессивных соперников — около 35%: замахиваются веслом, удар можно парировать.</li><li>Лесной берег: бывает медведь.</li></ul>
+    <p class="pool"><b>Жители берега:</b> bear, camp, fire, ducks, tower, fisher, bush, tree</p>
+    <h4>Лесной берег</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="bear"></canvas><figcaption><code>bear</code><span>Медведь бродит вдоль берега (только лесные реки).</span></figcaption></figure></div><h4>Коряги</h4><div class="sprites"><figure class="spr water"><canvas data-spr="snag"></canvas><figcaption><code>snag</code><span>Коряга, стоит на месте. Удар — минус сердце.</span></figcaption></figure></div><h4>Агрессивные соперники</h4><div class="sprites"><figure class="spr water"><canvas data-spr="rower_wind"></canvas><figcaption><code>rower_wind</code><span>Агрессивный соперник замахивается веслом, когда ты борт о борт. Удар можно парировать.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_strike"></canvas><figcaption><code>rower_strike</code><span>Кадр удара веслом. Попадает, только если ты всё ещё рядом.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_flip"></canvas><figcaption><code>rower_flip</code><span>Парированный соперник переворачивается и тонет.</span></figcaption></figure></div>
+  </article>
+  <article class="day" id="day5" style="--river:#136fb8;--grass:#47973f">
+    <header>
+      <span class="num">5</span>
+      <div><h3>ТВЕРЦА · ДЕРЕВНЯ</h3><p>Старый водный путь на Торжок</p></div>
+    </header>
+    <dl class="facts">
+      <div><dt>Длина</dt><dd>1000 м</dd></div>
+      <div><dt>Третья звезда</dt><dd>Пройти 4 моста в пролёт</dd></div>
+      <div><dt>Прибытие</dt><dd>деревня</dd></div>
+      <div><dt>Река</dt><dd>ширина ×1 · изгибы ×1 · камни ×1 · течение ×1.05</dd></div>
+    </dl>
+    <ul class="feat"><li>Пороги: русло сужается, течение быстрее, бонусов на порогах нет.</li><li>Мосты: в пролёт — очки, в опору — удар.</li><li>Дождь: гребок слабее на 14%.</li><li>Агрессивных соперников — около 45%: замахиваются веслом, удар можно парировать.</li><li>Лесной берег: бывает медведь.</li></ul>
+    <p class="pool"><b>Жители берега:</b> bear, camp, fire, ducks, tower, fisher, bush, tree</p>
+    <h4>Лесной берег</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="bear"></canvas><figcaption><code>bear</code><span>Медведь бродит вдоль берега (только лесные реки).</span></figcaption></figure></div><h4>Мосты</h4><div class="sprites"><figure class="spr water"><canvas data-spr="bridge"></canvas><figcaption><code>bridge</code><span>Мост: пройти в пролёт — +40 очков, в опору — удар. Первый пролёт за день — мультик.</span></figcaption></figure><figure class="spr water"><canvas data-spr="truss"></canvas><figcaption><code>truss</code><span>Ферма моста.</span></figcaption></figure><figure class="spr water"><canvas data-spr="deck"></canvas><figcaption><code>deck</code><span>Настил моста.</span></figcaption></figure><figure class="spr water"><canvas data-spr="pier"></canvas><figcaption><code>pier</code><span>Опора моста — в неё не въезжать.</span></figcaption></figure></div><h4>Агрессивные соперники</h4><div class="sprites"><figure class="spr water"><canvas data-spr="rower_wind"></canvas><figcaption><code>rower_wind</code><span>Агрессивный соперник замахивается веслом, когда ты борт о борт. Удар можно парировать.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_strike"></canvas><figcaption><code>rower_strike</code><span>Кадр удара веслом. Попадает, только если ты всё ещё рядом.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_flip"></canvas><figcaption><code>rower_flip</code><span>Парированный соперник переворачивается и тонет.</span></figcaption></figure></div><h4>Место прибытия</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="house"></canvas><figcaption><code>house</code><span>Дом у места прибытия.</span></figcaption></figure></div>
+  </article>
+  <article class="day" id="day6" style="--river:#136fb8;--grass:#47973f">
+    <header>
+      <span class="num">6</span>
+      <div><h3>ТВЕРЦА · ТОРЖОК</h3><p>Старый водный путь на Торжок</p></div>
+    </header>
+    <dl class="facts">
+      <div><dt>Длина</dt><dd>1000 м</dd></div>
+      <div><dt>Третья звезда</dt><dd>Дойти, сохранив сердце</dd></div>
+      <div><dt>Прибытие</dt><dd>город</dd></div>
+      <div><dt>Река</dt><dd>ширина ×1 · изгибы ×1 · камни ×1 · течение ×1.05</dd></div>
+    </dl>
+    <ul class="feat"><li>Пороги: русло сужается, течение быстрее, бонусов на порогах нет.</li><li>Мосты: в пролёт — очки, в опору — удар.</li><li>Дождь: гребок слабее на 21%.</li><li>Агрессивных соперников — около 45%: замахиваются веслом, удар можно парировать.</li><li>Лесной берег: бывает медведь.</li></ul>
+    <p class="pool"><b>Жители берега:</b> bear, camp, fire, ducks, tower, fisher, bush, tree</p>
+    <h4>Лесной берег</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="bear"></canvas><figcaption><code>bear</code><span>Медведь бродит вдоль берега (только лесные реки).</span></figcaption></figure></div><h4>Мосты</h4><div class="sprites"><figure class="spr water"><canvas data-spr="bridge"></canvas><figcaption><code>bridge</code><span>Мост: пройти в пролёт — +40 очков, в опору — удар. Первый пролёт за день — мультик.</span></figcaption></figure><figure class="spr water"><canvas data-spr="truss"></canvas><figcaption><code>truss</code><span>Ферма моста.</span></figcaption></figure><figure class="spr water"><canvas data-spr="deck"></canvas><figcaption><code>deck</code><span>Настил моста.</span></figcaption></figure><figure class="spr water"><canvas data-spr="pier"></canvas><figcaption><code>pier</code><span>Опора моста — в неё не въезжать.</span></figcaption></figure></div><h4>Агрессивные соперники</h4><div class="sprites"><figure class="spr water"><canvas data-spr="rower_wind"></canvas><figcaption><code>rower_wind</code><span>Агрессивный соперник замахивается веслом, когда ты борт о борт. Удар можно парировать.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_strike"></canvas><figcaption><code>rower_strike</code><span>Кадр удара веслом. Попадает, только если ты всё ещё рядом.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_flip"></canvas><figcaption><code>rower_flip</code><span>Парированный соперник переворачивается и тонет.</span></figcaption></figure></div><h4>Место прибытия</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="church"></canvas><figcaption><code>church</code><span>Церковь у места прибытия.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="house"></canvas><figcaption><code>house</code><span>Дом у места прибытия.</span></figcaption></figure></div>
+  </article>
+  <article class="day" id="day7" style="--river:#1565c0;--grass:#3f8f43">
+    <header>
+      <span class="num">7</span>
+      <div><h3>ОСУГА · ПОРОГ ПЕРВЫЙ</h3><p>Малая река, пороги и камни</p></div>
+    </header>
+    <dl class="facts">
+      <div><dt>Длина</dt><dd>1200 м</dd></div>
+      <div><dt>Третья звезда</dt><dd>Пройти 3 порога чисто</dd></div>
+      <div><dt>Прибытие</dt><dd>палаточный лагерь</dd></div>
+      <div><dt>Река</dt><dd>ширина ×0.72 · изгибы ×0.8 · камни ×1.8 · течение ×1.2</dd></div>
+    </dl>
+    <ul class="feat"><li>Пороги: русло сужается, течение быстрее, бонусов на порогах нет.</li><li>Агрессивных соперников — около 55%: замахиваются веслом, удар можно парировать.</li><li>Лесной берег: бывает медведь.</li></ul>
+    <p class="pool"><b>Жители берега:</b> bear, camp, fire, ducks, tower, fisher, bush, tree</p>
+    <h4>Лесной берег</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="bear"></canvas><figcaption><code>bear</code><span>Медведь бродит вдоль берега (только лесные реки).</span></figcaption></figure></div><h4>Агрессивные соперники</h4><div class="sprites"><figure class="spr water"><canvas data-spr="rower_wind"></canvas><figcaption><code>rower_wind</code><span>Агрессивный соперник замахивается веслом, когда ты борт о борт. Удар можно парировать.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_strike"></canvas><figcaption><code>rower_strike</code><span>Кадр удара веслом. Попадает, только если ты всё ещё рядом.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_flip"></canvas><figcaption><code>rower_flip</code><span>Парированный соперник переворачивается и тонет.</span></figcaption></figure></div>
+  </article>
+  <article class="day" id="day8" style="--river:#1565c0;--grass:#3f8f43">
+    <header>
+      <span class="num">8</span>
+      <div><h3>ОСУГА · КАНЬОН</h3><p>Малая река, пороги и камни</p></div>
+    </header>
+    <dl class="facts">
+      <div><dt>Длина</dt><dd>1200 м</dd></div>
+      <div><dt>Третья звезда</dt><dd>Набрать комбо 20</dd></div>
+      <div><dt>Прибытие</dt><dd>палаточный лагерь</dd></div>
+      <div><dt>Река</dt><dd>ширина ×0.72 · изгибы ×0.8 · камни ×1.8 · течение ×1.2</dd></div>
+    </dl>
+    <ul class="feat"><li>Пороги: русло сужается, течение быстрее, бонусов на порогах нет.</li><li>Агрессивных соперников — около 55%: замахиваются веслом, удар можно парировать.</li><li>Лесной берег: бывает медведь.</li></ul>
+    <p class="pool"><b>Жители берега:</b> bear, camp, fire, ducks, tower, fisher, bush, tree</p>
+    <h4>Лесной берег</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="bear"></canvas><figcaption><code>bear</code><span>Медведь бродит вдоль берега (только лесные реки).</span></figcaption></figure></div><h4>Агрессивные соперники</h4><div class="sprites"><figure class="spr water"><canvas data-spr="rower_wind"></canvas><figcaption><code>rower_wind</code><span>Агрессивный соперник замахивается веслом, когда ты борт о борт. Удар можно парировать.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_strike"></canvas><figcaption><code>rower_strike</code><span>Кадр удара веслом. Попадает, только если ты всё ещё рядом.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_flip"></canvas><figcaption><code>rower_flip</code><span>Парированный соперник переворачивается и тонет.</span></figcaption></figure></div>
+  </article>
+  <article class="day" id="day9" style="--river:#1565c0;--grass:#3f8f43">
+    <header>
+      <span class="num">9</span>
+      <div><h3>ОСУГА · УСТЬЕ ОСУГИ</h3><p>Малая река, пороги и камни</p></div>
+    </header>
+    <dl class="facts">
+      <div><dt>Длина</dt><dd>1200 м</dd></div>
+      <div><dt>Третья звезда</dt><dd>Парировать 4 удара веслом</dd></div>
+      <div><dt>Прибытие</dt><dd>палаточный лагерь</dd></div>
+      <div><dt>Река</dt><dd>ширина ×0.72 · изгибы ×0.8 · камни ×1.8 · течение ×1.2</dd></div>
+    </dl>
+    <ul class="feat"><li>Пороги: русло сужается, течение быстрее, бонусов на порогах нет.</li><li>Агрессивных соперников — около 60%: замахиваются веслом, удар можно парировать.</li><li>Лесной берег: бывает медведь.</li></ul>
+    <p class="pool"><b>Жители берега:</b> bear, camp, fire, ducks, tower, fisher, bush, tree</p>
+    <h4>Лесной берег</h4><div class="sprites"><figure class="spr grass"><canvas data-spr="bear"></canvas><figcaption><code>bear</code><span>Медведь бродит вдоль берега (только лесные реки).</span></figcaption></figure></div><h4>Агрессивные соперники</h4><div class="sprites"><figure class="spr water"><canvas data-spr="rower_wind"></canvas><figcaption><code>rower_wind</code><span>Агрессивный соперник замахивается веслом, когда ты борт о борт. Удар можно парировать.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_strike"></canvas><figcaption><code>rower_strike</code><span>Кадр удара веслом. Попадает, только если ты всё ещё рядом.</span></figcaption></figure><figure class="spr water"><canvas data-spr="rower_flip"></canvas><figcaption><code>rower_flip</code><span>Парированный соперник переворачивается и тонет.</span></figcaption></figure></div>
+  </article>
+</section>
+
+<section id="common">
+  <h2>Общее для всех дней</h2>
+  <p class="lead">Эти объекты встречаются на любой реке. Подпись — что объект делает в игре.</p>
+  <h3>Река: препятствия</h3><div class="sprites"><figure class="spr water"><canvas data-spr="boulder"></canvas><figcaption><code>boulder</code><span>Валун, стоит на месте. Удар — минус сердце.</span></figcaption></figure><figure class="spr water"><canvas data-spr="fang"></canvas><figcaption><code>fang</code><span>Острый камень, стоит на месте. Удар — минус сердце.</span></figcaption></figure><figure class="spr water"><canvas data-spr="slab"></canvas><figcaption><code>slab</code><span>Плита — самый широкий камень, не всегда оставляет проход. Удар — минус сердце.</span></figcaption></figure><figure class="spr water"><canvas data-spr="log"></canvas><figcaption><code>log</code><span>Плывёт по течению (0,22 скорости реки). На изгибах сносит к внешнему берегу; о песок тормозит по углу касания: в лоб почти останавливается, вскользь — чуть. Заранее обходит то, что догоняет. Удар — минус сердце.</span></figcaption></figure><figure class="spr water"><canvas data-spr="seaweed"></canvas><figcaption><code>seaweed</code><span>Заросли с кувшинками: не ранят, но скорость падает до 45%. Тёмное пятно показывает зону заранее.</span></figcaption></figure><figure class="spr water"><canvas data-spr="branch"></canvas><figcaption><code>branch</code><span>Легче бревна: плывёт быстрее (0,30) и рыскает. Обходит то, что впереди. Удар — минус сердце.</span></figcaption></figure></div><h3>Бонусы</h3><div class="sprites"><figure class="spr water"><canvas data-spr="bread"></canvas><figcaption><code>bread</code><span>Гребок в 1,5 раза мощнее, течение сносит вдвое слабее — 8 секунд. +20 очков.</span></figcaption></figure><figure class="spr water"><canvas data-spr="whisky"></canvas><figcaption><code>whisky</code><span>6 секунд неуязвимости: препятствия разлетаются в щепки, очки ×2. +50.</span></figcaption></figure><figure class="spr water"><canvas data-spr="medkit"></canvas><figcaption><code>medkit</code><span>+1 сердце; если все целы — щит на один удар. +15.</span></figcaption></figure><figure class="spr water"><canvas data-spr="axe"></canvas><figcaption><code>axe</code><span>Расчищает путь: разбивает препятствие, которое стоит на курсе впереди.</span></figcaption></figure><figure class="spr water"><canvas data-spr="sun"></canvas><figcaption><code>sun</code><span>+80 очков и продлевает комбо.</span></figcaption></figure></div><h3>Лодки</h3><div class="sprites"><figure class="spr water"><canvas data-spr="rower"></canvas><figcaption><code>rower</code><span>Соперник на байдарке (0,40) — обгон даёт очки. Уворачивается от препятствий впереди.</span></figcaption></figure><figure class="spr water"><canvas data-spr="oar"></canvas><figcaption><code>oar</code><span></span></figcaption></figure><figure class="spr water"><canvas data-spr="kayak_center"></canvas><figcaption><code>kayak_center</code><span>Игрок. Гребёт вперёд и назад, рулит; к берегу подходит вплотную.</span></figcaption></figure></div><h3>Берег и финиш: природа</h3><div class="sprites"><figure class="spr grass"><canvas data-spr="sfir"></canvas><figcaption><code>sfir</code><span>Декор берега: не ближе 39 px друг к другу, не на песчаных отмелях и не рядом с жителями; выплывает из тумана.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="sbirch"></canvas><figcaption><code>sbirch</code><span>Декор берега, как ёлка.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="sbush"></canvas><figcaption><code>sbush</code><span>Декор у кромки: не чаще 26 px.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="duck"></canvas><figcaption><code>duck</code><span>Стайка на воде у берега. Подплывёшь вплотную к их берегу — взлетают.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="fish"></canvas><figcaption><code>fish</code><span>Рыба, выпрыгивающая у рыбака.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="duckfly0"></canvas><figcaption><code>duckfly0</code><span>Кадр взлёта (крылья подняты).</span></figcaption></figure><figure class="spr grass"><canvas data-spr="duckfly1"></canvas><figcaption><code>duckfly1</code><span>Кадр взлёта (крылья раскинуты).</span></figcaption></figure><figure class="spr grass"><canvas data-spr="bush"></canvas><figcaption><code>bush</code><span>Куст — житель берега.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="tree"></canvas><figcaption><code>tree</code><span>Большое дерево у лагерей и деревень. Выше человека.</span></figcaption></figure></div><h3>Берег и финиш: люди и лагерь</h3><div class="sprites"><figure class="spr grass"><canvas data-spr="girl"></canvas><figcaption><code>girl</code><span>Девушка — вторая в паре, идущей в палатку. Через раз блондинка.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="fisher"></canvas><figcaption><code>fisher</code><span>Рыбак: удочка ходит, леска в воду, иногда клюёт — выпрыгивает рыба.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="tent"></canvas><figcaption><code>tent</code><span>Палатка в лагере.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="tent2"></canvas><figcaption><code>tent2</code><span>Купольная палатка.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="person"></canvas><figcaption><code>person</code><span>Турист. Пара уходит в палатку, после чего палатку потряхивает.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="sitter"></canvas><figcaption><code>sitter</code><span>Сидит у костра — всегда под огнём, вдоль берега.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="fire"></canvas><figcaption><code>fire</code><span>Костёр: пламя пляшет, летят искры.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="tower"></canvas><figcaption><code>tower</code><span>Смотровая вышка на берегу.</span></figcaption></figure><figure class="spr grass"><canvas data-spr="pack"></canvas><figcaption><code>pack</code><span>Рюкзак у лагеря на финише.</span></figcaption></figure></div>
+</section>
+
+<section id="rules">
+  <h2>Правила</h2>
+  <div class="cols">
+    <div>
+      <h3>Движение по реке</h3>
+      <table class="speeds"><thead><tr><th>Кто</th><th>Скорость<br>от течения</th></tr></thead><tbody>
+        <tr><td>Камни, мели, заросли, коряги, бонусы</td><td>0</td></tr>
+        <tr><td>Бревно</td><td>0,22</td></tr>
+        <tr><td>Ветка, баржа</td><td>0,30</td></tr>
+        <tr><td>Соперник</td><td>0,40</td></tr>
+      </tbody></table>
+      <ul>
+        <li>Каждый плывущий заранее отворачивает от ближайшего более медленного впереди — того, кого догоняет.</li>
+        <li>Пока баржа на реке, на её полосе впереди (~620 px пути) не появляются камни и бонусы.</li>
+        <li>Если объекты всё же сошлись, они расходятся плавно — не больше 1,5 px за раз, без рывков.</li>
+        <li>У развилки объект выбирает рукав один раз и не перелетает через остров.</li>
+        <li>Бревно на изгибах сносит к внешнему берегу; о песок оно тормозит по углу касания.</li>
+        <li>Финишная лента и лагерь выставляются за 46 м до конца, над экраном, и въезжают вместе с рекой.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Рисовка</h3>
+      <ul>
+        <li>Один размер пикселя — ×3 у всех спрайтов игры.</li>
+        <li>Свет сверху-слева; три тона на материал; тёмная обводка снаружи, детали внутри — тоном.</li>
+        <li>Предмет узнаётся силуэтом и в 3 раза меньше; одна характерная деталь ломает простую форму.</li>
+        <li>Размер по смыслу: человек 48 px, дерево выше, рюкзак по пояс.</li>
+        <li>Жители берега — целиком на суше; декор не ставится на песчаные отмели и рядом с жителями.</li>
+        <li>Подробно — <code>docs/art-rules.md</code>; рисовать — «Редактор спрайтов.bat».</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<script type="application/json" id="book-data">{"PAL":{"k":"#1c1008","K":"#101010","w":"#ffffff","W":"#c9cfd3","G":"#9aa9b2","j":"#74858e","g":"#55646d","L":"#eec27a","M":"#c9913f","D":"#8f5d1e","e":"#f7efd8","q":"#c9821f","A":"#e8a838","Y":"#d8a520","y":"#e8b23a","u":"#f2c035","r":"#d13a2e","R":"#8b1f18","f":"#dff0fa","o":"#7f5533","O":"#4a3018","n":"#a87848","i":"#c2ced6","I":"#7d8a93","H":"#f2a0c0","z":"#2f6fd0","Z":"#1c4a8f","t":"#f0c39a","T":"#c9926a","p":"#e2551f","x":"#a33510","a":"#d8b57a","N":"#2f7a3a","B":"#6f4527","b":"#472a15","m":"#bb8f60","v":"#2f8a36","V":"#1c5c22","s":"#efd9a0","S":"#d2b674","d":"#a98d52","c":"#7a4a28","C":"#55301a","h":"#a3703f","F":"#6cb84a"},"spr":{"sunbather":{"map":[".kkkkkkkkk.","kwrwrwrwrwk","krrrCCCrrrk","krrCtttCrrk","krrrKKKrrrk","kwwwtttwwwk","krTttttTTrk","krTttttTTrk","krTttttTTrk","krTttttTTrk","krTttttTTrk","kwwttttTwwk","krrzzzzzrrk","krrzzzzzrrk","krrtTrtTrrk","krrtTrtTrrk","krrtTrtTrrk","kwwtTwtTwwk","krrtTrtTrrk","krrtTrtTrrk","krrTTrTTrrk","krrrrrrrrrk","kwrwrwrwrwk",".kkkkkkkkk."],"variants":[{},{"r":"z","z":"r"}]},"sunbather_f":{"map":[".kkkkkkkkk.","kwrwrwrwrwk","krrCCtCCrrk","krCrCCCrCrk","krCrtttrCrk","kwCwKKKwCwk","krCrrrrrCrk","krCttttTCrk","krTHHtHHTrk","krTHHtHHTrk","krTttttTTrk","kwTttttTTwk","krrttttTrrk","krrHHHHHrrk","krrtTrtTrrk","krrtTrtTrrk","krrtTrtTrrk","kwwtTwtTwwk","krrtTrtTrrk","krrtTrtTrrk","krrTTrTTrrk","krrrrrrrrrk","kwrwrwrwrwk",".kkkkkkkkk."],"variants":[{},{"r":"z"}]},"towel":{"map":[".kkkkkkkkk.","kwrwrwrwrwk","krrrrrrrrrk","krrrrrrrrrk","krrrrrrrrrk","kwwwwwwwwwk","krrrrrrrrrk","krrrrrrrrrk","krrrrrrrrrk","krrrrrrrrrk","krrrrrrrrrk","kwwwwwwwwwk","krrrrrrrrrk","krrrrrrrrrk","krrrrrrrrrk","krrrrrrrrrk","krrrrrrrrrk","kwwwwwwwwwk","krrrrrrrrrk","krrrrrrrrrk","krrrrrrrrrk","krrrrrrrrrk","kwrwrwrwrwk",".kkkkkkkkk."],"variants":[{},{"r":"z"},{"r":"p"}]},"umbrella":{"map":["....kkkkk....","...krrrwwk...","..krrrrwwwk..",".kwrrrrwwwrk.","kwwwrrrwwrRRk","kwwwwrrwrRRRk","kwwwwwkrRRRRk","krrrrrrRWWWWk","krrrrrWRRWWWk",".krrrWWRRRWk.","..krWWWRRRk..","...kWWWRRk...","....kkkkk...."],"variants":[]},"swimmer0":{"map":["....kkkk....","...kCCCCk...","..kCtttCk...","...ktttk....","...ktttk....","..ktttttkk..",".kttttttttk.","ffkktttkkftk","fffffffffff."],"variants":[]},"swimmer1":{"map":["....kkkk..k.","...kCCCCkktk","..kCtttCkttk","...ktttkktk.","...ktttkktk.","..kttttttk..",".ktttttttk..","ffkktttkkff.","fffffffffff."],"variants":[]},"sitter_guitar":{"map":["......kkkk......",".....kBBBBk.....",".....kttttk.....",".....kttttk.....",".....kkttkk.....","....krrrrrrk....","..kkrrrrrrrrk...","..krrrrrrrrrrk..","..krrrrrrrrrrk..","..kkkkkkkkkkkk..","..kkkkkkkkkkkk..",".knnnnnnnnnnkooo","kkwnwnwnwnwnkOOO",".knnnnnnnnnnkooo","..kkkkkkkkkkkk..","......krrrrrkk..","......kkkkkkk...","................"],"variants":[]},"note":{"map":["...kk.","..kwwk","..kwwk","..kwkw","..kwkk",".kkwk.","kwwwk.","kwwk..",".kk..."],"variants":[]},"barge":{"map":["..........kkkkkkk..........","........kkrrrRRRRkk........","......kkrrrrrRRRRRRkk......",".....krrrGGGGjjjjjRRRk.....","....krrGGGGGGjjjjjjjRRk....","...krrGGGGGGGjjjjjjjjRRk...","..krrrGGGGGGgKgjjjjjjRRRk..","..krrGGGGGGGGjjjjjjjjjRRk..",".krrGGGGGGGGGjjjjjjjjjjRRk.","krrGGGGGGGGGGjjjjjjjjjjjRRk","krrGGGGGGGGGGjjjjjjjjjjjRRk","krrgggggggggggggggggggggRRk","krrgddSSSsssssssssSSSddgRRk","krrgddSSSSsssssssSSSSddgRRk","krrgdddSSSSSsssSSSSSdddgRRk","krrgddddSSSSSSSSSSSddddgRRk","krrgdddddddSSSSSdddddddgRRk","krrgdddddddddddddddddddgRRk","krrgdddddddddddddddddddgRRk","krrgdddddddddddddddddddgRRk","krrgdddddddddddddddddddgRRk","krrgdddddddddSdddddddddgRRk","krrgdddddSSSSSSSSSdddddgRRk","krrgdddSSSSSSsSSSSSSdddgRRk","krrgddSSSSSsssssSSSSSddgRRk","krrgddSSSSsssssssSSSSddgRRk","krrgddSSSsssssssssSSSddgRRk","krrgddSSSsssssssssSSSddgRRk","krrgddSSSSsssssssSSSSddgRRk","krrgdddSSSSsssssSSSSdddgRRk","krrgddddSSSSSSSSSSSddddgRRk","krrgddddddSSSSSSSddddddgRRk","krrgdddddddddddddddddddgRRk","krrgdddddddddddddddddddgRRk","krrgggggggggggggggggggggRRk","krrGGGGGGGGGGjjjjjjjjjjjRRk","krrGGGGGGGGGGjjjjjjjjjjjRRk","krrGGGGwzzzzzzzzzzzWjjjjRRk","krrGGGGwzzzzzzzzzzzWjjjjRRk","krrGGGGwwwwwwWWWWWWWjjjjRRk","krrGGGGwwwwwwWWWWWWWjjjjRRk","krrGGGGwwwwwwWWWWWWWjjjjRRk","krrGGGGwwwwwwWWWWWWWjjjjRRk","krrGGGGwwwwwwWWWWWWWjjjjRRk","krrGGGGwwwwwwWWWWWWWjjjjRRk","krrGGGGGGGGGGjjjjjjjjjjjRRk",".krrrrrrrrrrrRRRRRRRRRRRRk.",".krrrrrrrrrrrRRRRRRRRRRRRk.","..kkkkkkkkkkkkkkkkkkkkkkk.."],"variants":[]},"church":{"map":[".........yk.........",".......yyyyy........",".........yk.........",".........yk.........",".......kkkkk........","......kzzzzzk.......",".....kzzzzzzzk......",".....kzzzzzzzk......","......kzzzzzk.......",".......kkkkk........","......kwwwwwk.......","......kwzzzwk.......","......kwwwwwk.......","....kkkkkkkkkkk.....","...kwwwwwwwwwwwk....","...kwwzzwwwzzwwk....","...kwwzzwwwzzwwk....","...kwwwwwwwwwwwk....","..kwwwwwwwwwwwwwwk..","..kwwzzwwwwzzwwwwk..","..kwwzzwwwwzzwwwwk..","..kwwwwwwwwwwwwwwk..","..kwwwwwOOOOwwwwwk..","..kwwwwwOOOOwwwwwk..","..kwwwwwOOOOwwwwwk..","..kkkkkkkkkkkkkkkk.."],"variants":[]},"house":{"map":[".......kk.......","......krrk.kk...",".....krrrrkOk...","....krrrrrrOk...","...krrrrrrrrk...","..krrrrrrrrrrk..",".krrrrrrrrrrrrk.","kkkkkkkkkkkkkkkk","knnnnnnnnnnnnnnk","knnnnnnnnnnnnnnk","knnzzknnnnkzznnk","knnzzknnnnkzznnk","knnzzknnnnkzznnk","knnzzknnnnkzznnk","knnnnnkOOkknnnnk","knnnnnkOOkknnnnk","knnnnnkOOkknnnnk","knnnnnkOOkknnnnk","kkkkkkkkkkkkkkkk"],"variants":[]},"bear":{"map":["...kkk......kkk...","..kBBBk....kBBBk..","..kBmBkkkkkkBmBk..","..kkBBBBBBBBBBkk..","..kBBBBBBBBBBBBk..","..kBBwwBBBBwwBBk..","..kBBwKBBBBKwBBk..","..kBBBBmmmmBBBBk..","..kBBBmmmmmmBBBk..","..kBBBmKKKKmBBBk..","...kBBmmmmmmBBk...","....kkBBBBBBkk....","..kkkBBBBBBBBkkk..",".kBBBBmmmmmmBBBBk.",".kBBBBmmmmmmBBBBk.",".kBBBBBBBBBBBBBBk.","..kkkkkkkkkkkkkk.."],"variants":[]},"snag":{"map":["........kk....",".......knnk...","...kk..knok...","..knnk.knok...","..knok.knok...","..knokkknok...","...knnnnnok...","...knnooook...","....knooOk....","....knoOOk....","....kOOOOk....","...kOOOOOOk...","..kfkOOOOkfk..",".kffkOOOOkffk.","..fffkkkkfff..","....ffffff...."],"variants":[]},"rower_wind":{"map":[".........kYYk........",".........kYYk........","........kyyk.........","........krrk.........",".......kkttkk........","......kzzzzzzzk......",".....kzzzzzzzzzk.....",".....kzzwwwwwzzk.....",".....kzzzzzzzzzk.....","..kpppppppppppppppk..","..kpppxxxxxxxxxpppk..","..kpppppppppppppppk..","...kpppppppppppppk...",".....kpppppppppk.....",".......kkpppkk.......",".........kkk........."],"variants":[{},{"z":"N","p":"v","x":"V"},{"r":"K","z":"g","p":"j","x":"g"}]},"rower_strike":{"map":[".....kkttkk..........","....krrrrrrk.........","YYYYyyyyyyyyyyyyyYYYY","...krrrrrrrrk........","..kkkkkkkkkkk........","......kzzzzzzzk......",".....kzzzzzzzzzk.....",".....kzzwwwwwzzk.....",".....kzzzzzzzzzk.....","..kpppppppppppppppk..","..kpppxxxxxxxxxpppk..","..kpppppppppppppppk..","...kpppppppppppppk...",".....kpppppppppk.....",".......kkpppkk.......",".........kkk........."],"variants":[{},{"z":"N","p":"v","x":"V"},{"r":"K","z":"g","p":"j","x":"g"}]},"rower_flip":{"map":[".......kkkkkkk.......","......kpppppppk......","......kpppppppk......","....kpppppppppppk....","..kpppppppppppppppk..","..kzzzzzzzzzzzzzzzk..","..kzzwwwwwwwwwwwzzk..","...kpppppppppppppk...","....kpppppppppppk....",".....kpppppppppk.....",".......kkkkkkk.......",".......kkttkk........","......krrrrkk........","...wwyyyyyyyyyww.....","..wwyyyyyyyyyyyyyww..","...wwyyyyyyyyyyyww..."],"variants":[{},{"z":"N","p":"v","x":"V"},{"r":"K","z":"g","p":"j","x":"g"}]},"bridge":{"map":["kGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGk","kggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggk","kGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgk","kgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGk","kGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgk","kgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGk","kGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgGgk","kggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggk","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","........kggggggggk............................................................................................","............................................................................................kggggggggk........","......kkkkkkkkkkkkkk..........................................................................................","..........................................................................................kkkkkkkkkkkkkk......"],"variants":[]},"truss":{"map":[".kkkkkkkkkkkkkk.","kgGGGGGGGGGGGGgk","kGgGgGgGgGgGgGgk","kgGgGgGgGgGgGgGk","kGgGgGgGgGgGgGgk","kgGgGgGgGgGgGgGk","kGgGgGgGgGgGgGgk","kgGGGGGGGGGGGGgk",".kkkkkkkkkkkkkk."],"variants":[]},"deck":{"map":["....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk....","..gggggggggggggggggggggggggggggggggg..","gggggggggggggggggggggggggggggggggggggg","gGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGg","gggggggggggggggggggggggggggggggggggggg","..gggggggggggggggggggggggggggggggggg..","....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...."],"variants":[]},"pier":{"map":["..gggg......",".kggggggk...",".kggggggk...",".kggggggk...",".kggggggk...",".kggggggk...",".kggggggk...",".kggggggk...",".kggggggk...",".kkkkkkkk...","..kkkkkk....","...kkkk.....","....kk......"],"variants":[]},"boulder":{"map":[".....kkkkk......","...kkGGGGGkk....","..kGGGGGGGGGkk..",".kGGGGGGjjjjGGkk",".kGGGGjjjjjjjGk.","kGGGjjjjjjjjjGk.","kGGjjjjjjjjjjjGk","kGjjjjjggggjjjGk","kGjjjjggggggjjGk","kGjjjggggggggjGk","kGjjggggggggggGk",".kjjgggggggggGk.",".kkgggggggggGkk.","..kkgggggggkkk..","....kkkkkkkk...."],"variants":[]},"fang":{"map":["......kk......",".....kGGk.....",".....kGGk.....","....kGGjjk....","....kGGjjk....","...kGGGjjjk...","...kGGGjjjk...","..kGGGGjjjjk..","..kGGGjjjjjk..",".kGGGGjjjjjjk.",".kGGGjjjjgggk.","kGGGjjjjgggggk","kGjjjjgggggggk","kGjjjggggggggk","kjjggggggggggk",".kkgggggggggk.","..kkkkkkkkkk.."],"variants":[]},"slab":{"map":["......kkkkkk............","...kkkGGGGGGkkkk........","..kGGGGGGGGGGGGGkkkkk...",".kGGGGGGjjjjjjGGGGGGGGk.","kGGGGjjjjjjjjjjjjGGGGGGk","kGjjjjjjjjjjjjjjjjjjjjGk","kjjjjjjjggggggggjjjjjjjk","kjjjjggggggggggggggjjjjk","kjjggggggggggggggggggjjk",".kkggggggggggggggggggkk.","...kkgggggggggggggkkk...","......kkkkkkkkkkk......."],"variants":[]},"log":{"map":[".........kmok.................","..k.kkkkkomkkkkkkkkkkkkkkkkk..",".kmkmmmmmmmmmmmmmmmmmmmmmSSSk.",".kmmmmooommmmmmmmooommmmmdssk.","kSooooooooooobbbooooooooSsddSk","SksobbbboooooooooobbbbooSsdsSk","kSooooooooobbbbbooooooooSsddSk",".kbbbbbbbbbbbbbbbbbbbbbbbdssk.",".kbkbbbbbbbbbbbbbbbbbbbbbSSSk.","..k.kkkkkkkkkkkkkkkkkkkkkkkk.."],"variants":[]},"seaweed":{"map":["....kZZZZZ....","..kkFkkVVZZ...",".kFFvvvkZZZV..",".kFvvvVkZZZVZ.",".kvvvkkZZZZVV.",".ZkkVkVVkkkZV.",".VVZkZZkFwvkV.","ZVZZZZkFFwuvkV","ZVVZZZkFkwwwkV","ZZVkkkZkkeVkVZ",".ZkFFvkkVkkVV.",".kFFvvvVkZZVZ.",".kFvvvVVkZZVZ.","..kvvVVkZZZV..","...kkkkVZZZ...","....ZZVZZZ....",".....ZVZZ....."],"variants":[]},"branch":{"map":["..........kFFk...","..........kFFvk..","..........kooFFk.",".........kookFFvk","..kkkkkkkoooovvk.",".kFFooooookkkkk..","koFFokkkookFvk...",".kkkk...kkFFvk...","..........kvvk...","...........kk...."],"variants":[]},"bread":{"map":["..kkkLLLLLkkk..",".kLLeLLeLLeLLk.","kLLeDLeDLeDLLLk","kLMDMMDMMDMMMLk",".kDDDDDDDDDDDk.","..kkkkkkkkkkk.."],"variants":[]},"whisky":{"map":["....kkk....","...kccck...","...kAqqk...","...kAqqk...","..kqqqqqk..",".kqqqqqqqk.","kqAAqqqqqDk","kqAAqqqqqDk","kqeeeeeeeDk","kqrrrrrrrDk","kqeeeeeeeDk","kqeeeeeeeDk","kqAAqqqqqDk","kDDDDDDDDDk",".kkkkkkkkk."],"variants":[]},"medkit":{"map":[".....kkkk.....","....kggggk....",".kkkkgkkgkkkk.","kwwwwwwwwwwwWk","kwwwwwrrwwwwWk","kwwwwwrrwwwwWk","kwwrrrrrrrrwWk","kwwrrrrrrrrwWk","kwwwwwrrwwwwWk","kwwwwwrrwwwwWk","kWWWWWWWWWWWWk",".kkkkkkkkkkkk."],"variants":[]},"axe":{"map":["..kwwWk....",".kwwwWWk...",".kwwGWWWkk.",".kwGGGWWWok",".kwjGGGGWok","..kkkjGGGk.",".....knook.",".....knok..","....knok...","...knook...","...knok....","..knok.....",".knok......","knook......","knok.......",".kk........"],"variants":[]},"sun":{"map":["...kk...","..kuuk..",".kuuYuk.","kuuuuuuk",".kuuYuk.","..kuuk..","...kk..."],"variants":[]},"rower":{"map":[".........kkk.........","........krrrk........","........krrrk........","........ktttk........",".......kktttkk.......","......kzzzzzzzk......",".....kzzzzzzzzzk.....",".....kzzwwwwwzzk.....",".....kzzzzzzzzzk.....","..kpppppppppppppppk..","..kpppxxxxxxxxxpppk..","..kpppppppppppppppk..","...kpppppppppppppk...",".....kpppppppppk.....",".......kkpppkk.......",".........kkk........."],"variants":[{},{"z":"N","p":"v","x":"V"},{"r":"K","z":"g","p":"j","x":"g"}]},"oar":{"map":["..YYY..","..kkk..","...k...","...k...","...k...","...k...","...k...","...k...","...k...","...k...","...k...","...k...","...k...","..kkk..","..YYY.."],"variants":[]},"kayak_center":{"map":[".........kkk.........","........kwwwk........","........kwwwk........","........ktttk........",".......kktttkk.......","......krrrrrrrk......",".....krrrrrrrrrk.....",".....krrwwwwwrrk.....",".....krrrrrrrrrk.....","..kuuuuuuuuuuuuuuuk..","..kuuuYYYYYYYYYuuuk..","..kuuuuuuuuuuuuuuuk..","...kuuuuuuuuuuuuuk...",".....kuuuuuuuuuk.....",".......kkuuukk.......",".........kkk........."],"variants":[]},"sfir":{"map":[".....k.....","....kvk....","...kFvVk...","...kFvVk...","...kFvVk...","..kFFvVVk..","...kFvVk...","..kFFvVVk..",".kvFFvVVVk.",".kvFFvVVVk.","..kFFvVVk..",".kvFFvVVVk.","kvvFFvVVVVk",".kvFFvVVVk.",".kvFFvVVVk.","kvvFFvVVVVk","vvvFFvVVVVV","kkkkkCkkkkk","....kCk....","...kcCk....","....kk....."],"variants":[]},"sbirch":{"map":["....kkkk....","...kFvvvk...","..kFFvvvk...",".kFFFvvvvk..",".kFFFvvvvk..","kFFFFvvvvvk.","kFFFFvvvvvk.","kvvvvvvvvvk.","kvvvvvvvvvvk","kvvvvvvvvvvk","kVVVVVVVVVk.",".kVVVVVVVk..","..kVVwWkk...","...kkwKk....","....kKWk....","....kwWk....","....kwKk....","....kwWk....","....kKWk....","....kwWk....","....kKWk....",".....kk....."],"variants":[]},"sbush":{"map":["...kkk...",".kkFvvkk.","kFFFvvvvk","kvvvvvvvk","kVVVVVVVk",".kVVVVVk.","..kkkkk.."],"variants":[]},"duck":{"map":["..kk.......",".kNNk......","kNKNkkkk.k.","ukNNaaaakDk","kkawaaaaDDk",".kaaaaaaDk.","..kkDDDDk..","....kkkk..."],"variants":[]},"fish":{"map":["..kkkkkk..k.",".kjjjGjjkkGk","kWKWWWWWWGGk","kWWWWWWWWGGk",".kwwwwwwkkGk","..kkkkkk..k."],"variants":[]},"duckfly0":{"map":[".k...k...k.","kek.kuk.kek",".kekkNkkek.","..keWWWek..","...kWWWk...","....kkk...."],"variants":[]},"duckfly1":{"map":["......k......",".....kuk.....",".kkkkkNkkkkk.","keeeeWWWeeeek","keeeeWWWeeeek",".kkkkkkkkkkk."],"variants":[]},"bush":{"map":["...kkkk...","..kvvvvk..",".kvvvvvvk.","kvvvVvvvvk","kvvVvvvvVk",".kvvvvvvk.","..kVVVVk..","...kkkk..."],"variants":[]},"tree":{"map":["......kk..........","....kkFFkkkkkk....","...kFFFFFvvvvvk...","...kFFFFvvvvvvk...","...kFFFvvvvvvvVk..","...kFFvvvvVvvVkk..","..kFFvvvvvvvVVVVk.",".kFFvvvvvvvVVVVVVk","kFFvvvVvvvVVVVVVVk","kFvvvvvvvVVVVVVVVk","kvvvVvvVVVVVVVVVVk",".kvvvvVVVVVVVVVVk.",".kvvvVVVVVVVVVVk..","..kkkVVccCVVVkk...",".....kVccCCVk.....","......kccCCk......","......kcCCCk......","......kccCCk......","......kcccCk......","......kccCCk......","......kccCCk......",".....kcccCCCk.....","......kkkkkk......"],"variants":[]},"girl":{"map":["...kCCCCk...","..kCttttCk..","..kCttttCk..","..kCkttkCk..","..kCHHHHCk..",".kCHHHHHHCk.","kCHHHHHHHHCk","ktHHHHHHHHtk",".kHHHHHHHHk.",".kHHHHHHHHk.","kHHHHHHHHHHk","kkkkkkkkkkkk","...ktkktk...","...ktkktk...","..kOOkkOOk..","..kkkkkkkk.."],"variants":[{},{"C":"u","H":"z"}]},"fisher":{"map":[".....kkkk.......","....kyyyyk......","...kkyyyyyykk...",".....kttk.......",".....kttk.......","....krrrrk......","...krrrrrrk.....","...krrrrrrk.....","...krrrrrrk.....","...kZZZZZZk.....","...kZZZZZZk.....","...kZZkkZZk.....","...kZZkkZZk.....","...kZZkkZZk.....","..kkOOkkOOkk....","..kkkkkkkkkk...."],"variants":[]},"tent":{"map":["............kk............",".....k.....kOk.....k......","....k.....krrrk.....k.....","...k.....krrrrrk.....k....","..k.....krrrKKrrk.....k...",".k.....krrrKKKKrrk.....k..","k.....krrrrKKKKrrrk.....k.","k....krrrrrKKKKrrrrk....k.",".k..krrrrrrKKKKrrrrrk..k..","..k.krrrrrrrKKrrrrrrk.k...","...krrrrrrrrKKrrrrrrrrk...","..krrrrrrrrrKKrrrrrrrrrk..",".krrrrrrrrrrKKrrrrrrrrrrk.","kkkkkkkkkkkkKKkkkkkkkkkkkk","..k.....................k."],"variants":[{},{"r":"z"},{"r":"v"},{"r":"A"},{"r":"H"},{"r":"p"},{"r":"a"}]},"tent2":{"map":["..........kk...........","........krrkk..........",".......krrrrrrk........","......krrrrrrrrk.......",".....krrrrrrrrrrk......",".....krrrrrrrrrrrk.....","....krrrrrKKKrrrrrk....","...krrrrrrKKKrrrrrrk...","..krrrrrrrKKKrrrrrrrk..","..kkrrrrrrKKKrrrrrrrkk.","..kkkkkkkkkkkkkkkkkkk..","..kk...............kk.."],"variants":[{},{"r":"z"},{"r":"v"},{"r":"A"},{"r":"H"},{"r":"p"},{"r":"a"}]},"person":{"map":["....kkkk....","...kttttk...","...kttttk...","...kkttkk...","..krrrrrrk..",".krrrrrrrrk.","krrrrrrrrrrk","krrrrrrrrrrk",".krrrrrrrrk.","..kZZZZZZk..","..kZZZZZZk..","..kZZkkZZk..","..kZZkkZZk..","..kZZkkZZk..",".kOOkkkkOOk.",".kkkkkkkkkk."],"variants":[{},{"r":"N","Z":"q"},{"r":"p","Z":"g"},{"r":"A","Z":"Z"},{"r":"D","Z":"I"}]},"sitter":{"map":[".....kkkk.....","....kttttk....","....kttttk....","....kkttkk....","...krrrrrrk...","..krrrrrrrrk..",".krrrrrrrrrrk.",".krrrrrrrrrrk.","kZZZkrrrrkZZZk","kZZZZkkkkZZZZk","kOOZZZZZZZZOOk","kkkkkkkkkkkkkk"],"variants":[]},"fire":{"map":["....k....","...kuk...","..kuuuk..",".kppyypk.",".kppyypk.","kOOcccOOk",".kkkkkkk."],"variants":[]},"tower":{"map":[".......kk.......","......kIIk......",".....kIIIIk.....","....kIIIIIIk....","...kIIIIIIIIk...","..kIIIIIIIIIIk..",".kIIIIIIIIIIIIk.","kkkkkkkkkkkkkkkk","kOwwwwwwwwwwwwOk","kOwkkwwkkwwkkwOk","kOwwwwwwwwwwwwOk","kOOOOOOOOOOOOOOk","kkkkkkkkkkkkkkkk","kOk.kOk..kOk.kOk","kkkkkkkkkkkkkkkk","..kOk......kOk..","..kOk......kOk..","..kOkkkkkkkkOk..","..kOk......kOk..","..kOk.kkkk.kOk..","..kOk......kOk..","..kOkkkkkkkkOk..","..kOk......kOk..","..kOk.kkkk.kOk..","..kOk......kOk..",".kOOk......kOOk.",".kOOk......kOOk.","kOOOk......kOOOk","kkkkk......kkkkk"],"variants":[]},"pack":{"map":[".kkkkkkkk.","kZffffffZk","kZzzzzzzZk",".kppppppk.","kpxxuxxxxk","kpppppxxxk","kpppppxxxk","kppxxxxxxk","kppppppxxk","kppxxxxxxk","kpppppxxxk",".kkkkkkkk."],"variants":[]}}}</script>
+<script>
+(function(){
+  var D = JSON.parse(document.getElementById("book-data").textContent);
+  var hex = function(h){ return h; };
+  document.querySelectorAll("canvas[data-spr]").forEach(function(c){
+    var s = D.spr[c.dataset.spr]; if (!s) return;
+    var m = s.map, W = m[0].length, H = m.length;
+    var sc = Math.max(2, Math.min(4, Math.floor(96 / Math.max(W, H))));
+    if (W * sc > 150) sc = Math.max(1, Math.floor(150 / W));
+    c.width = W * sc; c.height = H * sc;
+    var x = c.getContext("2d");
+    for (var r = 0; r < H; r++) for (var q = 0; q < W; q++){
+      var ch = m[r][q]; if (ch === "." || !D.PAL[ch]) continue;
+      x.fillStyle = hex(D.PAL[ch]); x.fillRect(q * sc, r * sc, sc, sc);
+    }
+  });
+})();
+</script></main>
+<footer>Собрано из index.html · 26.09.2026 · правки просьб — docs/requests.json</footer>
