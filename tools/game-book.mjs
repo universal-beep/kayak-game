@@ -6,6 +6,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { loadGame } from "../tests/harness.mjs";
+import { sampleDay, daySvg } from "./river-map.mjs";
 import { loadSprites, isMain } from "./sprites-lib.mjs";
 
 const DOCS = fileURLToPath(new URL("../docs/", import.meta.url));
@@ -60,7 +61,7 @@ const RULES = {
   umbrella: "Пляжный зонтик с тенью.",
   swimmer0: "Ребёнок в воде по плечи.",
   swimmer1: "Он же машет рукой.",
-  sitter_guitar: "Гитарист у костра (тот же, что в ночном мульте), перебирает струны.",
+  guitarist: "Гитарист у костра: гитара на коленях, гриф с колками, бьёт по струнам (два кадра).",
   note: "Ноты поднимаются от гитары вглубь берега.",
   bridge: "Мост: пройти в пролёт — +40 очков, в опору — удар. Первый пролёт за день — мультик.",
   truss: "Ферма моста.", deck: "Настил моста.", pier: "Опора моста — в неё не въезжать.",
@@ -70,7 +71,7 @@ const RULES = {
 function uniqueOf(L, R) {
   const u = [];
   if (L.river === 0) u.push(["Пляж", ["sunbather", "sunbather_f", "towel", "umbrella", "swimmer0", "swimmer1"]],
-                            ["Компания с гитарой", ["sitter_guitar", "note"]]);
+                            ["Компания с гитарой", ["guitarist", "note"]]);
   if (L.river !== 0) u.push(["Лесной берег", ["bear"]]);
   if (L.barges) u.push(["Баржи", ["barge"]]);
   if (L.snags) u.push(["Коряги", ["snag"]]);
@@ -116,7 +117,7 @@ export function buildBook() {
     u.forEach(([, names]) => names.forEach(n => uniq.add(n)));
     return { L, R, u, f: features(L, R), pool: [...new Set(pools[L.river] || [])] };
   });
-  const SKIP = new Set(["kayak_left", "kayak_right", "shallows", "sitter_guitar_b"]);
+  const SKIP = new Set(["kayak_left", "kayak_right", "shallows", "sitter_guitar_b", "guitarist_b"]);
   const commonGroups = data.groups.filter(g => g !== "Катсцены и прочее" && g !== "Мосты")
     .map(g => [g, Object.keys(data.sprites).filter(n => data.sprites[n].group === g && !uniq.has(n) && !SKIP.has(n))])
     .filter(([, n]) => n.length);
@@ -141,12 +142,25 @@ export function buildBook() {
   <h1>Книга похода</h1>
   <p class="lead">Что ты просил поправить и что сделано; чем живёт каждый из девяти дней; общие спрайты и правила, по которым они работают. Собирается из самой игры командой <code>node tools/game-book.mjs</code>.</p>
   <nav class="toc">
+    <a href="#map">Карта</a>
     <a href="#requests">Просьбы <b>${nDone}/${requests.length}</b></a>
     ${days.map(d => `<a href="#day${d.L.day}">День ${d.L.day}</a>`).join("")}
     <a href="#common">Общее</a>
     <a href="#rules">Правила</a>
   </nav>
 </header>
+
+<section id="map">
+  <h2>Карта похода</h2>
+  <p class="lead">Девять дней, четыре реки. Каждая полоса снята с геометрии самой игры (<code>tools/river-map.mjs</code>): старт слева, финиш справа, левый берег по ходу лодки — сверху. Пороги, развилки и мосты в игре случайны — здесь показан типичный заход с постоянным зерном, чтобы по карте было удобно прорисовывать берега.</p>
+  <ul class="legend">
+    <li><i style="background:#1565c0"></i>вода</li><li><i style="background:#d2b674"></i>песчаная отмель</li>
+    <li><i class="rap"></i>порог</li><li><i style="background:#4b9c48"></i>остров развилки</li><li><i style="background:#4a3018"></i>мост</li>
+  </ul>
+  <div class="atlas">
+  ${levels.map((L, i) => `<a class="strip" href="#day${L.day}"><span class="sd"><b>${L.day}</b>${esc(rivers[L.river].name)}</span><span class="sv">${daySvg(sampleDay(i))}</span></a>`).join("\n  ")}
+  </div>
+</section>
 
 <section id="requests">
   <h2>Просьбы и правки</h2>
@@ -259,6 +273,7 @@ export function buildBook() {
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.55 var(--body);padding-inline:16px;padding-block:24px 48px}
 main{max-width:1040px;margin:0 auto;display:grid;gap:48px}
+main>section{min-width:0}
 h1,h2{font-family:var(--pix);font-weight:400;letter-spacing:.02em;text-wrap:balance;margin:0}
 h1{font-size:clamp(22px,4vw,34px);line-height:1.3}
 h2{font-size:18px;line-height:1.5;margin-bottom:16px}
@@ -306,6 +321,16 @@ code{font-family:var(--mono);font-size:.86em}
 .speeds th,.speeds td{text-align:left;padding:6px 14px 6px 0;border-bottom:1px solid var(--line)}
 .speeds td:last-child{font-variant-numeric:tabular-nums;font-family:var(--mono)}
 .speeds th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.legend{list-style:none;display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 12px;padding:0;font-size:14px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:10px;margin-right:6px;vertical-align:-1px;border-radius:2px}
+.legend i.rap{background:repeating-linear-gradient(90deg,#1565c0 0 3px,#bcd6f0 3px 5px)}
+.atlas{display:grid;gap:6px;overflow-x:auto;padding-bottom:4px}
+.strip{display:grid;grid-template-columns:92px 1fr;gap:12px;align-items:center;min-width:640px;color:var(--ink);text-decoration:none;padding:6px 8px;border-radius:5px;border:1px solid transparent}
+.strip:hover,.strip:focus-visible{border-color:var(--line);background:var(--surface);outline:none}
+.sd{display:grid;font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.sd b{font-family:var(--pix);font-weight:400;font-size:16px;color:var(--accent)}
+.sv svg{display:block;width:100%;height:auto;overflow:visible}
+.sv .lbl{font:11px var(--body);fill:var(--muted)} .sv .lbl.b{font-weight:700;fill:var(--ink)} .sv .tick{stroke:var(--muted);stroke-width:1}
 footer{max-width:1040px;margin:40px auto 0;color:var(--muted);font-size:13px}
 @media (max-width:560px){ .req li{grid-template-columns:1fr} .req time{order:-1} .spr{grid-template-columns:1fr} }
 </style>`;
