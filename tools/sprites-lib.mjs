@@ -25,7 +25,7 @@ export const GROUPS = [
   ["Бонусы", ["bread", "whisky", "medkit", "axe", "sun"]],
   ["Лодки", ["kayak_center", "kayak_left", "kayak_right", "rower", "rower_wind", "rower_strike", "rower_flip", "oar"]],
   ["Берег и финиш: природа", ["tree", "sfir", "sbirch", "sbush", "bush", "bear", "duck", "duckfly0", "duckfly1", "fish"]],
-  ["Берег и финиш: люди и лагерь", ["person", "girl", "sitter", "sitter_guitar", "sitter_guitar_b", "note", "fisher", "tent", "tent2", "pack", "fire", "tower", "church", "house"]],
+  ["Берег и финиш: люди и лагерь", ["person", "girl", "sitter", "guitarist", "guitarist_b", "sitter_guitar", "sitter_guitar_b", "note", "fisher", "tent", "tent2", "pack", "fire", "tower", "church", "house"]],
   ["Пляж", ["sunbather", "sunbather_f", "towel", "umbrella", "swimmer0", "swimmer1"]],
   ["Мосты", ["bridge", "truss", "deck", "pier", "shadow"]],
 ];

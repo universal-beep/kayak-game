@@ -37,7 +37,7 @@ test("бревно заранее обходит камень впереди п�
 
 test("баржа обходит камни и бонусы впереди, а не проходит сквозь них", () => {
   const K = fresh();
-  K.G.rWidth = 1.35;                               // баржи ходят по Волге (день 2)
+  K.G.rWidth = K.RIVERS[0].width;                  // баржи ходят по Волге (день 2)
   const barge = thing(K, "barge", 0, 1000);
   const rock = thing(K, "rock", 0.05, 1300, "boulder");
   K.G.obs = [barge, rock];
