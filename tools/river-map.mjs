@@ -15,7 +15,7 @@ export function sampleDay(dayIdx, seed = dayIdx + 1) {
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })()`, sandbox);
   setupWorld(K, { wy: 0 });
   const G = K.G, L = K.LEVELS[dayIdx], R = K.RIVERS[L.river];
-  G.day = dayIdx; G.rWidth = R.width; G.rBend = R.bend; G.landSide = 1;
+  G.day = dayIdx; G.rWidth = R.width; G.rBend = R.bend; G.rFreq = R.freq || 1; G.landSide = 1;
   G.bev = []; G.segs = []; G.forks = []; G.bridges_ = [];
   const END = L.len * PX_PER_M;
   K.ensureSegments(END + 3000);
@@ -39,50 +39,53 @@ export function sampleDay(dayIdx, seed = dayIdx + 1) {
            samples, forks: [...forks.values()], bridges: [...bridges].sort((a, b) => a - b) };
 }
 
-// Полоса дня: старт слева, финиш справа. Левый берег (по ходу лодки) — сверху,
-// как если повернуть экран игры по часовой стрелке.
+// Карта дня — строки по 250 м (как строки текста): старт слева вверху, финиш
+// справа внизу. Масштаб по длине и по ширине почти один (4 px на метр против
+// 4 по ширине), поэтому изгибы выглядят изгибами, а не зубьями. Левый берег
+// по ходу лодки — сверху, как если повернуть экран игры по часовой стрелке.
+const ROW_M = 250;
 export function daySvg(map) {
-  const W = 1000, K = 0.2, H = SCREEN_W * K, TOP = 4, AX = H + TOP + 16;
-  const x = m => +(m / map.len * W).toFixed(1), y = px => +(TOP + px * K).toFixed(1);
-  const S = map.samples;
-  const edge = key => S.map(s => x(s.m) + "," + y(s[key])).join(" ");
-  const water = `<polygon fill="${map.water}" points="${edge("l")} ${[...S].reverse().map(s => x(s.m) + "," + y(s.r)).join(" ")}"/>`;
-  const sand = ["L", "R"].map(side => {
-    const runs = [];
-    let cur = null;
-    for (const s of S) {
-      const v = s["sand" + side];
-      if (v > 1) { (cur = cur || []).push(s); } else if (cur) { runs.push(cur); cur = null; }
+  const W = 1000, K = 0.16, H = SCREEN_W * K, ROW_H = H + 40;
+  const rows = Math.ceil(map.len / ROW_M);
+  const parts = [];
+  // Подписи мест, где начинается порог или развилка (по одной на участок).
+  const rapidStarts = [];
+  map.samples.forEach((s, i) => { if (s.rapid > 0.5 && !(map.samples[i - 1]?.rapid > 0.5)) rapidStarts.push(s.m); });
+  for (let r = 0; r < rows; r++) {
+    const m0 = r * ROW_M, m1 = Math.min(map.len, m0 + ROW_M), top = r * ROW_H + 16;
+    const x = m => +((m - m0) / ROW_M * W).toFixed(1), y = px => +(top + px * K).toFixed(1);
+    const S = map.samples.filter(s => s.m >= m0 - 4 && s.m <= m1 + 4).map(s => ({ ...s, m: Math.max(m0, Math.min(m1, s.m)) }));
+    const wEnd = x(m1);
+    let g = `<rect x="0" y="${top}" width="${wEnd}" height="${H}" fill="${map.grass}"/>`;
+    for (const side of ["L", "R"]) {                 // песчаные отмели
+      let run = [];
+      const flush = () => {
+        if (run.length > 1) {
+          const e = side === "L" ? "l" : "r", sg = side === "L" ? -1 : 1;
+          g += `<polygon fill="#d2b674" points="${run.map(s => x(s.m) + "," + y(s[e] + sg * s["sand" + side])).join(" ")} ${[...run].reverse().map(s => x(s.m) + "," + y(s[e])).join(" ")}"/>`;
+        }
+        run = [];
+      };
+      for (const s of S) { if (s["sand" + side] > 1) run.push(s); else flush(); }
+      flush();
     }
-    if (cur) runs.push(cur);
-    return runs.map(run => {
-      const e = side === "L" ? "l" : "r", sg = side === "L" ? -1 : 1;
-      const out = run.map(s => x(s.m) + "," + y(s[e] + sg * s["sand" + side]));
-      const inn = [...run].reverse().map(s => x(s.m) + "," + y(s[e]));
-      return `<polygon fill="#d2b674" points="${out.join(" ")} ${inn.join(" ")}"/>`;
-    }).join("");
-  }).join("");
-  // Пороги — белые штрихи поверх воды.
-  const rapids = [];
-  for (let i = 0; i < S.length; i += 2) {
-    const s = S[i];
-    if (s.rapid > 0.5) rapids.push(`<line x1="${x(s.m)}" x2="${x(s.m) + 3}" y1="${y(s.l + 6)}" y2="${y(s.r - 6)}" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/>`);
+    g += `<polygon fill="${map.water}" points="${S.map(s => x(s.m) + "," + y(s.l)).join(" ")} ${[...S].reverse().map(s => x(s.m) + "," + y(s.r)).join(" ")}"/>`;
+    for (const s of S) if (s.island) g += `<rect x="${x(s.m)}" y="${y(s.island[0])}" width="${(STEP_M / ROW_M * W + 0.5).toFixed(1)}" height="${((s.island[1] - s.island[0]) * K).toFixed(1)}" fill="${map.grass}"/>`;
+    for (let i = 0; i < S.length; i += 2) {           // пороги — белые штрихи
+      const s = S[i];
+      if (s.rapid > 0.5) g += `<line x1="${x(s.m)}" x2="${x(s.m) + 4}" y1="${y(s.l + 6)}" y2="${y(s.r - 6)}" stroke="#fff" stroke-opacity=".6" stroke-width="1.5"/>`;
+    }
+    const lblY = top + H + 12;
+    for (const b of map.bridges) if (b >= m0 && b < m1)
+      g += `<rect x="${x(b) - 3}" y="${top - 3}" width="6" height="${H + 6}" fill="#4a3018"/><text x="${x(b)}" y="${lblY}" text-anchor="middle" class="lbl">мост</text>`;
+    for (const m of rapidStarts) if (m >= m0 && m < m1 - 10) g += `<text x="${Math.min(x(m) + 4, wEnd - 34)}" y="${lblY}" class="lbl">порог</text>`;
+    for (const f of map.forks) if (f.from >= m0 && f.from < m1) g += `<text x="${x(f.from) + 4}" y="${lblY}" class="lbl">развилка</text>`;
+    for (let m = m0 + 50; m < m1; m += 50) g += `<line x1="${x(m)}" x2="${x(m)}" y1="${top + H + 1}" y2="${top + H + 4}" class="tick"/>`;
+    g += `<text x="0" y="${top - 5}" class="lbl b">${m0 === 0 ? "старт · " : ""}${m0}–${m1} м${m1 === map.len ? " · финиш" : ""}</text>`;
+    if (m1 === map.len) g += `<rect x="${wEnd - 6}" y="${top}" width="6" height="${H}" fill="url(#chk)"/>`;
+    parts.push(g);
   }
-  const islands = S.filter(s => s.island).map(s => `<rect x="${x(s.m)}" y="${y(s.island[0])}" width="${(STEP_M / map.len * W + 0.4).toFixed(1)}" height="${(Math.max(1, s.island[1] - s.island[0]) * K).toFixed(1)}" fill="${map.grass}"/>`).join("");
-  const bridges = map.bridges.map(b => `<rect x="${x(b) - 2}" y="${TOP - 2}" width="4" height="${H + 4}" fill="#4a3018"/>`).join("");
-  const fin = `<g><rect x="${W - 5}" y="${TOP}" width="5" height="${H}" fill="url(#chk)"/><text x="${W}" y="${AX + 13}" text-anchor="end" class="lbl b">финиш ${map.len} м</text></g>`;
-  const ticks = [];
-  for (let m = 100; m < map.len; m += 100) {
-    ticks.push(`<line x1="${x(m)}" x2="${x(m)}" y1="${AX - 3}" y2="${AX + 2}" class="tick"/>`);
-    if (m % 200 === 0 && map.len - m > 60) ticks.push(`<text x="${x(m)}" y="${AX + 13}" text-anchor="middle" class="lbl">${m} м</text>`);
-  }
-  const rLabel = (() => {                           // подпись первого порога
-    const s = S.find(s => s.rapid > 0.5);
-    return s ? `<text x="${x(s.m) + 4}" y="${TOP + H + 13}" class="lbl">порог</text>` : "";
-  })();
-  const fLabel = map.forks.length ? `<text x="${x(map.forks[0].from) + 4}" y="${TOP + H + 13}" class="lbl">развилка</text>` : "";
-  return `<svg viewBox="0 -2 ${W} ${AX + 18}" role="img" aria-label="Карта дня ${map.day}: ${map.river}, ${map.len} м" preserveAspectRatio="xMinYMid meet">` +
-    `<defs><pattern id="chk" width="5" height="5" patternUnits="userSpaceOnUse"><rect width="5" height="5" fill="#fff"/><rect width="2.5" height="2.5" fill="#15262e"/><rect x="2.5" y="2.5" width="2.5" height="2.5" fill="#15262e"/></pattern></defs>` +
-    `<rect x="0" y="${TOP}" width="${W}" height="${H}" fill="${map.grass}"/>${sand}${water}${islands}${rapids.join("")}${bridges}${fin}` +
-    `<text x="0" y="${AX + 13}" class="lbl b">старт</text>${rLabel}${fLabel}${ticks.join("")}</svg>`;
+  return `<svg viewBox="0 -2 ${W} ${rows * ROW_H + 4}" role="img" aria-label="Карта дня ${map.day}: ${map.river}, ${map.len} м" preserveAspectRatio="xMinYMin meet">` +
+    `<defs><pattern id="chk" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#fff"/><rect width="3" height="3" fill="#15262e"/><rect x="3" y="3" width="3" height="3" fill="#15262e"/></pattern></defs>` +
+    parts.join("") + "</svg>";
 }

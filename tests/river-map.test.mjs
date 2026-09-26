@@ -32,9 +32,11 @@ test("на карте то, что есть в дне: пороги, разви�
   }
 });
 
-test("полоса карты — SVG с водой, финишем и отметками метров", () => {
+test("карта дня — строки по 250 м с водой, мостами, финишем и отметками метров", () => {
   const svg = daySvg(sampleDay(0));
   assert.match(svg, /^<svg[^>]+viewBox/);
-  assert.match(svg, /финиш/);
-  assert.match(svg, />400 м</);
+  assert.match(svg, /750–800 м · финиш/);
+  assert.match(svg, />250–500 м</);
+  assert.equal((svg.match(/<rect x="0" y="[\d.]+" width="[\d.]+" height="[\d.]+" fill="#/g) || []).length, 4, "800 м — это 4 строки по 250 м");
+  assert.match(daySvg(sampleDay(4)), />мост</, "на Тверце мосты подписаны");
 });
