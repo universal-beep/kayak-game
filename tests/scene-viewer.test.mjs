@@ -21,7 +21,9 @@ test("teleportTo ставит камеру так, что точка w — по 
   K.teleportTo(1000);
   assert.equal(K.G.scroll, 1000 - 720 / 2, "scroll захватывает точку по центру");
   assert.equal(K.G.pwy, 1000, "игрок в той же точке");
-  assert.equal(K.G.dist, 1000, "дистанция синхронна");
+  // Дистанция — в метрах: 25 px мира = 1 м. Раньше тест закреплял dist = w
+  // (метры = пиксели) — из-за этого ?at= и ?scene=finish показывали не то место.
+  assert.equal(K.G.dist, 1000 / 25, "дистанция в метрах");
   // Точка ровно по центру по вертикали (screenYOf(w) = PY + scroll - w = PY - 360).
   assert.equal(K.screenYOf(1000), K.PY - 360);
 });
@@ -50,8 +52,11 @@ test("sceneAt('finish') ставит ленту и лагерь, камера в
   const { K } = loadGame();
   prepare(K);
   K.sceneAt("finish");
-  const tape = Math.max(60, K.level().len - 30);
+  // Лента там же, где в игре: за 150 px до конца дистанции (пиксели мира).
+  const tape = K.level().len * 25 - 150;
   assert.equal(K.G.tapeWy, tape, "лента на дистанции уровня");
+  const y = K.screenYOf(tape);
+  assert.ok(y > 0 && y < 720, "лента в кадре, y=" + y);
   // Лагерь заспавнен (палатки и огонь присутствуют).
   const kinds = new Set(K.G.bev.map(e => e.type));
   assert.ok(kinds.has("tent") || kinds.has("tent2"), "палатки у лагеря");
@@ -65,8 +70,8 @@ test("applyDebugScene с ?at=M телепортирует на метры", () =
   prepare(K);
   sandbox.location.search = "?day=1&at=555";
   K.applyDebugScene();
-  assert.equal(K.G.pwy, 555, "телепорт на 555 м");
-  assert.equal(K.G.dist, 555);
+  assert.equal(K.G.pwy, 555 * 25, "телепорт на 555 м (в мире — пиксели)");
+  assert.equal(K.G.dist, 555, "дистанция 555 м");
   assert.equal(K.G.bev.length, 1, "на точке одна случайная береговая сцена");
 });
 

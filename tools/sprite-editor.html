@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Редактор спрайтов — Сплав на байдарке</title>
+<style>
+  :root{
+    --bg:#15171c; --panel:#1f232b; --panel2:#272c36; --line:#343b47;
+    --text:#e6e8ec; --muted:#98a1ae; --accent:#4aa3ff; --warn:#f2b441; --bad:#ef5b5b; --ok:#5fcf7a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,"Segoe UI",sans-serif;height:100vh;display:grid;grid-template-columns:230px 1fr 380px;grid-template-rows:auto 1fr}
+  header{grid-column:1/-1;display:flex;gap:16px;align-items:center;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  header h1{font-size:16px;margin:0;font-weight:600}
+  header .steps{color:var(--muted);font-size:13px}
+  header .steps b{color:var(--text);font-weight:600}
+  .tabs{margin-left:auto;display:flex;gap:4px}
+  button,select,input{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:5px 10px}
+  button{cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.on{background:var(--accent);border-color:var(--accent);color:#08121f}
+  button.primary{background:var(--ok);border-color:var(--ok);color:#0c1f12;font-weight:600}
+  aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:8px}
+  aside h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 6px 4px}
+  aside .item{display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:5px;cursor:pointer}
+  aside .item:hover{background:var(--panel2)}
+  aside .item.cur{background:var(--accent);color:#08121f}
+  aside .item canvas{background:#0f6bc4;border-radius:3px;flex:none}
+  aside .item .dot{margin-left:auto;color:var(--warn)}
+  aside .item.locked{opacity:.55}
+  main{overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+  .bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .bar .sep{width:1px;height:24px;background:var(--line);margin:0 4px}
+  .bar label{color:var(--muted);font-size:13px}
+  #gridWrap{overflow:auto;border:1px solid var(--line);border-radius:8px;background:#0c0e12;padding:12px;flex:1;min-height:200px}
+  #grid{image-rendering:pixelated;cursor:crosshair;display:block}
+  .pal{display:flex;flex-wrap:wrap;gap:4px}
+  .sw{width:30px;height:30px;border-radius:5px;border:2px solid transparent;cursor:pointer;position:relative;font:11px monospace;display:flex;align-items:flex-end;justify-content:flex-end;padding:1px 3px;text-shadow:0 0 3px #000,0 0 2px #000;color:#fff}
+  .sw.cur{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+  .sw.used::before{content:"";position:absolute;left:3px;top:3px;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 2px #000}
+  .sw.clear{background:repeating-conic-gradient(#555 0 25%,#333 0 50%) 0 0/10px 10px}
+  #info{color:var(--muted);font-size:13px}
+  #warn{font-size:13px}
+  #warn div{margin:2px 0}
+  .w-bad{color:var(--bad)} .w-warn{color:var(--warn)} .w-ok{color:var(--ok)}
+  section.right{background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px}
+  .card h4{margin:0 0 8px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .card h4 small{color:var(--muted);font-weight:400}
+  .card canvas{image-rendering:pixelated;display:block;max-width:100%;border-radius:5px}
+  .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+  .row figure{margin:0;text-align:center;color:var(--muted);font-size:12px}
+  #gallery{display:none;overflow:auto;padding:14px 16px;grid-column:2/4}
+  #gallery .gtitle{margin:18px 0 8px;font-size:14px;color:var(--muted)}
+  #gallery .grid{display:flex;flex-wrap:wrap;gap:10px}
+  #gallery .cell{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer;text-align:center;font-size:12px;color:var(--muted)}
+  #gallery .cell:hover{border-color:var(--accent)}
+  #gallery canvas{image-rendering:pixelated;display:block;margin:0 auto 4px;border-radius:4px}
+  body.gal main, body.gal section.right{display:none}
+  body.gal #gallery{display:block}
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ok);color:#0c1f12;padding:8px 16px;border-radius:8px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+  #toast.show{opacity:1}
+  kbd{background:#0c0e12;border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:12px}
+  #nodata{grid-column:1/-1;padding:40px;font-size:16px}
+  @media (max-width:1150px){
+    body{grid-template-columns:200px 1fr;grid-template-rows:auto 1fr auto;height:auto;min-height:100vh}
+    section.right{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+    #gallery{grid-column:2/3}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Редактор спрайтов</h1>
+  <div class="steps">1. <b>выбери</b> спрайт слева · 2. <b>рисуй</b> · 3. <b>Сохранить</b> → файл в «Загрузки» · 4. двойной клик «<b>Применить спрайт.bat</b>»</div>
+  <div class="tabs">
+    <button id="tabEdit" class="on">Рисовать</button>
+    <button id="tabGal">Лист всех спрайтов</button>
+  </div>
+</header>
+
+<aside id="list"></aside>
+
+<main>
+  <div class="bar">
+    <button data-tool="pen" class="on" title="Карандаш (P)">Карандаш</button>
+    <button data-tool="erase" title="Ластик (E), или правая кнопка мыши">Ластик</button>
+    <button data-tool="fill" title="Заливка области одного цвета (F)">Заливка</button>
+    <button data-tool="pick" title="Пипетка (I), или Alt+клик">Пипетка</button>
+    <span class="sep"></span>
+    <button id="undo" title="Ctrl+Z">↶</button>
+    <button id="redo" title="Ctrl+Y">↷</button>
+    <span class="sep"></span>
+    <button id="flip" title="Отразить по горизонтали">⇆</button>
+    <button data-shift="-1,0" title="Сдвинуть влево">←</button>
+    <button data-shift="1,0" title="Сдвинуть вправо">→</button>
+    <button data-shift="0,-1" title="Сдвинуть вверх">↑</button>
+    <button data-shift="0,1" title="Сдвинуть вниз">↓</button>
+    <span class="sep"></span>
+    <label>масштаб</label><input id="zoom" type="range" min="6" max="40" value="22">
+  </div>
+  <div class="bar">
+    <label>размер:</label>
+    <button data-rs="L,1">+ слева</button><button data-rs="L,-1">− слева</button>
+    <button data-rs="R,1">+ справа</button><button data-rs="R,-1">− справа</button>
+    <button data-rs="T,1">+ сверху</button><button data-rs="T,-1">− сверху</button>
+    <button data-rs="B,1">+ снизу</button><button data-rs="B,-1">− снизу</button>
+    <span id="info"></span>
+  </div>
+  <div id="gridWrap"><canvas id="grid"></canvas></div>
+  <div class="pal" id="pal"></div>
+  <div class="bar">
+    <button class="primary" id="save">Сохранить (в «Загрузки»)</button>
+    <button id="copy">Скопировать строки</button>
+    <button id="reset">Вернуть как в игре</button>
+    <span id="hint" style="color:var(--muted);font-size:13px">Правая кнопка — стереть · <kbd>Alt</kbd>+клик — взять цвет · черновик сохраняется сам</span>
+  </div>
+</main>
+
+<section class="right">
+  <div class="card">
+    <h4>Как в игре <small id="pvScale"></small></h4>
+    <div class="bar" style="margin-bottom:8px">
+      <button data-bg="water" class="on">вода</button><button data-bg="grass">трава</button><button data-bg="sand">песок</button>
+      <label><input type="checkbox" id="moving" checked> в движении</label>
+    </div>
+    <canvas id="pvGame" width="356" height="220"></canvas>
+  </div>
+  <div class="card">
+    <h4>Тест силуэта <small>узнаётся ли издалека и одной формой</small></h4>
+    <div class="row">
+      <figure><canvas id="pvThird"></canvas>в 3 раза меньше</figure>
+      <figure><canvas id="pvSil"></canvas>силуэт</figure>
+    </div>
+  </div>
+  <div class="card">
+    <h4>Рядом с другими <small>не путается ли</small></h4>
+    <div class="bar" style="margin-bottom:8px"><select id="cmp" multiple size="4" style="width:100%"></select></div>
+    <canvas id="pvCmp" width="356" height="150"></canvas>
+  </div>
+  <div class="card" id="varCard" style="display:none">
+    <h4>Варианты окраски <small>как в игре</small></h4>
+    <canvas id="pvVar" width="356" height="90"></canvas>
+  </div>
+  <div class="card"><h4>Проверки</h4><div id="warn"></div></div>
+</section>
+
+<div id="gallery"></div>
+<div id="toast"></div>
+
+<script src="sprite-data.js"></script>
+<script>
+"use strict";
+const D = window.SPRITE_DATA;
+if (!D){
+  document.body.innerHTML = '<div id="nodata">Нет файла <b>tools/sprite-data.js</b>. Открой редактор через «Редактор спрайтов.bat» — он пересобирает данные из игры.</div>';
+  throw new Error("no sprite data");
+}
+const PAL = D.PAL, SCALE = D.SCALE;
+const BG = { water:"#0f6bc4", grass:"#4b9c48", sand:"#d2b674" };
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+// ---------- хранение черновиков (браузер может запретить — тогда без них) ----------
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+const draftKey = n => "kayak-spr:" + n;
+
+// ---------- состояние ----------
+let cur = null;          // имя спрайта
+let map = [];            // массив массивов символов
+let tool = "pen", color = "k", bgName = "water";
+let undoStack = [], redoStack = [];
+const toStr = m => m.map(r => r.join(""));
+const fromStr = a => a.map(r => [...r]);
+
+function spriteScale(n){ return Math.round(D.sprites[n].scale) || SCALE; }
+
+// ---------- растеризация ----------
+function drawMap(ctx, m, x, y, sc, opts = {}){
+  for (let r = 0; r < m.length; r++) for (let q = 0; q < m[r].length; q++){
+    let ch = m[r][q];
+    if (ch === ".") continue;
+    if (opts.swap && opts.swap[ch]) ch = opts.swap[ch];
+    ctx.fillStyle = opts.sil ? "#141414" : (PAL[ch] || "#ff00ff");
+    ctx.fillRect(x + q*sc, y + r*sc, sc, sc);
+  }
+}
+function thumb(n, maxW = 40, maxH = 24){
+  const m = D.sprites[n].map, c = document.createElement("canvas");
+  const sc = Math.max(1, Math.floor(Math.min(maxW / m[0].length, maxH / m.length)));
+  c.width = m[0].length * sc; c.height = m.length * sc;
+  drawMap(c.getContext("2d"), m, 0, 0, sc);
+  return c;
+}
+
+// ---------- список слева ----------
+function buildList(){
+  const box = $("#list"); box.innerHTML = "";
+  for (const g of D.groups){
+    const names = Object.keys(D.sprites).filter(n => D.sprites[n].group === g);
+    if (!names.length) continue;
+    const h = document.createElement("h3"); h.textContent = g; box.appendChild(h);
+    for (const n of names){
+      const it = document.createElement("div");
+      it.className = "item" + (n === cur ? " cur" : "") + (D.sprites[n].editable ? "" : " locked");
+      it.title = D.sprites[n].editable ? n : n + " — " + D.sprites[n].note;
+      it.appendChild(thumb(n, 34, 20));
+      const s = document.createElement("span"); s.textContent = n; it.appendChild(s);
+      if (store.get(draftKey(n))){ const d = document.createElement("span"); d.className = "dot"; d.textContent = "●"; d.title = "есть несохранённый черновик"; it.appendChild(d); }
+      it.onclick = () => open(n);
+      box.appendChild(it);
+    }
+  }
+}
+
+// ---------- открыть спрайт ----------
+function open(n){
+  cur = n;
+  const dr = store.get(draftKey(n));
+  const base = D.sprites[n].map;
+  // Черновик годится, только если игра с тех пор не менялась.
+  map = fromStr(dr && JSON.stringify(dr.base) === JSON.stringify(base) ? dr.map : base);
+  undoStack = []; redoStack = [];
+  fitZoom();
+  fillCompare();
+  setMode("edit");
+  buildList(); drawAll();
+  try { history.replaceState(null, "", "#" + n); } catch(e){}
+}
+
+// ---------- рисование сетки ----------
+const grid = $("#grid"), gctx = grid.getContext("2d");
+let hover = null;
+function cell(){ return +$("#zoom").value; }
+// Масштаб сетки под окно: спрайт целиком виден без прокрутки.
+function fitZoom(){
+  const w = $("#gridWrap"), W = map[0].length, H = map.length;
+  const z = Math.floor(Math.min((w.clientWidth - 28) / W, (Math.max(w.clientHeight, 260) - 28) / H));
+  $("#zoom").value = Math.max(6, Math.min(40, z || 22));
+}
+function drawGrid(){
+  const z = cell(), H = map.length, W = map[0].length;
+  grid.width = W*z; grid.height = H*z;
+  for (let r = 0; r < H; r++) for (let q = 0; q < W; q++){
+    gctx.fillStyle = ((r + q) & 1) ? "#2a2e36" : "#22262d";
+    gctx.fillRect(q*z, r*z, z, z);
+  }
+  drawMap(gctx, map, 0, 0, z);
+  if (z >= 8){
+    gctx.strokeStyle = "rgba(255,255,255,.07)"; gctx.lineWidth = 1;
+    for (let q = 0; q <= W; q++){ gctx.beginPath(); gctx.moveTo(q*z + .5, 0); gctx.lineTo(q*z + .5, H*z); gctx.stroke(); }
+    for (let r = 0; r <= H; r++){ gctx.beginPath(); gctx.moveTo(0, r*z + .5); gctx.lineTo(W*z, r*z + .5); gctx.stroke(); }
+    // Центральные оси — чтобы держать симметрию.
+    gctx.strokeStyle = "rgba(74,163,255,.35)";
+    gctx.beginPath(); gctx.moveTo(W*z/2 + .5, 0); gctx.lineTo(W*z/2 + .5, H*z); gctx.stroke();
+    gctx.beginPath(); gctx.moveTo(0, H*z/2 + .5); gctx.lineTo(W*z, H*z/2 + .5); gctx.stroke();
+  }
+  if (hover){
+    gctx.strokeStyle = "#fff"; gctx.lineWidth = 2;
+    gctx.strokeRect(hover.q*z + 1, hover.r*z + 1, z - 2, z - 2);
+  }
+}
+
+// ---------- правка ----------
+function snapshot(){ undoStack.push(JSON.stringify(map)); if (undoStack.length > 200) undoStack.shift(); redoStack = []; }
+function changed(){
+  const same = JSON.stringify(toStr(map)) === JSON.stringify(D.sprites[cur].map);
+  if (same) store.del(draftKey(cur));
+  else store.set(draftKey(cur), { map: toStr(map), base: D.sprites[cur].map });
+  drawAll();
+}
+function setPx(q, r, ch){ if (map[r] && map[r][q] !== undefined && map[r][q] !== ch){ map[r][q] = ch; return true; } return false; }
+function flood(q, r, ch){
+  const from = map[r][q]; if (from === ch) return;
+  const st = [[q, r]];
+  while (st.length){
+    const [x, y] = st.pop();
+    if (!map[y] || map[y][x] !== from) continue;
+    map[y][x] = ch;
+    st.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+  }
+}
+function posOf(e){
+  const b = grid.getBoundingClientRect(), z = cell();
+  const q = Math.floor((e.clientX - b.left) / (b.width / map[0].length));
+  const r = Math.floor((e.clientY - b.top) / (b.height / map.length));
+  return (q >= 0 && r >= 0 && r < map.length && q < map[0].length) ? { q, r } : null;
+}
+let painting = false, paintCh = null;
+grid.addEventListener("contextmenu", e => e.preventDefault());
+grid.addEventListener("pointerdown", e => {
+  const p = posOf(e); if (!p) return;
+  let t = tool;
+  if (e.button === 2) t = "erase";
+  if (e.altKey) t = "pick";
+  if (t === "pick"){ pickColor(map[p.r][p.q]); return; }
+  snapshot();
+  if (t === "fill"){ flood(p.q, p.r, color); changed(); return; }
+  paintCh = t === "erase" ? "." : color;
+  painting = true; grid.setPointerCapture(e.pointerId);
+  setPx(p.q, p.r, paintCh); changed();
+});
+grid.addEventListener("pointermove", e => {
+  const p = posOf(e);
+  hover = p;
+  if (painting && p){ if (setPx(p.q, p.r, paintCh)) changed(); else drawGrid(); }
+  else drawGrid();
+});
+grid.addEventListener("pointerup", () => { painting = false; });
+grid.addEventListener("pointerleave", () => { hover = null; drawGrid(); });
+
+function undo(){ if (!undoStack.length) return; redoStack.push(JSON.stringify(map)); map = JSON.parse(undoStack.pop()); changed(); }
+function redo(){ if (!redoStack.length) return; undoStack.push(JSON.stringify(map)); map = JSON.parse(redoStack.pop()); changed(); }
+$("#undo").onclick = undo; $("#redo").onclick = redo;
+$("#flip").onclick = () => { snapshot(); map = map.map(r => r.slice().reverse()); changed(); };
+$$("[data-shift]").forEach(b => b.onclick = () => {
+  const [dx, dy] = b.dataset.shift.split(",").map(Number), H = map.length, W = map[0].length;
+  snapshot();
+  map = Array.from({length:H}, (_, r) => Array.from({length:W}, (_, q) => {
+    const sr = r - dy, sq = q - dx;
+    return (sr >= 0 && sr < H && sq >= 0 && sq < W) ? map[sr][sq] : ".";
+  }));
+  changed();
+});
+$$("[data-rs]").forEach(b => b.onclick = () => {
+  const [side, d] = b.dataset.rs.split(","); const n = +d;
+  const W = map[0].length, H = map.length;
+  if (n < 0 && ((side === "L" || side === "R") ? W : H) <= 1) return;
+  snapshot();
+  if (side === "L") map = map.map(r => n > 0 ? ["."].concat(r) : r.slice(1));
+  if (side === "R") map = map.map(r => n > 0 ? r.concat(["."]) : r.slice(0, -1));
+  if (side === "T") map = n > 0 ? [Array(W).fill(".")].concat(map) : map.slice(1);
+  if (side === "B") map = n > 0 ? map.concat([Array(W).fill(".")]) : map.slice(0, -1);
+  changed();
+});
+$("#zoom").oninput = drawGrid;
+$$("[data-tool]").forEach(b => b.onclick = () => setTool(b.dataset.tool));
+function setTool(t){ tool = t; $$("[data-tool]").forEach(b => b.classList.toggle("on", b.dataset.tool === t)); }
+
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && (k === "z" || k === "я")){ e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if ((e.ctrlKey || e.metaKey) && (k === "y" || k === "н")){ e.preventDefault(); redo(); }
+  else if (k === "p" || k === "з") setTool("pen");
+  else if (k === "e" || k === "у") setTool("erase");
+  else if (k === "f" || k === "а") setTool("fill");
+  else if (k === "i" || k === "ш") setTool("pick");
+});
+
+// ---------- палитра ----------
+function buildPalette(){
+  const box = $("#pal"); box.innerHTML = "";
+  const used = new Set(map.flat());
+  const add = (ch, css, title) => {
+    const s = document.createElement("div");
+    s.className = "sw" + (ch === color ? " cur" : "") + (ch === "." ? " clear" : "") + (used.has(ch) && ch !== "." ? " used" : "");
+    if (css) s.style.background = css;
+    s.textContent = ch; s.title = title;
+    s.onclick = () => pickColor(ch);
+    box.appendChild(s);
+  };
+  add(".", null, "прозрачный");
+  for (const [ch, hex] of Object.entries(PAL)) add(ch, hex, ch + " = " + hex + (used.has(ch) ? " (есть в спрайте)" : ""));
+}
+function pickColor(ch){ color = ch; if (tool === "pick" || tool === "erase") setTool("pen"); buildPalette(); }
+
+// ---------- превью ----------
+let tick = 0;
+function drawGame(){
+  const c = $("#pvGame"), x = c.getContext("2d"), sc = spriteScale(cur);
+  x.fillStyle = BG[bgName]; x.fillRect(0, 0, c.width, c.height);
+  const mv = $("#moving").checked;
+  if (bgName === "water"){
+    // Светлые полосы течения, как в игре, — чтобы видеть спрайт на живой воде.
+    x.fillStyle = "rgba(255,255,255,.09)";
+    for (let i = 0; i < 6; i++){
+      const y = ((i*47 + (mv ? tick*0.9 : 0)) % (c.height + 20)) - 10;
+      x.fillRect(20, y, c.width - 40, 8);
+    }
+  }
+  const W = map[0].length*sc, H = map.length*sc;
+  const bob = mv ? Math.round(Math.sin(tick*0.08)*3) : 0;
+  drawMap(x, map, Math.round((c.width - W)/2), Math.round((c.height - H)/2) + bob, sc);
+}
+function drawSmall(){
+  const m = map, W = m[0].length, H = m.length, sc = spriteScale(cur);
+  const t = $("#pvThird"), s = $("#pvSil");
+  const k = Math.max(1, Math.round(sc/3));
+  t.width = W*k + 16; t.height = H*k + 16;
+  const tx = t.getContext("2d"); tx.fillStyle = BG[bgName]; tx.fillRect(0, 0, t.width, t.height);
+  drawMap(tx, m, 8, 8, k);
+  s.width = W*sc + 16; s.height = H*sc + 16;
+  const sx = s.getContext("2d"); sx.fillStyle = "#ebebe1"; sx.fillRect(0, 0, s.width, s.height);
+  drawMap(sx, m, 8, 8, sc, { sil:true });
+}
+function fillCompare(){
+  const sel = $("#cmp"); sel.innerHTML = "";
+  const g = D.sprites[cur].group;
+  for (const n of Object.keys(D.sprites)){
+    if (n === cur) continue;
+    const o = document.createElement("option");
+    o.value = n; o.textContent = n + (D.sprites[n].group === g ? "" : "  · " + D.sprites[n].group);
+    // По умолчанию — соседи по группе: их и надо не путать между собой.
+    o.selected = D.sprites[n].group === g && sel.querySelectorAll("option:checked").length < 4;
+    sel.appendChild(o);
+  }
+}
+function drawCompare(){
+  const c = $("#pvCmp"), x = c.getContext("2d");
+  const names = [cur, ...[...$("#cmp").selectedOptions].map(o => o.value)];
+  const items = names.map(n => ({ n, m: n === cur ? map : D.sprites[n].map, sc: spriteScale(n) }));
+  const gap = 12, totalW = items.reduce((a, it) => a + it.m[0].length*it.sc + gap, gap);
+  const maxH = Math.max(...items.map(it => it.m.length*it.sc)) + 34;
+  const k = Math.min(1, (c.width) / totalW);           // не влезают — уменьшаем все одинаково
+  c.height = Math.ceil(maxH * k) + 4;
+  x.fillStyle = BG[bgName]; x.fillRect(0, 0, c.width, c.height);
+  x.save(); x.scale(k, k);
+  let px = gap;
+  x.font = "11px system-ui"; x.textAlign = "center";
+  for (const it of items){
+    const w = it.m[0].length*it.sc, h = it.m.length*it.sc;
+    drawMap(x, it.m, px, (maxH - 20 - h)/2 + 4, it.sc);
+    x.fillStyle = it.n === cur ? "#fff" : "rgba(255,255,255,.75)";
+    x.fillText(it.n, px + w/2, maxH - 6);
+    px += w + gap;
+  }
+  x.restore();
+}
+function drawVariants(){
+  const vs = D.sprites[cur].variants || [];
+  $("#varCard").style.display = vs.length ? "" : "none";
+  if (!vs.length) return;
+  const c = $("#pvVar"), x = c.getContext("2d"), sc = spriteScale(cur);
+  const W = map[0].length*sc, H = map.length*sc, gap = 10;
+  const k = Math.min(1, c.width / (vs.length*(W + gap) + gap));
+  c.height = Math.ceil((H + 16) * k);
+  x.fillStyle = BG[bgName]; x.fillRect(0, 0, c.width, c.height);
+  x.save(); x.scale(k, k);
+  vs.forEach((v, i) => drawMap(x, map, gap + i*(W + gap), 8, sc, { swap: v }));
+  x.restore();
+}
+
+// ---------- проверки ----------
+function checks(){
+  const out = [], s = D.sprites[cur];
+  const used = new Set(map.flat()); used.delete(".");
+  const W = map[0].length, H = map.length, sc = spriteScale(cur);
+  const colors = [...used].filter(ch => ch !== "k" && ch !== "K").length;
+  $("#info").textContent = "· " + W + "×" + H + " клеток · на экране " + W*sc + "×" + H*sc + " px · цветов " + used.size;
+  $("#pvScale").textContent = "увеличение ×" + sc;
+  if (!s.editable) out.push(["bad", "Этот спрайт так не правится: " + s.note + "."]);
+  if (sc !== SCALE) out.push(["warn", "Увеличение ×" + sc + ", а у остальных ×" + SCALE + ": пиксели будут другого размера. Это старый долг — при перерисовке переходи на ×" + SCALE + "."]);
+  if (colors > 6) out.push(["warn", "Цветов кроме обводки: " + colors + ". На таком размере обычно хватает 3–4 оттенков на материал, иначе рисунок рябит."]);
+  const emptyRow = r => map[r].every(c => c === ".");
+  const emptyCol = q => map.every(r => r[q] === ".");
+  if (emptyRow(0) || emptyRow(H - 1) || emptyCol(0) || emptyCol(W - 1))
+    out.push(["warn", "Есть пустой край: лишние строки/столбцы сдвигают центр спрайта в игре (он рисуется от центра)."]);
+  const changedNow = JSON.stringify(toStr(map)) !== JSON.stringify(s.map);
+  out.push(changedNow ? ["warn", "Есть изменения — не забудь «Сохранить»."] : ["ok", "Совпадает с игрой."]);
+  $("#warn").innerHTML = out.map(([k, t]) => '<div class="w-' + k + '">' + (k === "ok" ? "✓ " : k === "bad" ? "✗ " : "! ") + t + "</div>").join("");
+}
+
+function drawAll(){ drawGrid(); buildPalette(); drawGame(); drawSmall(); drawCompare(); drawVariants(); checks(); }
+
+// ---------- сохранение ----------
+function toast(t){ const el = $("#toast"); el.textContent = t; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2200); }
+$("#save").onclick = () => {
+  if (!D.sprites[cur].editable){ toast("Этот спрайт так не правится"); return; }
+  const job = { name: cur, map: toStr(map), base: D.sprites[cur].map, savedAt: new Date().toISOString() };
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(job, null, 1)], { type: "application/json" }));
+  a.download = "sprite-" + cur + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("Сохранено: sprite-" + cur + ".json → «Загрузки». Теперь «Применить спрайт.bat»");
+};
+$("#copy").onclick = async () => {
+  const txt = "  " + cur + ":{map:[" + toStr(map).map(r => JSON.stringify(r)).join(",\n    ") + "]},";
+  try { await navigator.clipboard.writeText(txt); toast("Строки скопированы"); }
+  catch(e){ prompt("Скопируй вручную:", txt); }
+};
+$("#reset").onclick = () => {
+  if (!confirm("Выбросить правки «" + cur + "» и вернуть как в игре?")) return;
+  snapshot(); map = fromStr(D.sprites[cur].map); store.del(draftKey(cur)); drawAll(); buildList();
+};
+$$("[data-bg]").forEach(b => b.onclick = () => { bgName = b.dataset.bg; $$("[data-bg]").forEach(x => x.classList.toggle("on", x === b)); drawAll(); });
+$("#cmp").onchange = drawCompare;
+
+// ---------- лист всех спрайтов ----------
+function buildGallery(){
+  const box = $("#gallery"); box.innerHTML = "";
+  const intro = document.createElement("div");
+  intro.style.color = "var(--muted)";
+  intro.textContent = "Каждый спрайт — как в игре, на воде; ниже в 3 раза меньше и силуэт. Смотри: узнаётся ли предмет по силуэту и не путается ли с соседями. Клик — открыть в редакторе.";
+  box.appendChild(intro);
+  for (const g of D.groups){
+    // Пустые карты (мель рисуется формулой) в листе не показываем.
+    const names = Object.keys(D.sprites).filter(n => D.sprites[n].group === g &&
+      D.sprites[n].map.some(r => /[^.]/.test(r)));
+    if (!names.length) continue;
+    const t = document.createElement("div"); t.className = "gtitle"; t.textContent = g; box.appendChild(t);
+    const row = document.createElement("div"); row.className = "grid"; box.appendChild(row);
+    for (const n of names){
+      const m = (store.get(draftKey(n)) || {}).map || D.sprites[n].map, sc = spriteScale(n);
+      const W = m[0].length, H = m.length, k = Math.max(1, Math.round(sc/3));
+      const c = document.createElement("canvas");
+      c.width = Math.max(W*sc + 16, 90); c.height = H*sc + 16 + H*k + 12;
+      const x = c.getContext("2d");
+      x.fillStyle = BG.water; x.fillRect(0, 0, c.width, H*sc + 16);
+      drawMap(x, m, Math.round((c.width - W*sc)/2), 8, sc);
+      x.fillStyle = BG.water; x.fillRect(0, H*sc + 16, c.width/2, H*k + 12);
+      x.fillStyle = "#ebebe1"; x.fillRect(c.width/2, H*sc + 16, c.width/2, H*k + 12);
+      drawMap(x, m, Math.round(c.width/4 - W*k/2), H*sc + 22, k);
+      drawMap(x, m, Math.round(3*c.width/4 - W*k/2), H*sc + 22, k, { sil:true });
+      const cellEl = document.createElement("div"); cellEl.className = "cell";
+      cellEl.appendChild(c);
+      cellEl.appendChild(document.createTextNode(n + (sc !== SCALE ? " · ×" + sc : "")));
+      cellEl.onclick = () => open(n);
+      row.appendChild(cellEl);
+    }
+  }
+}
+function setMode(m){
+  document.body.classList.toggle("gal", m === "gal");
+  $("#tabEdit").classList.toggle("on", m !== "gal");
+  $("#tabGal").classList.toggle("on", m === "gal");
+  if (m === "gal") buildGallery();
+}
+$("#tabEdit").onclick = () => setMode("edit");
+$("#tabGal").onclick = () => setMode("gal");
+
+// ---------- старт ----------
+setInterval(() => { if (cur && $("#moving").checked && !document.body.classList.contains("gal")){ tick++; drawGame(); } }, 33);
+const start = decodeURIComponent(location.hash.slice(1));
+open(D.sprites[start] ? start : "log");
+</script>
+</body>
+</html>

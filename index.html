@@ -208,32 +208,276 @@ const PAL = {
   p:"#e2551f", x:"#a33510", a:"#d8b57a", N:"#2f7a3a",
   B:"#6f4527", b:"#472a15", m:"#bb8f60",
   v:"#2f8a36", V:"#1c5c22", s:"#efd9a0", S:"#d2b674", d:"#a98d52",
-  c:"#7a4a28", C:"#55301a", h:"#a3703f"
+  c:"#7a4a28", C:"#55301a", h:"#a3703f",
+  // Светлая листва: блик кроны со стороны света. v и N почти одного тона,
+  // без светлого крона деревьев на траве сливалась в плоское пятно.
+  F:"#6cb84a"
 };
 const rep = (ch,n) => ch.repeat(n);
 
 const SPR = {
-  bread:{map:[".....kkkkkkkkkk.....","...kkLLLLLLLLLLkk...",
-    "..kLLLDLLLLDLLLLLk..",".kLLDLLLLDLLLLLLDLk.",
-    ".kLDLLLLDLLLLLLDLLk.",".kLLLLLDLLLLLLDLLLk.",
-    ".kLLLLLLLLLLLLLLLLk.",".kMMMMMMMMMMMMMMMMk.",
-    "..kMMMMMMMMMMMMMMk..","...kkMMMMMMMMMMkk...",
-    ".....kkkkkkkkkk....."]},
-  whisky:{map:["....kkkkkk....","...kKKKKKKk...","...kKKKKKKk...","...kYYYYYYk...",
-    "...kqqqqqqk...","..kqqqqqqqqk..",".kqqqqqqqqqqk.","kqAqqqqqqqqqqk",
-    "kqAqqqqqqqqqqk","kKKKKKKKKKKKKk","kKwwwwwwwwwwKk","kKwKKwKwKKwwKk",
-    "kKwwwwwwwwwwKk","kKKKKKKKKKKKKk","kqAqqqqqqqqqqk","kqAqqqqqqqqqqk",
-    "kqqqqqqqqqqqqk",".kqqqqqqqqqqk.",".kkkkkkkkkkkk."]},
-  medkit:{map:["......kkkkkk......","......kWWWWk......",".kkkkkkkkkkkkkkkk.",
-    ".kwwwwwwwwwwwwwwk.",".kwwwwwwrrwwwwwwk.",".kwwwwwwrrwwwwwwk.",
-    ".kwwwrrrrrrrrwwwk.",".kwwwrrrrrrrrwwwk.",".kwwwwwwrrwwwwwwk.",
-    ".kwwwwwwrrwwwwwwk.",".kwwwwwwwwwwwwwwk.",".kkkkkkkYYkkkkkkk.",
-    ".kwwwwwwYYwwwwwwk.",".kwwwwwwwwwwwwwwk.",".kkkkkkkkkkkkkkkk."]},
-  axe:{map:["....kkkkkk......","..kkiiiiiik.....",".kiiiiiiiiik....","kiiiiiiiiiIkk...",
-    "kIiiiiiiiiIOOk..","kIIiiiiiiIIOOk..",".kIIiiiiIIkOOk..","..kkIIIIkk.OOk..",
-    "....kkkk...OOk..","..........kOOk..","..........kOnk..","..........kOnk..",
-    "..........kOnk..","..........kOnk..","..........kOnk..","..........kOOk..",
-    "..........kOOk..","..........kkkk.."]},
+  // Девушка: та же сетка, что у person, — длинные волосы до плеч, сарафан.
+  // Вариант 1 — блондинка в синем.
+  girl:{map:["...kCCCCk...",
+    "..kCttttCk..",
+    "..kCttttCk..",
+    "..kCkttkCk..",
+    "..kCHHHHCk..",
+    ".kCHHHHHHCk.",
+    "kCHHHHHHHHCk",
+    "ktHHHHHHHHtk",
+    ".kHHHHHHHHk.",
+    ".kHHHHHHHHk.",
+    "kHHHHHHHHHHk",
+    "kkkkkkkkkkkk",
+    "...ktkktk...",
+    "...ktkktk...",
+    "..kOOkkOOk..",
+    "..kkkkkkkk.."], variants:[{}, {C:"u", H:"z"}]},
+  // Загорающая: волосы веером по полотенцу, купальник — лиф и плавки.
+  sunbather_f:{map:[".kkkkkkkkk.",
+    "kwrwrwrwrwk",
+    "krrCCtCCrrk",
+    "krCrCCCrCrk",
+    "krCrtttrCrk",
+    "kwCwKKKwCwk",
+    "krCrrrrrCrk",
+    "krCttttTCrk",
+    "krTHHtHHTrk",
+    "krTHHtHHTrk",
+    "krTttttTTrk",
+    "kwTttttTTwk",
+    "krrttttTrrk",
+    "krrHHHHHrrk",
+    "krrtTrtTrrk",
+    "krrtTrtTrrk",
+    "krrtTrtTrrk",
+    "kwwtTwtTwwk",
+    "krrtTrtTrrk",
+    "krrtTrtTrrk",
+    "krrTTrTTrrk",
+    "krrrrrrrrrk",
+    "kwrwrwrwrwk",
+    ".kkkkkkkkk."], variants:[{}, {r:"z"}]},
+  // Пляж сверху (вдоль реки): загорающий на полосатом полотенце — голова
+  // вверх, тёмные очки, руки вдоль тела, плавки; варианты — синее полотенце.
+  sunbather:{map:[".kkkkkkkkk.",
+    "kwrwrwrwrwk",
+    "krrrCCCrrrk",
+    "krrCtttCrrk",
+    "krrrKKKrrrk",
+    "kwwwtttwwwk",
+    "krTttttTTrk",
+    "krTttttTTrk",
+    "krTttttTTrk",
+    "krTttttTTrk",
+    "krTttttTTrk",
+    "kwwttttTwwk",
+    "krrzzzzzrrk",
+    "krrzzzzzrrk",
+    "krrtTrtTrrk",
+    "krrtTrtTrrk",
+    "krrtTrtTrrk",
+    "kwwtTwtTwwk",
+    "krrtTrtTrrk",
+    "krrtTrtTrrk",
+    "krrTTrTTrrk",
+    "krrrrrrrrrk",
+    "kwrwrwrwrwk",
+    ".kkkkkkkkk."], variants:[{}, {r:"z", z:"r"}]},
+  // Пустое полотенце: красное, синее, оранжевое.
+  towel:{map:[".kkkkkkkkk.",
+    "kwrwrwrwrwk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "kwwwwwwwwwk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "kwwwwwwwwwk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "kwwwwwwwwwk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "krrrrrrrrrk",
+    "kwrwrwrwrwk",
+    ".kkkkkkkkk."], variants:[{}, {r:"z"}, {r:"p"}]},
+  // Пляжный зонтик сверху: полосатые клинья, тень на нижней половине.
+  umbrella:{map:["....kkkkk....",
+    "...krrrwwk...",
+    "..krrrrwwwk..",
+    ".kwrrrrwwwrk.",
+    "kwwwrrrwwrRRk",
+    "kwwwwrrwrRRRk",
+    "kwwwwwkrRRRRk",
+    "krrrrrrRWWWWk",
+    "krrrrrWRRWWWk",
+    ".krrrWWRRRWk.",
+    "..krWWWRRRk..",
+    "...kWWWRRk...",
+    "....kkkkk...."]},
+  // Ребёнок в воде: голова и плечи над водой, рябь; второй кадр — машет рукой.
+  swimmer0:{map:["....kkkk....",
+    "...kCCCCk...",
+    "..kCtttCk...",
+    "...ktttk....",
+    "...ktttk....",
+    "..ktttttkk..",
+    ".kttttttttk.",
+    "ffkktttkkftk",
+    "fffffffffff."]},
+  swimmer1:{map:["....kkkk..k.",
+    "...kCCCCkktk",
+    "..kCtttCkttk",
+    "...ktttkktk.",
+    "...ktttkktk.",
+    "..kttttttk..",
+    ".ktttttttk..",
+    "ffkktttkkff.",
+    "fffffffffff."]},
+  // Нота над компанией с гитарой.
+  note:{map:["...kk.",
+    "..kwwk",
+    "..kwwk",
+    "..kwkw",
+    "..kwkk",
+    ".kkwk.",
+    "kwwwk.",
+    "kwwk..",
+    ".kk..."]},
+  // Дерево мультов «дорога» и «вокзал» — прежний рисунок, мульты не менялись.
+  // Игровое дерево на берегу и финише — tree ниже.
+  ctree:{map:["......kk......",
+    ".....kvvk.....",
+    "....kvvvvk....",
+    "...kvvvvvvk...",
+    "..kvvvVvvvvk..",
+    ".kvvvvvvvvvvk.",
+    "kvvvvVvvvvvvvk",
+    ".kvvvvvvvvvvk.",
+    "..kvvvvvvvvk..",
+    "...kvvvvvvk...",
+    "....kvvvvk....",
+    ".....kvvk.....",
+    "......kOk.....",
+    "......kOk.....",
+    ".....kOOk.....",
+    ".....kOOk.....",
+    "....kOOOOk....",
+    "....kkkkkk...."]},
+  // Мелкий декор вдоль берега (drwBg): ёлка, берёза, кустик. Узкие — влезают
+  // в полосу берега 12–38 px; свет слева-сверху, листва v/V с бликом F.
+  sfir:{map:[".....k.....",
+    "....kvk....",
+    "...kFvVk...",
+    "...kFvVk...",
+    "...kFvVk...",
+    "..kFFvVVk..",
+    "...kFvVk...",
+    "..kFFvVVk..",
+    ".kvFFvVVVk.",
+    ".kvFFvVVVk.",
+    "..kFFvVVk..",
+    ".kvFFvVVVk.",
+    "kvvFFvVVVVk",
+    ".kvFFvVVVk.",
+    ".kvFFvVVVk.",
+    "kvvFFvVVVVk",
+    "vvvFFvVVVVV",
+    "kkkkkCkkkkk",
+    "....kCk....",
+    "...kcCk....",
+    "....kk....."]},
+  sbirch:{map:["....kkkk....",
+    "...kFvvvk...",
+    "..kFFvvvk...",
+    ".kFFFvvvvk..",
+    ".kFFFvvvvk..",
+    "kFFFFvvvvvk.",
+    "kFFFFvvvvvk.",
+    "kvvvvvvvvvk.",
+    "kvvvvvvvvvvk",
+    "kvvvvvvvvvvk",
+    "kVVVVVVVVVk.",
+    ".kVVVVVVVk..",
+    "..kVVwWkk...",
+    "...kkwKk....",
+    "....kKWk....",
+    "....kwWk....",
+    "....kwKk....",
+    "....kwWk....",
+    "....kKWk....",
+    "....kwWk....",
+    "....kKWk....",
+    ".....kk....."]},
+  sbush:{map:["...kkk...",
+    ".kkFvvkk.",
+    "kFFFvvvvk",
+    "kvvvvvvvk",
+    "kVVVVVVVk",
+    ".kVVVVVk.",
+    "..kkkkk.."]},
+  // Батон нарезной сбоку: плоское дно, золотой купол корки, четыре косых
+  // надреза со светлым мякишем — примета именно батона. Бонус-иконка, поэтому
+  // вид сбоку; от бревна (вид сверху, ровный цилиндр с сучком) отличается и
+  // силуэтом, и цветом.
+  bread:{map:["..kkkLLLLLkkk..",
+    ".kLLeLLeLLeLLk.",
+    "kLLeDLeDLeDLLLk",
+    "kLMDMMDMMDMMMLk",
+    ".kDDDDDDDDDDDk.",
+    "..kkkkkkkkkkk.."]},
+  whisky:{map:["....kkk....",
+    "...kccck...",
+    "...kAqqk...",
+    "...kAqqk...",
+    "..kqqqqqk..",
+    ".kqqqqqqqk.",
+    "kqAAqqqqqDk",
+    "kqAAqqqqqDk",
+    "kqeeeeeeeDk",
+    "kqrrrrrrrDk",
+    "kqeeeeeeeDk",
+    "kqeeeeeeeDk",
+    "kqAAqqqqqDk",
+    "kDDDDDDDDDk",
+    ".kkkkkkkkk."]},
+  medkit:{map:[".....kkkk.....",
+    "....kggggk....",
+    ".kkkkgkkgkkkk.",
+    "kwwwwwwwwwwwWk",
+    "kwwwwwrrwwwwWk",
+    "kwwwwwrrwwwwWk",
+    "kwwrrrrrrrrwWk",
+    "kwwrrrrrrrrwWk",
+    "kwwwwwrrwwwwWk",
+    "kwwwwwrrwwwwWk",
+    "kWWWWWWWWWWWWk",
+    ".kkkkkkkkkkkk."]},
+  axe:{map:["..kwwWk....",
+    ".kwwwWWk...",
+    ".kwwGWWWkk.",
+    ".kwGGGWWWok",
+    ".kwjGGGGWok",
+    "..kkkjGGGk.",
+    ".....knook.",
+    ".....knok..",
+    "....knok...",
+    "...knook...",
+    "...knok....",
+    "..knok.....",
+    ".knok......",
+    "knook......",
+    "knok.......",
+    ".kk........"]},
   sun:{map:["....k.....","..k.kk.k..","...kYYk...",".kkYYYYkk.","kYYYYYYYYk",
     ".kkYYYYkk.","...kYYk...","..k.kk.k..","....k....."],noOutline:true},
   boulder:{map:[".....kkkkk......","...kkGGGGGkk....","..kGGGGGGGGGkk..",".kGGGGGGjjjjGGkk",
@@ -248,22 +492,39 @@ const SPR = {
     ".kGGGGGGjjjjjjGGGGGGGGk.","kGGGGjjjjjjjjjjjjGGGGGGk","kGjjjjjjjjjjjjjjjjjjjjGk",
     "kjjjjjjjggggggggjjjjjjjk","kjjjjggggggggggggggjjjjk","kjjggggggggggggggggggjjk",
     ".kkggggggggggggggggggkk.","...kkgggggggggggggkkk...","......kkkkkkkkkkk......."]},
-  // Бревно — боковой вид: круглые торцы с «кольцами», тёмная кора кверху-книзу,
-  // светлая древесина в середине. Так читается именно «бревно/плавник», а не диск.
-  log:{map:["....kOOOOOOOOOOOOOOOOk....",
-    ".kkkkOOOOOOOOOOOOOOOOkkkk.",
-    "kkooonnnnnnnnnnnnnnnnoookk",
-    "kooOOnnnnnnnnnnnnnnnnOOook",
-    "koOnnnnnnnnnnnnnnnnnnnnOok",
-    "koOnnnnnnnnnnnnnnnnnnnnOok",
-    "koOnnnnnnnnnnnnnnnnnnnnOok",
-    "kooOOnnnnnnnnnnnnnnnnOOook",
-    "kkooonnnnnnnnnnnnnnnnoookk",
-    ".kkkkOOOOOOOOOOOOOOOOkkkk.",
-    "....kOOOOOOOOOOOOOOOOk...."]},
-  seaweed:{map:["...kk.....","..kVVk....","..kVVk.kk.","..kVVkkVVk",".kVVVkkVVk",".kVVVkkVVk",
-    ".kVVVkkVVk","kVVVVkkVVk","kVVVVkkVVk","kVVVVkkVVk","kVVVVkkVVk",".kVVVkkVVk",
-    ".kVVVkkVVk","..kVVkkVVk","..kVVkkVVk","..kVVk.kk.","..kkkk...."]},
+  // Бревно вида сверху: цилиндр со светом сверху (светлая кора по верху,
+  // тёмная снизу), продольные штрихи коры, светлый спил с кольцом справа,
+  // обломанный конец со щепками слева и сучок сверху. Сучок и рваный конец
+  // ломают ровный овал — прежний «поднос» по силуэту совпадал с батоном и плитой.
+  log:{map:[".........kmok.................",
+    "..k.kkkkkomkkkkkkkkkkkkkkkkk..",
+    ".kmkmmmmmmmmmmmmmmmmmmmmmSSSk.",
+    ".kmmmmooommmmmmmmooommmmmdssk.",
+    "kSooooooooooobbbooooooooSsddSk",
+    "SksobbbboooooooooobbbbooSsdsSk",
+    "kSooooooooobbbbbooooooooSsddSk",
+    ".kbbbbbbbbbbbbbbbbbbbbbbbdssk.",
+    ".kbkbbbbbbbbbbbbbbbbbbbbbSSSk.",
+    "..k.kkkkkkkkkkkkkkkkkkkkkkkk.."]},
+  // Заросли в воде (замедляют): тёмное пятно зарослей, кувшинки с вырезом и
+  // белым цветком, пряди водорослей по течению. Пятно показывает зону заранее.
+  seaweed:{map:["....kZZZZZ....",
+    "..kkFkkVVZZ...",
+    ".kFFvvvkZZZV..",
+    ".kFvvvVkZZZVZ.",
+    ".kvvvkkZZZZVV.",
+    ".ZkkVkVVkkkZV.",
+    ".VVZkZZkFwvkV.",
+    "ZVZZZZkFFwuvkV",
+    "ZVVZZZkFkwwwkV",
+    "ZZVkkkZkkeVkVZ",
+    ".ZkFFvkkVkkVV.",
+    ".kFFvvvVkZZVZ.",
+    ".kFvvvVVkZZVZ.",
+    "..kvvVVkZZZV..",
+    "...kkkkVZZZ...",
+    "....ZZVZZZ....",
+    ".....ZVZZ....."]},
   rower:{map:[rep(".",9)+"kkk"+rep(".",9),rep(".",8)+"k"+"rrr"+"k"+rep(".",8),
     rep(".",8)+"k"+"rrr"+"k"+rep(".",8),rep(".",8)+"k"+"ttt"+"k"+rep(".",8),
     rep(".",7)+"kk"+"ttt"+"kk"+rep(".",7),rep(".",6)+"k"+"zzzzzzz"+"k"+rep(".",6),
@@ -312,9 +573,14 @@ const SPR = {
   // Утка-кряква в профиль, клюв влево: зелёная голова, белая щёчка и ожерелье,
   // оранжевый клюв, коричневая спина (D), светлое брюхо (a). Раньше утки
   // читались как тёмные комки — теперь силуэт светлый и узнаваемый.
-  duck:{map:["....kkkk.......","....kNNNNk.....","....kwNNNN.....","...kuuNNNNk....",
-    "...kNNNNNNk....",".kkkNNNNNNNDk..",".kDDDaaaaaDDk..",".kDaaaaaaaaak..",
-    "..kkkkkkkkkkk..","....kkkkkkk...."],noOutline:true},
+  duck:{map:["..kk.......",
+    ".kNNk......",
+    "kNKNkkkk.k.",
+    "ukNNaaaakDk",
+    "kkawaaaaDDk",
+    ".kaaaaaaDk.",
+    "..kkDDDDk..",
+    "....kkkk..."],noOutline:true},
   bear:{map:["...kkk......kkk...","..kBBBk....kBBBk..","..kBmBkkkkkkBmBk..",
     "..kkBBBBBBBBBBkk..","..kBBBBBBBBBBBBk..","..kBBwwBBBBwwBBk..","..kBBwKBBBBKwBBk..",
     "..kBBBBmmmmBBBBk..","..kBBBmmmmmmBBBk..","..kBBBmKKKKmBBBk..","...kBBmmmmmmBBk...",
@@ -379,42 +645,55 @@ const SPR = {
     "..knok.knok...","..knokkknok...","...knnnnnok...","...knnooook...",
     "....knooOk....","....knoOOk....","....kOOOOk....","...kOOOOOOk...",
     "..kfkOOOOkfk..",".kffkOOOOkffk.","..fffkkkkfff..","....ffffff...."],noOutline:true},
-  barge:{map:[
-    ".....kkkkkkkkkk.....",
-    "....kIIIIIIIIIIk....",
-    "...kIIIIIIIIIIIIk...",
-    "..kIIIIIIIIIIIIIIk..",
-    "..kIiiiiiiiiiiiiIk..",
-    "..kIrrrrrrrrrrrrIk..",
-    "..kIiiiiiiiiiiiiIk..",
-    "..kIggggggggggggIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIgSSSSSSSSSSgIk..",
-    "..kIggggggggggggIk..",
-    "..kIiiiiiiiiiiiiIk..",
-    "..kIIIIIIIIIIIIIIk..",
-    "..kIIIkkkkkkkkIIIk..",
-    "..kIIIkWWWWWWkIIIk..",
-    "..kIIIkWzzzzWkIIIk..",
-    "..kIIIkWzzzzWkIIIk..",
-    "..kIIIkWWWWWWkIIIk..",
-    "..kIIIkkkkkkkkIIIk..",
-    "..kIIIIIIIIIIIIIIk..",
-    "..kIggggggggggggIk..",
-    "..kkgggggggggggkk...",
-    "...kkkkkkkkkkkkk...."],noOutline:true},
+  barge:{map:["..........kkkkkkk..........",
+    "........kkrrrRRRRkk........",
+    "......kkrrrrrRRRRRRkk......",
+    ".....krrrGGGGjjjjjRRRk.....",
+    "....krrGGGGGGjjjjjjjRRk....",
+    "...krrGGGGGGGjjjjjjjjRRk...",
+    "..krrrGGGGGGgKgjjjjjjRRRk..",
+    "..krrGGGGGGGGjjjjjjjjjRRk..",
+    ".krrGGGGGGGGGjjjjjjjjjjRRk.",
+    "krrGGGGGGGGGGjjjjjjjjjjjRRk",
+    "krrGGGGGGGGGGjjjjjjjjjjjRRk",
+    "krrgggggggggggggggggggggRRk",
+    "krrgddSSSsssssssssSSSddgRRk",
+    "krrgddSSSSsssssssSSSSddgRRk",
+    "krrgdddSSSSSsssSSSSSdddgRRk",
+    "krrgddddSSSSSSSSSSSddddgRRk",
+    "krrgdddddddSSSSSdddddddgRRk",
+    "krrgdddddddddddddddddddgRRk",
+    "krrgdddddddddddddddddddgRRk",
+    "krrgdddddddddddddddddddgRRk",
+    "krrgdddddddddddddddddddgRRk",
+    "krrgdddddddddSdddddddddgRRk",
+    "krrgdddddSSSSSSSSSdddddgRRk",
+    "krrgdddSSSSSSsSSSSSSdddgRRk",
+    "krrgddSSSSSsssssSSSSSddgRRk",
+    "krrgddSSSSsssssssSSSSddgRRk",
+    "krrgddSSSsssssssssSSSddgRRk",
+    "krrgddSSSsssssssssSSSddgRRk",
+    "krrgddSSSSsssssssSSSSddgRRk",
+    "krrgdddSSSSsssssSSSSdddgRRk",
+    "krrgddddSSSSSSSSSSSddddgRRk",
+    "krrgddddddSSSSSSSddddddgRRk",
+    "krrgdddddddddddddddddddgRRk",
+    "krrgdddddddddddddddddddgRRk",
+    "krrgggggggggggggggggggggRRk",
+    "krrGGGGGGGGGGjjjjjjjjjjjRRk",
+    "krrGGGGGGGGGGjjjjjjjjjjjRRk",
+    "krrGGGGwzzzzzzzzzzzWjjjjRRk",
+    "krrGGGGwzzzzzzzzzzzWjjjjRRk",
+    "krrGGGGwwwwwwWWWWWWWjjjjRRk",
+    "krrGGGGwwwwwwWWWWWWWjjjjRRk",
+    "krrGGGGwwwwwwWWWWWWWjjjjRRk",
+    "krrGGGGwwwwwwWWWWWWWjjjjRRk",
+    "krrGGGGwwwwwwWWWWWWWjjjjRRk",
+    "krrGGGGwwwwwwWWWWWWWjjjjRRk",
+    "krrGGGGGGGGGGjjjjjjjjjjjRRk",
+    ".krrrrrrrrrrrRRRRRRRRRRRRk.",
+    ".krrrrrrrrrrrRRRRRRRRRRRRk.",
+    "..kkkkkkkkkkkkkkkkkkkkkkk.."],noOutline:true},
   church:{map:[
     ".........yk.........",".......yyyyy........",".........yk.........",
     ".........yk.........",".......kkkkk........","......kzzzzzk.......",
@@ -425,11 +704,25 @@ const SPR = {
     "..kwwwwwwwwwwwwwwk..","..kwwzzwwwwzzwwwwk..","..kwwzzwwwwzzwwwwk..",
     "..kwwwwwwwwwwwwwwk..","..kwwwwwOOOOwwwwwk..","..kwwwwwOOOOwwwwwk..",
     "..kwwwwwOOOOwwwwwk..","..kkkkkkkkkkkkkkkk.."]},
-  house:{map:[
-    ".......kk.......","......krrk......",".....krrrrk.....","....krrrrrrk....",
-    "...krrrrrrrrk...","..krrrrrrrrrrk..",".krrrrrrrrrrrrk.","kkkkkkkkkkkkkkkk",
-    "knnnnnnnnnnnnnnk","knnzzknnnnkzznnk","knnzzknnnnkzznnk","knnnnnkOOkknnnnk",
-    "knnnnnkOOkknnnnk","kkkkkkkkkkkkkkkk"]},
+  house:{map:[".......kk.......",
+    "......krrk.kk...",
+    ".....krrrrkOk...",
+    "....krrrrrrOk...",
+    "...krrrrrrrrk...",
+    "..krrrrrrrrrrk..",
+    ".krrrrrrrrrrrrk.",
+    "kkkkkkkkkkkkkkkk",
+    "knnnnnnnnnnnnnnk",
+    "knnnnnnnnnnnnnnk",
+    "knnzzknnnnkzznnk",
+    "knnzzknnnnkzznnk",
+    "knnzzknnnnkzznnk",
+    "knnzzknnnnkzznnk",
+    "knnnnnkOOkknnnnk",
+    "knnnnnkOOkknnnnk",
+    "knnnnnkOOkknnnnk",
+    "knnnnnkOOkknnnnk",
+    "kkkkkkkkkkkkkkkk"]},
   car:{map:[
     "..........kkkkkkkk..........",
     ".........kzzzzzzzzk.........",
@@ -561,9 +854,19 @@ const SPR = {
     "kWWWWWWWWkOOOOkWWWWWWWWWWWWk",
     "kWWWWWWWWkOOOOkWWWWWWWWWWWWk",
     "kkkkkkkkkkkkkkkkkkkkkkkkkkkk"]},
-  fish:{map:["..kkk..",".kWWWkk","kWWWWWk",".kWWWkk","..kkk.."],noOutline:true},
-  fire:{map:["....kk....","...kuuk...","..kuyyuk..","..kyyyyk..",".kyyrryyk.",
-    ".kyrrrryk.","kOOkkkkOOk",".kOOOOOOk.","..kkkkkk.."],noOutline:true},
+  fish:{map:["..kkkkkk..k.",
+    ".kjjjGjjkkGk",
+    "kWKWWWWWWGGk",
+    "kWWWWWWWWGGk",
+    ".kwwwwwwkkGk",
+    "..kkkkkk..k."],noOutline:true},
+  fire:{map:["....k....",
+    "...kuk...",
+    "..kuuuk..",
+    ".kppyypk.",
+    ".kppyypk.",
+    "kOOcccOOk",
+    ".kkkkkkk."],noOutline:true},
   // Три кадра пламени одного костра: тот же кострище из камней, разная форма
   // огня. Движок катсцен циклит их через «cycle» — дешёвое мерцание без анимации.
   fire0:{map:["....kk....","...kuuk...","..kuyyuk..","..kyyyyk..",".kyyrryyk.",
@@ -612,13 +915,30 @@ const SPR = {
   // Летящие утки (два кадра маха) для разлёта у берега: светлое брюшко,
   // оранжевый клюв справа. Не чёрные силуэты — чайки-силуэты остались
   // только в катсценах (bird0/bird1).
-  duckfly0:{map:[".....kk..kk.....","....kWWkkWWk....","...keWWkkWWeu...",
-    "...keWWWWWWeu...",".....WWWWWW.....","......k..k......"],noOutline:true},
-  duckfly1:{map:["..................","..kk........kk....","..kWWkkkkkWWk.....",
-    "..keWWWWWWWeu.....","....WWWWWWWW......","......kkkkk......."],noOutline:true},
+  duckfly0:{map:[".k...k...k.",
+    "kek.kuk.kek",
+    ".kekkNkkek.",
+    "..keWWWek..",
+    "...kWWWk...",
+    "....kkk...."],noOutline:true},
+  duckfly1:{map:["......k......",
+    ".....kuk.....",
+    ".kkkkkNkkkkk.",
+    "keeeeWWWeeeek",
+    "keeeeWWWeeeek",
+    ".kkkkkkkkkkk."],noOutline:true},
   // Плывущая ветка: тонкий сук с короткими отростками. Быстрее коряги
   // читается на фоне реки и чуть легче бревна по габаритам.
-  branch:{map:["..k..k...","..OK.Ok..",".kOnkOOk.",".KOk.knk.",".kOnkOk..","..k..k..."],noOutline:true},
+  branch:{map:["..........kFFk...",
+    "..........kFFvk..",
+    "..........kooFFk.",
+    ".........kookFFvk",
+    "..kkkkkkkoooovvk.",
+    ".kFFooooookkkkk..",
+    "koFFokkkookFvk...",
+    ".kkkk...kkFFvk...",
+    "..........kvvk...",
+    "...........kk...."],noOutline:true},
   // Мост: ферма (решётка), настил и опора — актёры сцены «Под мостом».
   // Серо-стальная гамма (g/G), чтобы конструкция читалась издалека: ровные
   // вертикали и наклонные раскосы, тёмный контур. Раньше ферма была бежевой
@@ -710,11 +1030,29 @@ const SPR = {
     "kOOOk......kOOOk","kkkkk......kkkkk"],noOutline:true},
   bush:{map:["...kkkk...","..kvvvvk..",".kvvvvvvk.","kvvvVvvvvk","kvvVvvvvVk",
     ".kvvvvvvk.","..kVVVVk..","...kkkk..."]},
-  tree:{map:["......kk......",".....kvvk.....","....kvvvvk....","...kvvvvvvk...",
-    "..kvvvVvvvvk..",".kvvvvvvvvvvk.","kvvvvVvvvvvvvk",".kvvvvvvvvvvk.",
-    "..kvvvvvvvvk..","...kvvvvvvk...","....kvvvvk....",".....kvvk.....",
-    "......kOk.....","......kOk.....",".....kOOk.....",".....kOOk.....",
-    "....kOOOOk....","....kkkkkk...."],noOutline:true},
+  tree:{map:["......kk..........",
+    "....kkFFkkkkkk....",
+    "...kFFFFFvvvvvk...",
+    "...kFFFFvvvvvvk...",
+    "...kFFFvvvvvvvVk..",
+    "...kFFvvvvVvvVkk..",
+    "..kFFvvvvvvvVVVVk.",
+    ".kFFvvvvvvvVVVVVVk",
+    "kFFvvvVvvvVVVVVVVk",
+    "kFvvvvvvvVVVVVVVVk",
+    "kvvvVvvVVVVVVVVVVk",
+    ".kvvvvVVVVVVVVVVk.",
+    ".kvvvVVVVVVVVVVk..",
+    "..kkkVVccCVVVkk...",
+    ".....kVccCCVk.....",
+    "......kccCCk......",
+    "......kcCCCk......",
+    "......kccCCk......",
+    "......kcccCk......",
+    "......kccCCk......",
+    "......kccCCk......",
+    ".....kcccCCCk.....",
+    "......kkkkkk......"],noOutline:true},
   // Байдарка в профиль: низкий длинный корпус с приподнятыми носом и кормой,
   // тёмный кокпит в середине. Это альтернатива kayak_center (вид сверху):
   // в сценах, где движение боковое — вниз по реке или на прицепе — лодка
@@ -860,16 +1198,18 @@ const SPR = {
   ],noOutline:true},
   // Рюкзак: коричневый мешок (o) с тёмным дном (O), жёлтой пряжкой (Y) и
   // лямкой (k). Герой несёт его к лодке — отдельным актёром, едущим с ним.
-  pack:{map:[
-    "..kkkk..",
-    ".kooooO.",
-    "kookYYok",
-    "koooook.",
-    "kooooooO",
-    "kkoooook",
-    ".kOOOOk.",
-    "..kkkk.."
-  ],noOutline:true},
+  pack:{map:[".kkkkkkkk.",
+    "kZffffffZk",
+    "kZzzzzzzZk",
+    ".kppppppk.",
+    "kpxxuxxxxk",
+    "kpppppxxxk",
+    "kpppppxxxk",
+    "kppxxxxxxk",
+    "kppppppxxk",
+    "kppxxxxxxk",
+    "kpppppxxxk",
+    ".kkkkkkkk."],noOutline:true},
   // Гитара у сидящего у костра: корпус-«восьмёрка» с тёмной декой и резонаторным
   // отверстием, гриф уходит вбок с ладами. Рисуется ПЕРЕД гитаристом отдельным
   // актёром, чтобы он мог качаться вместе с человеком (лодка-то тоже живая).
@@ -945,10 +1285,11 @@ SPR.kayak_side   = { map: swapPalette(SPR.kayak_side.map, { O:"Y" }) };
 // тёплой, силуэт туриста внутри — отдельный спрайт сверху.
 SPR.tent_lit = { map: swapPalette(SPR.tent.map, { K:"A" }), noOutline:true };
 
-// Часть спрайтов рисуется в меньшем масштабе, чтобы не подавлять остальные.
-const SPR_SCALE = { whisky:2, axe:2, medkit:2, slice:2, duck:2, fire:2, snag:3, barge:4,
-                    car:3, train:3, station:3, fire0:2, fire1:2, fire2:2,
-                    duckfly0:2, duckfly1:2 };
+// Увеличение по умолчанию — SCALE (×3) у всех: спрайты с ×2 и ×4 выглядели
+// вклейкой из другой игры (docs/art-rules.md, правило 1). Виски, аптечка,
+// топор, утки, костёр и баржа перерисованы под ×3. Кадры костра мультов
+// (fire0..2) пока ×2 — мульты не трогаем.
+const SPR_SCALE = { fire0:2, fire1:2, fire2:2 };
 function scaleOf(name){ return SPR_SCALE[name] || SCALE; }
 
 function spriteSize(name){
@@ -1425,10 +1766,10 @@ const CUTS = {
       // ТРАВЕ (низ ≥ 320, земля начинается ниже неба) и НИКОГДА на асфальте: два дерева
       // на верхней траве (низ 354/361, выше дороги) и два НИЖЕ дороги на нижней траве
       // (низ 545/570) — там было пусто.
-      { spr:"tree",  keys:[[0,470,354,1,1],[1,-90,354,1,1]] },
-      { spr:"tree",  keys:[[0,700,361,1.2,1],[1,140,361,1.2,1]] },
-      { spr:"tree",  keys:[[0,380,545,1,1],[1,-220,545,1,1]] },
-      { spr:"tree",  keys:[[0,830,570,1.3,1],[1,240,570,1.3,1]] },
+      { spr:"ctree",  keys:[[0,470,354,1,1],[1,-90,354,1,1]] },
+      { spr:"ctree",  keys:[[0,700,361,1.2,1],[1,140,361,1.2,1]] },
+      { spr:"ctree",  keys:[[0,380,545,1,1],[1,-220,545,1,1]] },
+      { spr:"ctree",  keys:[[0,830,570,1.3,1],[1,240,570,1.3,1]] },
       // ВСТРЕЧНЫЕ — ПОРЯДОК ПО ГЛУБИНЕ ПОЛОС (сверху вниз, от дальнего к ближнему):
       // полоса 1 (верхняя) рисуется ПЕРВОЙ и перекрывается всеми нижними; полоса 4
       // (нижняя) рисуется ПОСЛЕДНЕЙ и всегда видна поверх всех. Нумерация сверху:
@@ -1468,9 +1809,9 @@ const CUTS = {
       { spr:"station", keys:[[0,210,320,2,1],[1,210,320,2,1]] },
       // Деревья вокруг вокзала — фон (y<320, ниже перрона, без тени), чтобы не пусто.
       // Стоят ЗА путями, как и вокзал, поезд проходит перед ними.
-      { spr:"tree", keys:[[0,58,300,1,1],[1,58,300,1,1]] },
-      { spr:"tree", keys:[[0,382,302,1.15,1],[1,382,302,1.15,1]] },
-      { spr:"tree", keys:[[0,34,296,0.8,1],[1,34,296,0.8,1]] },
+      { spr:"ctree", keys:[[0,58,300,1,1],[1,58,300,1,1]] },
+      { spr:"ctree", keys:[[0,382,302,1.15,1],[1,382,302,1.15,1]] },
+      { spr:"ctree", keys:[[0,34,296,0.8,1],[1,34,296,0.8,1]] },
       // Пассажиры на перроне (x на 344) ЗА вагонами (порядок: person до train — поезд спереди,
       // толпа позади; пока поезд в кадре — люди за вагонами). В начале (секунда пустоты) поезда
       // нет, пассажиры видны у вокзала. В 0.6 при отправлении ВСЕ садятся и исчезают (al→0).
@@ -1971,11 +2312,15 @@ function inIsland(t, w){
 // и вплывают в остров уже после появления — отсюда и «плывут по траве».
 function pushOutOfIsland(o){
   const sh = forkShape(o.wy);
-  if (!sh || sh.h <= 0.02) return;
+  if (!sh || sh.h <= 0.02){ o.forkSide = 0; return; }
   const d = o.t - sh.c;
   if (Math.abs(d) >= sh.h + 0.04) return;
   const margin = ((o.visHalf || 24) / Math.max(1, widthAt(o.wy)/2)) + 0.03;
-  o.t = sh.c + (d >= 0 ? 1 : -1) * (sh.h + margin);
+  // Рукав выбирается один раз и запоминается: стоя почти посередине острова,
+  // объект раньше от кадра к кадру менял «ближайший» рукав и перелетал.
+  const side = o.forkSide || (d >= 0 ? 1 : -1);
+  o.forkSide = side;
+  o.t = sh.c + side * (sh.h + margin);
   o.t = Math.max(-0.92, Math.min(0.92, o.t));
   if (o.vt !== undefined) o.vt = 0;
 }
@@ -2393,14 +2738,44 @@ function mixHex(a,b,k){
     +Math.round(parseInt(a.slice(5,7),16)+(parseInt(b.slice(5,7),16)-parseInt(a.slice(5,7),16))*k)+")";
 }
 // Детерминированный псевдослучай 0..1 от целого.
-function hsh(n){ n=(n<<13)^n; return (((n*(n*n*15731+789221)+1376312589)>>>0)&0x7fffffff)/0x7fffffff; }
+// Детерминированный шум 0..1 по целому номеру. Умножение — через Math.imul
+// (32-битное целое). Прежняя формула считала n*n*15731 в дробных числах:
+// после 2^53 младшие биты терялись и шум почти всегда был 0 — декор берега
+// пропадал уже через ~30 м от старта дня.
+// Песчаные отмели вдоль берега: время от времени кромка песка расширяется.
+// Мир поделён на участки по SAND_SEG px; примерно в каждом пятом — отмель на
+// одном берегу: куполом по длине участка, до 16–42 px вглубь, с неровным
+// краем. Возвращает ширину отмели (px) за обычной кромкой песка или 0.
+const SAND_SEG = 260;
+function sandBar(wy, side){
+  const seg = Math.floor(wy / SAND_SEG);
+  if (hsh(seg*19 + 3) < 0.78) return 0;
+  if ((hsh(seg*5 + 1) < 0.5 ? -1 : 1) !== side) return 0;
+  const len = 0.45 + 0.4*hsh(seg*7 + 2);               // доля участка под отмелью
+  const u0 = (1 - len) * hsh(seg*11 + 5);
+  const k = ((wy - seg*SAND_SEG) / SAND_SEG - u0) / len;
+  if (k <= 0 || k >= 1) return 0;
+  const peak = 16 + 26*hsh(seg*13 + 7);
+  return Math.max(0, peak * Math.pow(Math.sin(Math.PI*k), 0.6) + 3*Math.sin(wy*0.21 + seg));
+}
+function hsh(n){
+  n = n | 0;
+  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
+  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
+  n ^= n >>> 16;
+  return (n >>> 0) / 4294967296;
+}
 
 function drwBg(){
   // Даль смазывается туманом: чем выше на экране (дальше по реке), тем сильнее
   // трава и вода светлеют к цвету неба. Так возникает мягкий горизонт без рамки,
   // и сцена читается как «плыву вперёд», а не «мотор вверх».
   const FOG_END = 320;
-  for (let y = 0; y < H; y += BAND){
+  // Полосы идут и на DECOR_TAIL px ниже экрана: дерево рисуется от своей
+  // нижней полосы вверх, и без этого запаса крона высокого дерева пропадала
+  // разом, как только низ ствола уходил за нижнюю кромку.
+  const DECOR_TAIL = 72;
+  for (let y = 0; y < H + DECOR_TAIL; y += BAND){
     const wy = worldYOf(y);
     const c  = centerAt(wy);
     const hw = widthAt(wy)/2;
@@ -2421,6 +2796,9 @@ function drwBg(){
     cx.fillStyle = sand;
     cx.fillRect(L - 6, y, 6, BAND);
     cx.fillRect(R, y, 6, BAND);
+    const sbL = sandBar(wy, -1), sbR = sandBar(wy, 1);
+    if (sbL > 0) cx.fillRect(L - 6 - sbL, y, sbL, BAND);
+    if (sbR > 0) cx.fillRect(R + 6, y, sbR, BAND);
 
     cx.fillStyle = water;
     cx.fillRect(L, y, R - L, BAND);
@@ -2460,35 +2838,49 @@ function drwBg(){
     // Береговой декор: кусты, деревья, камыш. Живут на травяных полосах,
     // поэтому с руслом (геймплеем) не пересекаются. Рисуются детерминированно
     // по мировому сантиметру и не шевелятся, когда камера плывёт.
-    // В дали их съедает туман, поэтому там декора нет.
-    if (fy < 0.45 && (wy % 13) < BAND){
+    // Вдали декор выплывает из тумана: прозрачный у fy=0.85 и полностью
+    // видимый к fy=0.45. Раньше он рисовался только ниже fy=0.45 и сразу
+    // целиком — дерево в 63 px «вырастало» на глазах.
+    if (fy < 0.85 && (wy % 13) < BAND){
+      cx.globalAlpha = Math.min(1, (0.85 - fy) / 0.4);
       const vwx = Math.floor(wy/13);
       const s1 = hsh(vwx*7+3), s2 = hsh(vwx*13+9), s3 = hsh(vwx*17+5);
-      const wob = Math.sin(g.frame*0.05 + vwx)*2;
-      const bushl = mixHex("#2c6a2b", s2 > 0.5 ? "#3f8a35" : "#205324", 0.6);
-      if (s1 > 0.62){
-        const bx = L - 10 - Math.floor(s2*20) + wob;
-        cx.fillStyle = bushl;
-        cx.fillRect(bx, y, 9, BAND); cx.fillRect(bx + 2, y - 4, 5, BAND);
-      } else if (s2 > 0.62){
-        const bx = R + 8 + Math.floor(s1*20) - wob;
-        cx.fillStyle = bushl;
-        cx.fillRect(bx, y, 9, BAND); cx.fillRect(bx + 2, y - 4, 5, BAND);
+      // Декор — спрайты (ёлка, берёза, кустик), а не прямоугольники: палка с
+      // перекладиной читалась как столб или вешалка. Ставятся целиком на суше:
+      // центр отнесён от кромки воды на полширины спрайта плюс зазор. Не
+      // качаются — раньше их сдвигало ±2 px каждый кадр.
+      // Положение — от мировой точки слота (vwx·13), а не от полосы рендера:
+      // иначе при плавной камере деревья дёргались ступеньками по 4 px и на
+      // изгибе сдвигались вбок на пиксель.
+      const swy = vwx * 13;
+      const foot = screenYOf(swy);                    // низ спрайта
+      const sc = centerAt(swy), shw = widthAt(swy)/2;
+      const edgeOf = side => sc + side*shw;
+      // Место занято жителем берега (лагерь, рыбак, медведь) — декор не ставим,
+      // иначе рыбак стоит «в» берёзе, а палатка на ёлке.
+      // Пляж длинный (отмель до 158 px, полотенца по 72 px) — у него зона шире.
+      const busy = side => g.bev.some(e => e.side === side && Math.abs(e.wy - swy) < (e.type === "beach" ? 110 : 70));
+      const place = (name, side, gap) => {
+        if (busy(side)) return;
+        if (sandBar(swy, side) > 1) return;            // на песчаной отмели не растёт
+        const sz = spriteSize(name);
+        drawSprite(name, edgeOf(side) + side*(sz.w/2 + gap), foot - sz.h/2);
+      };
+      // Шаг: кусты не чаще 26 px, деревья не чаще 39 px по течению. При шаге
+      // 13 px высокие ёлки налезали друг на друга полосатым столбом.
+      if (vwx % 2 === 0){
+        if (s1 > 0.62) place("sbush", -1, 3 + Math.floor(s2*20));
+        else if (s2 > 0.62) place("sbush", 1, 3 + Math.floor(s1*20));
       }
-      if (s3 > 0.72){
+      if (vwx % 3 === 0 && s3 > 0.55){
         const side = s1 > 0.5 ? 1 : -1;
-        const tx = (side > 0 ? R : L) + side*(12 + Math.floor(s2*26)) + wob;
-        const th = 16 + Math.floor(s3*12);
-        cx.fillStyle = "#33200f";
-        cx.fillRect(tx - 1, y - th + 4, 3, th);
-        cx.fillStyle = mixHex("#2c6a2b", "#245c27", 0.5);
-        cx.fillRect(tx - 6, y - th, 13, 6);
-        cx.fillRect(tx - 3, y - th - 4, 7, 5);
+        place(s2 > 0.7 ? "sbirch" : "sfir", side, 4 + Math.floor(s2*22));
       }
       if (s1 > 0.30 && s1 < 0.44 && (wy % 22) < BAND){
         cx.fillStyle = "#4d6b35";
         cx.fillRect(L - 4 + (s2 > 0.5 ? 1 : 0), y - 6, 1, 8);
       }
+      cx.globalAlpha = 1;
     }
   }
 }
@@ -2684,36 +3076,31 @@ function drwBev(e){
   if (!bankVisible(e.side, edg)) return;
   // Отступ от кромки под ширину спрайта/группы: гитара (дуэт) 24px, костёр 16,
   // палатка (78px) 44, одиночный спрайт — половина ширины + запас.
-  const M = e.type === "guitar" ? 24 : e.type === "fire" ? 16 : e.type === "camp" ? 44 : e.type === "beach" ? 20 : spriteSize(e.type).w/2 + 3;
+  const M = e.type === "guitar" ? 24 : e.type === "fire" ? 22 : e.type === "camp" ? 44 : e.type === "beach" ? 20 : spriteSize(e.type).w/2 + 3;
   const bx = bankAnchor(edg, e.side, edg + e.side*e.off, M);
 
   // Компания у костра: двое у огня — СИДЯЩИЙ гитарист и СТОЯЩИЙ музыкант.
   // Гитарист и певец сидят/стоят С ВНУТРЕННЕЙ стороны костра (вглубь берега),
   // чтобы плечо никого не свисало над водой.
+  // Компания выстроена ВДОЛЬ берега (гитарист — костёр — слушатель): поперёк
+  // она была шире и на узком берегу Волги её срезал край экрана. Гитарист —
+  // тот же спрайт, что в ночном мульте, с кадром перебора струн. Гитара больше
+  // не прямоугольники, ноты — пиксельный спрайт, а не белые кляксы.
   if (e.type === "guitar"){
+    const strum = Math.floor((g.frame + ph*40) / 12) % 2 ? "sitter_guitar_b" : "sitter_guitar";
+    drawSprite(strum, bx, by - 24 + Math.sin(g.frame*0.045 + ph)*1.2);
     const flick = 0.85 + Math.sin(g.frame*0.35 + ph)*0.12;
-    cx.save(); cx.translate(bx, by + 8); cx.scale(1, flick); cx.translate(-bx, -(by + 8));
-    drawSprite("fire", bx, by + 8);
+    cx.save(); cx.translate(bx, by + 18); cx.scale(1, flick); cx.translate(-bx, -(by + 18));
+    drawSprite("fire", bx, by + 12);
     cx.restore();
-    // сидящий гитарист чуть впереди костра (вглубь берега)
-    const gy = by + 6 + Math.sin(g.frame*0.045 + ph)*1.2;
-    drawSprite("sitter", bx + e.side*4, gy);
-    cx.fillStyle = PAL.o;
-    cx.fillRect(bx + 4, gy - 16, 16, 10);
-    cx.fillRect(bx + 18, gy - 14, 12, 3);
-    cx.fillStyle = PAL.O;
-    cx.fillRect(bx + 8, gy - 13, 6, 4);
-    // СТОЯЩИЙ музыкант — на шаг вглубь берега.
-    drawSprite("person", bx + e.side*22, by + 6, 1);
-    // ноты над компанией
+    drawSprite("sitter", bx, by + 44 + Math.sin(g.frame*0.05 + ph + 2)*1.2);
+    // Ноты поднимаются от гитары и уходят ВГЛУБЬ берега — не над водой.
     for (let i = 0; i < 3; i++){
       const t = (g.frame*0.8 + i*44 + ph*25) % 150;
       if (t > 120) continue;
-      const a = (1 - t/120).toFixed(2);
-      cx.fillStyle = "rgba(255,255,255," + a + ")";
-      const nx = bx - 12 + Math.sin(t*0.07 + i)*14, ny = by - 34 - t*0.5;
-      cx.fillRect(nx, ny, 3, 8); cx.fillRect(nx + 3, ny, 5, 3);
-      cx.fillRect(nx - 3, ny + 7, 6, 4);
+      cx.globalAlpha = 1 - t/120;
+      drawSprite("note", bx + e.side*(6 + Math.abs(Math.sin(t*0.07 + i))*12), by - 50 - t*0.5);
+      cx.globalAlpha = 1;
     }
     return;
   }
@@ -2732,8 +3119,9 @@ function drwBev(e){
       cx.fillStyle = "rgba(255," + (150 + i*30) + ",60," + (1 - t/60).toFixed(2) + ")";
       cx.fillRect(bx - 6 + Math.sin(t*0.2 + i)*7, by - 12 - t*0.8, 3, 3);
     }
-    // турист сидит с той стороны костра, что ближе к берегу
-    drawSprite("sitter", bx + e.side*24, by + 4 + Math.sin(g.frame*0.04 + ph)*1.2);
+    // Турист сидит у костра ВДОЛЬ берега (под огнём), а не вглубь суши: на
+    // узком берегу вглубь — это за краем экрана, его срезало.
+    drawSprite("sitter", bx, by + 30 + Math.sin(g.frame*0.04 + ph)*1.2);
     return;
   }
 
@@ -2744,7 +3132,8 @@ function drwBev(e){
       const k = cyc/300;
       const fromX = bx + e.side*70;
       drawSprite("person", fromX + (bx - fromX)*k - 12, by + 4, 0);
-      drawSprite("person", fromX + (bx - fromX)*k + 12, by + 4, 1);
+      // Вторая в паре — девушка (длинные волосы, сарафан; через раз блондинка).
+      drawSprite("girl", fromX + (bx - fromX)*k + 12, by + 4, Math.floor(ph*3) % 2);
       drawSprite("tent", bx, by);
     } else if (cyc < 360){                     // заходят внутрь
       drawSprite("tent", bx, by);
@@ -2786,8 +3175,14 @@ function drwBev(e){
     const t = g.frame;
     const ph = e.phase || 1.3;
     const variant = e.variant == null ? 3 : ((e.variant % 4) + 4) % 4;
-    const span = variant === 0 ? 72 : variant === 2 ? 158 : 112;
-    const rr = (x0, x1, y, h, c) => { cx.fillStyle = c; cx.fillRect(Math.min(x0,x1), y, Math.abs(x1-x0), h); };
+    // Длина отмели — под состав, чтобы полотенца и зонтик лежали на песке
+    // целиком, а не на траве (было 72/112/158 — короче полотенец).
+    const span = [132, 180, 210, 172][variant];
+    // Три вида песчаного берега: ровная полоса, бухточка (шире посередине),
+    // широкий пляж с короткими пологими концами. Глубина песка — не меньше
+    // того, насколько полотенце отходит от воды (39 px) с запасом.
+    const SHAPES = [{ base: 58, taper: 24, bulge: 0 }, { base: 50, taper: 32, bulge: 20 }, { base: 64, taper: 18, bulge: -6 }];
+    const shp = SHAPES[((e.shape != null ? e.shape : Math.floor(ph*5)) % 3 + 3) % 3];
 
     // Вся геометрия отмели (ширина, волнистость краёв, сужение концов) считается
     // в МИРОВЫХ координатах по e.wy и проецируется на холст через screenYOf.
@@ -2796,8 +3191,9 @@ function drwBev(e){
     const wC = e.wy - 10;                               // центр отмели вдоль кромки (мир)
     const wTop = wC + span/2, wBot = wC - span/2;       // границы отмели (длина зависит от варианта)
     const depth = yw => {
-      const tp = Math.max(0, Math.min(1, (yw - wBot)/26, (wTop - yw)/26));
-      return tp * (34 + 7*Math.sin(yw*0.10 + ph*2) + 5*Math.sin(yw*0.06 + ph*3));
+      const tp = Math.max(0, Math.min(1, (yw - wBot)/shp.taper, (wTop - yw)/shp.taper));
+      const u = (yw - wBot)/span;
+      return tp * (shp.base + shp.bulge*Math.sin(Math.PI*u) + 5*Math.sin(yw*0.10 + ph*2) + 3*Math.sin(yw*0.06 + ph*3));
     };
     const edgeX = yw => edg + dir*(3 + 2*Math.sin(yw*0.13 + ph*4));          // у воды
     const wetX  = yw => edg + dir*(-5 + 2*Math.sin(yw*0.13 + ph*4 + 0.4));   // мокрый песок
@@ -2812,12 +3208,20 @@ function drwBev(e){
 
     // Тело песка: градиент от жёлто-зелёного на стыке с травой (вглубь берега)
     // к сухому и мокрому песку у воды. Сведённые концы — квадратных углов нет.
-    const grad = cx.createLinearGradient(edg + dir*(-46), 0, edg + dir*4, 0);
+    const grad = cx.createLinearGradient(edg + dir*(-(shp.base + Math.max(0, shp.bulge))), 0, edg + dir*4, 0);
     grad.addColorStop(0, "#9fb46f");
     grad.addColorStop(0.55, "#d2b674");
     grad.addColorStop(1, "#c8a860");
     band(edgeX, grassX, grad);
     band(edgeX, wetX, "#c8a860");        // мокрая кромка у воды
+
+    // Галька на песке — детерминированно по миру, под отдыхающими.
+    cx.fillStyle = "#a98d52";
+    for (let i = 0; i < 9; i++){
+      const yw = wBot + shp.taper + hsh(Math.floor(e.wy)*7 + i)*(span - 2*shp.taper);
+      const dd = 8 + hsh(Math.floor(e.wy)*11 + i)*Math.max(0, depth(yw) - 16);
+      cx.fillRect(Math.round(edg - dir*dd), Math.round(screenYOf(yw)), 2, 2);
+    }
 
     // Стык с травой: тёмно-зелёные «пучки», вклинивающиеся в песок.
     for (let i = 0; i < 6; i++){
@@ -2836,99 +3240,39 @@ function drwBev(e){
       cx.fillRect(wetX(yw) + dir*9, screenYOf(yw), 4, 2);
     }
 
-    // КЛАССИЧЕСКИЙ пляж (вариант 3, как на основном сайте): полотенца, зонтик,
-    // отдыхающий и ДВОЕ ДЕТЕЙ В ВОДЕ по грудь — один машет рукой с брызгами,
-    // низ каждого скрыт полупрозрачной водой.
+    // Отдыхающие — пиксельные спрайты вида сверху (docs/art-rules.md). Раньше
+    // это были векторные фигурки поперёк берега, мелкие и непонятные. Теперь
+    // лежат ВДОЛЬ реки, крупно: длина тела не упирается в ширину берега.
+    // Центр отмели на экране — by + 10 (wC = e.wy − 10).
+    const sy0 = by + 10;
+    const SUN_OFF = 6 + spriteSize("sunbather").w/2;   // край полотенца в 6 px от воды
+    const onSand = (name, dy, v, off) => drawSprite(name, edg - dir*(off == null ? SUN_OFF : off), sy0 + dy, v);
+    const parasol = dy => {
+      drawShadow(edg - dir*(SUN_OFF + 3), sy0 + dy + 20, 34);   // зонтик приподнят: тень ниже
+      onSand("umbrella", dy);
+    };
+
+    // КЛАССИЧЕСКИЙ пляж (вариант 3): пустое полотенце, зонтик и ДВОЕ ДЕТЕЙ
+    // В ВОДЕ — головы и плечи над водой, по очереди машут руками.
     if (variant === 3){
-      const TOWELS = ["#ff5252", "#4fc3f7", "#66bb6a", "#ab47bc"];
-      for (let i = 0; i < 3; i++){
-        const ty = by + 16 - i*18;
-        rr(edg + dir*(-14), edg + dir*(-30), ty, 9, TOWELS[i % TOWELS.length]);
-        rr(edg + dir*(-17), edg + dir*(-27), ty, 3, "rgba(0,0,0,0.25)");
-      }
-      const ux = edg + dir*(-34);
-      cx.fillStyle = "#8f5d1e";
-      cx.fillRect(ux - 1, by - 47, 2, 12);
-      cx.fillStyle = "#4fc3f7";
-      cx.beginPath(); cx.arc(ux, by - 45, 10, Math.PI, 0); cx.fill();
-      drawSprite("person", edg + dir*(-24), by - 34, 0);
-      // Двое детей В ВОДЕ по грудь, без одежды: виден верх (голова, плечи,
-      // машущая рука), низ скрыт водой — «наполовину видны».
-      const SKIN = "#e8b07c";
+      onSand("towel", 20, 1);
+      parasol(-36);
       for (let i = 0; i < 2; i++){
-        const sy = by + 4 - i*12;
-        const bob = Math.sin(t*0.09 + ph + i*2.1)*2.5;
-        const sx = edg + dir*(16 + i*7);
-        const s = sy + bob;
-        cx.fillStyle = SKIN;
-        cx.beginPath(); cx.arc(sx, s, 6.5, 0, Math.PI); cx.fill();
-        cx.beginPath(); cx.arc(sx - 5.5, s - 1, 2.6, Math.PI*0.4, Math.PI*1.6); cx.fill();
-        cx.beginPath(); cx.arc(sx + 5.5, s - 1, 2.6, Math.PI*0.4, Math.PI*1.6); cx.fill();
-        cx.fillStyle = SKIN;
-        cx.beginPath(); cx.arc(sx, s - 9, 4.5, 0, 6.283); cx.fill();
-        cx.fillStyle = "#4a2e17";
-        cx.beginPath(); cx.arc(sx, s - 10, 4.5, Math.PI, 0); cx.fill();
-        const ww = (t*1.3 + ph*61 + i*23) % 46;
-        const hand = ww < 20;
-        cx.strokeStyle = SKIN; cx.lineWidth = 2.4; cx.lineCap = "round";
-        cx.beginPath();
-        if (hand){
-          cx.moveTo(sx + 5.5, s - 2);
-          cx.quadraticCurveTo(sx + 9.5, s - 7, sx + 10.5, s - 12);
-        } else {
-          cx.moveTo(sx + 5.5, s - 2);
-          cx.quadraticCurveTo(sx + 9.5, s + 2, sx + 8.5, s + 3);
-        }
-        cx.stroke();
-        cx.fillStyle = "rgba(21,101,192,0.5)";
-        cx.fillRect(sx - 12, s + 1, 24, 8);
-        cx.fillStyle = "rgba(255,255,255,0.55)";
-        cx.fillRect(sx - 8, s - 1, 5, 2);
-        if (hand){
-          const a = (1 - ww/20).toFixed(2);
-          for (let j = 0; j < 3; j++){
-            cx.fillStyle = "rgba(255,255,255," + a + ")";
-            cx.fillRect(sx + 8 - j*3 + Math.sin(ww*0.7 + j)*4, s - 9 - j*3, 2, 2);
-          }
-        }
+        const bob = Math.sin(t*0.09 + ph + i*2.1)*2;
+        const waving = ((t*1.3 + ph*61 + i*23) % 46) < 20;
+        drawSprite(waving ? "swimmer1" : "swimmer0", edg + dir*(20 + i*16), sy0 - 6 - i*22 + bob);
       }
       return;
     }
 
-    // Коврики с ЛЕЖАЩИМИ загорающими (варианты 0-2): КРУПНЫЕ, в полный рост
-    // человека на песке — лежат лицом вниз, головой вглубь берега, ногами
-    // к воде. Силуэт: загорелая спина, руки вдоль тела, разведённые ноги,
-    // макушка волос; без одежды и деталей.
-    const MATS = ["#ff5252", "#4fc3f7"];
-    const SUN = "#e8b07c", SUN_D = "#c98d5f";
-    const HAIR = ["#4a2e17", "#8a5a2b"];
-    const rows = variant === 0 ? [8] : variant === 2 ? [-18, 30] : [-12, 26];
-    const sunbather = (sx, sy, dir, hi) => {
-      cx.fillStyle = SUN_D;                        // загорелая спина (крупно)
-      cx.beginPath(); cx.ellipse(sx, sy, 14, 4.6, 0, 0, 6.283); cx.fill();
-      cx.fillStyle = SUN;                          // руки вдоль тела, ноги к воде
-      cx.fillRect(sx + dir*7, sy - 4.2, 7, 3);
-      cx.fillRect(sx - dir*7, sy - 4.2, 7, 3);
-      cx.fillRect(sx + dir*15, sy - 3, 10, 3.8);
-      cx.fillRect(sx + dir*15, sy + 1.8, 10, 3.2);
-      cx.fillStyle = HAIR[hi];                     // макушка волос у ИНЛАНД-конца
-      cx.beginPath(); cx.arc(sx - dir*11, sy - 4.8, 5.2, Math.PI*0.05, Math.PI*0.95); cx.fill();
-    };
-    rows.forEach((ry, i) => {
-      const y = by + ry;
-      rr(edg + dir*(-52), edg + dir*(-8), y, 12, MATS[i % 2]);
-      rr(edg + dir*(-44), edg + dir*(-10), y + 4, 4, "rgba(0,0,0,0.25)");
-      const bob = Math.sin(t*0.07 + ph + i*2.4)*1.5;
-      sunbather(edg + dir*(-28), y + 6 + bob, dir, i % 2);
-    });
-    // Зонтик — только у среднего варианта.
-    if (variant === 1){
-      const ux = edg + dir*(-46);
-      cx.fillStyle = "#8f5d1e";
-      cx.fillRect(ux - 1, by - 55, 2, 16);
-      cx.fillStyle = "#4fc3f7";
-      cx.beginPath(); cx.arc(ux, by - 52, 12, Math.PI, 0); cx.fill();
-    }
+    // Загорающие на полотенцах (варианты 0–2): короткая отмель — один,
+    // средняя — один под зонтиком, длинная — двое.
+    // Кто загорает — парень или девушка (лиф и длинные волосы) — решает шум
+    // по месту пляжа: детерминированно, не мигает от кадра к кадру.
+    const sun = (dy, v, i) => onSand(hsh(Math.floor(e.wy)*3 + i) > 0.5 ? "sunbather_f" : "sunbather", dy, v);
+    if (variant === 0) sun(0, 0, 0);
+    else if (variant === 1){ parasol(-40); sun(18, 1, 0); }
+    else { sun(-38, 0, 0); sun(38, 1, 1); }
     return;
   }
 
@@ -3678,16 +4022,20 @@ function obHalfPx(ty,size){
 // у мели радиус столкновения втрое меньше картинки.
 function separate(o){
   const hw = widthAt(o.wy)/2, lim = 0.88;
+  // Не больше 1,5 px за вызов: раньше объект выдёргивало за раз на всю
+  // глубину перекрытия (до ~50 px, 4 прохода за кадр) — бревно «прыгало».
+  const STEP = 1.5 / hw;
   for (const o2 of g.obs.concat(g.bns)){
     if (o2 === o) continue;
-    if (Math.abs(o2.wy - o.wy) > 75) continue;
+    // Соседи — по настоящей длине объектов (баржа 147 px), а не в ±75 px.
+    if (Math.abs(o2.wy - o.wy) > (o.visHalfY || 20) + (o2.visHalfY || 20)) continue;
     const need = ((o2.visHalf || o2.halfPx || 20) + (o.visHalf || 32)) * 0.85;
     const dx = (o.t - o2.t) * hw;
     if (Math.abs(dx) >= need) continue;
     // Двигаем того, кто подвижен. Если оба подвижны — расходятся оба.
     const mobile2 = (o2.type === "log" || o2.type === "kayaker");
     const dir = dx >= 0 ? 1 : -1;
-    const push = (need - Math.abs(dx)) / hw;
+    const push = Math.min(STEP, (need - Math.abs(dx)) / hw);
     if (mobile2){
       o.t  += push/2*dir;  o.vt  = 0;
       o2.t -= push/2*dir;  o2.vt = 0;
@@ -3710,6 +4058,10 @@ function separate(o){
 function spaceFree(t, wy, visHalf){
   const hw = widthAt(wy)/2;
   for (const o of g.obs){
+    // Фарватер баржи: пока она на экране, она проходит вперёд ~600 px — всё,
+    // что появится на её полосе в этом отрезке, она бы протаранила.
+    if (o.type === "barge" && wy > o.wy - (o.visHalfY || 73) && wy - o.wy < 620 &&
+        Math.abs(o.t - t)*hw < (o.visHalf || 40) + visHalf + 8) return false;
     if (Math.abs(o.wy - wy) > 130) continue;
     if (Math.abs(o.t - t)*hw < (o.visHalf || 24) + visHalf + 14) return false;
   }
@@ -3774,7 +4126,7 @@ function spOb(){
   // налезают — проще не выпускать второго вплотную к первому.
   if(ty=="kayaker"&&g.obs.some(o=>o.type=="kayaker"&&Math.abs(o.wy-wy)<300))return;
   g.obs.push({t,wy,type:ty,size:sz,halfPx,sprite,vt:0,
-              visHalf,
+              visHalf, visHalfY:spriteSize(visName).h/2,
               variant:ty=="kayaker"?Math.floor(Math.random()*3):undefined,
               aggro:ty=="kayaker"&&Math.random()<level().aggro, swingT:-1});
 }
@@ -3795,7 +4147,7 @@ function spBn(){
     if(spaceFree(cand,wy,bVis)){bt=cand;break;}
   }
   if(bt===null)return;
-  g.bns.push({t:bt,wy,type:ty,visHalf:bVis});
+  g.bns.push({t:bt,wy,type:ty,visHalf:bVis,visHalfY:spriteSize(BN_SPRITE[ty]||"bread").h/2});
 }
 // Палаточный городок у финиша: несколько палаток, костёр и люди
 // на том берегу, к которому причаливаем.
@@ -3853,7 +4205,8 @@ function spBev(){
               off:26+Math.random()*38,
               phase:Math.random()*6.28,
               mode:Math.random()<0.6?"swim":"sit",
-              variant:ty==="beach"?Math.floor(Math.random()*4):0});
+              variant:ty==="beach"?Math.floor(Math.random()*4):0,
+              shape:Math.floor(Math.random()*3)});
   g.ned=g.dist+22+Math.random()*38;
 }
 function spPt(x,y,cl,c){
@@ -4128,11 +4481,13 @@ const DEBUG_SCENES = {
   camp: { wy: null },
 };
 function teleportTo(w){
-  // Ставим камеру так, чтобы точка w была по центру экрана по вертикали:
-  // на экране виден мир [scroll, scroll+H] => screenYOf(w)=PY+scroll-w=H/2.
+  // w — точка МИРА в пикселях. Ставим камеру так, чтобы она была по центру
+  // экрана по вертикали: screenYOf(w)=PY+scroll-w=H/2. Дистанция — в метрах
+  // (1 м = PX_PER_M px). Раньше сюда писали g.dist = w, смешивая метры с
+  // пикселями: ?at=, ?scene=finish и ?scene=camp показывали не то место.
   g.scroll = Math.max(0, w - H/2);
   g.pwy = w;
-  g.dist = w;
+  g.dist = w / PX_PER_M;
   ensureSegments(g.scroll + H*2);
   // tapeWy иlandSide НЕ трогаем — их могут выставить сцены (finish/camp).
 }
@@ -4143,14 +4498,17 @@ function sceneAt(s){
   g.tapeWy = -1;               // по умолчанию без ленты; сцены finish/camp ставят свою
   const L = level();
   if (s === "finish"){
-    // Лента на уровне дистанции: коридор сужения уже идёт, палатки вперёд.
-    const tape = Math.max(60, L.len - 30);
+    // Лента там же, где в игре: за 150 px до конца дистанции (в пикселях
+    // мира). Раньше стояло L.len − 30 — метры вместо пикселей, лента
+    // оказывалась на 31-м метре, а камера упиралась в 0.
+    const tape = L.len * PX_PER_M - 150;
     g.tapeWy = tape; g.landSide = 1;
     spawnCamp(tape);
-    teleportTo(Math.max(0, tape - H/2 - 60));
+    // Лента в верхней трети кадра (y≈150), лагерь под ней виден целиком.
+    teleportTo(Math.max(0, tape - 120));
   } else if (s === "camp"){
     // Центр лагеря по центру экрана.
-    const tape = Math.max(80, L.len - 30);
+    const tape = L.len * PX_PER_M - 150;
     g.tapeWy = tape; g.landSide = 1;
     spawnCamp(tape);
     teleportTo(Math.max(0, tape - 150));
@@ -4197,9 +4555,9 @@ function applyDebugScene(){
   if (v != null) DEBUG_SCENES.beach.variant = parseInt(String(v), 10) || 0;
   if (scene && DEBUG_SCENES[scene]) sceneAt(scene);
   else if (at != null && at !== ""){
-    const w = Math.max(0, parseFloat(String(at)) || 0);
+    const m = Math.max(0, parseFloat(String(at)) || 0);   // ?at= — в метрах
     g.bev = [];
-    teleportTo(w);
+    teleportTo(m * PX_PER_M);
     sceneAt(null);
   }
 }
@@ -4292,6 +4650,98 @@ function updArrive(){
   if (g.arriveT <= 0) finishLevel();
 }
 
+// Скорость плывущих по течению (доля g.sp·sm): кто кого догоняет. Камни,
+// мели, водоросли, коряги и бонусы стоят (0).
+const DRIFT_SPEED = { log:0.22, branch:0.30, barge:0.30, kayaker:0.40 };
+function speedOf(o){ return DRIFT_SPEED[o.type] || 0; }
+// «Давление» спереди: объекты и бонусы, которых o ДОГОНЯЕТ (они медленнее и
+// впереди по течению — больший wy) в пределах look px и которые перекрывают
+// его по ширине. >0 — уходить к t+, <0 — к t−. Раньше бревно смотрело назад
+// (знак dy перепутан), въезжало в камень впереди и его выдёргивало рывком.
+function aheadPush(o, look){
+  const hw = widthAt(o.wy)/2, half = o.visHalf || 30, v = speedOf(o);
+  // Отворачиваем от БЛИЖАЙШЕГО препятствия впереди. Сумма «давлений» не
+  // годится: камень чуть справа и батон чуть слева гасили друг друга, и
+  // баржа шла прямо между ними — сквозь оба.
+  let push = 0, best = Infinity;
+  for (const o2 of g.obs.concat(g.bns)){
+    if (o2 === o || speedOf(o2) >= v) continue;
+    const dy = o2.wy - o.wy;
+    if (dy <= -((o.visHalfY || 20) + (o2.visHalfY || 20)) || dy > look) continue;
+    const dx = (o.t - o2.t) * hw;
+    if (Math.abs(dx) < (o2.visHalf || 24) + half + 6 && dy < best){ best = dy; push = dx >= 0 ? 1 : -1; }
+  }
+  return push;
+}
+
+// Баржа идёт своим ходом (быстрее брёвен, медленнее лодок) и медленно
+// отворачивает от того, что впереди на её полосе. Раньше шла по прямой
+// сквозь камни, мели и бонусы.
+function bargeStep(o, flow){
+  o.wy += flow;
+  const hw = widthAt(o.wy)/2;
+  o.vt = (o.vt || 0) * 0.9 + aheadPush(o, 260) * 0.0006;
+  o.vt = Math.max(-0.006, Math.min(0.006, o.vt));
+  o.t += o.vt;
+  const lim = Math.max(0, 1 - (o.visHalf || 40)/hw - 0.03);
+  o.t = Math.max(-lim, Math.min(lim, o.t));
+}
+
+// Бревно на воде. flow — скорость течения для бревна, px за кадр.
+// • На изгибах его, как и байдарку, сносит к внешнему берегу (curvBend).
+// • Течение обносит его вокруг камней заранее, а не впечатывает в них.
+// • У берега оно не заезжает на песок, а упирается краем в кромку воды.
+// • Удар тормозит по углу касания: o.vk — доля скорости течения. В лоб
+//   (бревно летит на берег) почти останавливает, вскользь — слегка. Пока
+//   бревно трётся о песок, оно продолжает терять ход; оторвавшись,
+//   разгоняется течением обратно.
+const LOG_DRIFT = DRIFT * 0.35;   // бревно без гребца, но тяжелее и сидит глубже
+const LOG_HIT = 0.85;             // доля скорости, которую съедает удар в лоб
+const LOG_RUB = 0.985;            // трение о песок за кадр
+const LOG_RECOVER = 0.02;         // как быстро течение разгоняет обратно
+// За сколько метров до конца выставлять ленту и лагерь прибытия. Лента на
+// экране: PY − (осталось·25 − 150); дальний актёр прибытия на 260 px выше
+// ленты и сам ~70 px ростом. 46 м — все они ещё над верхней кромкой.
+const FIN_SPAWN_M = 46;
+// Пикселей мира в метре дистанции: за кадр камера уходит на step px,
+// а дистанция растёт на step·0.04 м.
+const PX_PER_M = 25;
+function logStep(o, flow){
+  if (o.vk == null) o.vk = 1;
+  o.wy += flow * o.vk;
+  o.t += Math.sin(o.wy*0.02) * 0.0006;           // лёгкое рыскание на воде
+  const hw = widthAt(o.wy) / 2, half = o.visHalf || 39;
+  const push = aheadPush(o, 170);                 // обходит то, что догоняет
+  o.vt = (o.vt || 0) * 0.92 + push * 0.0009 - curvBend(o.wy) * LOG_DRIFT;
+  o.vt = Math.max(-0.03, Math.min(0.03, o.vt));
+  o.t += o.vt;
+
+  // Предел: край спрайта ровно на кромке воды.
+  const lim = Math.max(0, 1 - half / hw);
+  const side = o.t >= 0 ? 1 : -1;
+  if (Math.abs(o.t) >= lim - 0.004){
+    const toBank = Math.max(0, side * o.vt * hw);          // px/кадр к берегу
+    const along = Math.max(0.05, flow * o.vk);            // px/кадр по течению
+    const sinA = toBank / Math.hypot(toBank, along);      // 0 — вскользь, 1 — в лоб
+    if (!o.onBank || toBank > 0.3){
+      o.vk *= 1 - LOG_HIT * sinA;
+      // Сильный удар выбивает песок из-под бревна.
+      if (sinA > 0.35 && g.pts){
+        const y = screenYOf(o.wy);
+        if (y > -20 && y < H + 20)
+          spPt(centerAt(o.wy) + side * hw, y, "#d2b674", 4 + Math.round(sinA * 6));
+      }
+    }
+    o.vk *= LOG_RUB;
+    o.t = side * lim;
+    if (side * o.vt > 0) o.vt = 0;                        // в берег дальше не идёт
+    o.onBank = true;
+  } else {
+    o.onBank = false;
+    o.vk += (1 - o.vk) * LOG_RECOVER;
+  }
+}
+
 function upd(){
   if(g.s=="cutscene"){ updCut(); return; }
   if(g.s=="arrive"){ updArrive(); return; }
@@ -4327,10 +4777,15 @@ function upd(){
     setMusic(nearGuitar ? "camp" : "river");
   }
 
-  // Финишная лента выставляется за экран до конца дистанции, дальше она
-  // сама наплывает на игрока вместе с течением.
-  if (g.tapeWy < 0 && g.dist >= level().len - 30){
-    g.tapeWy = g.scroll + H - 120;
+  // Финишная лента выставляется выше верхней кромки экрана, дальше она
+  // сама наплывает на игрока вместе с течением. Раньше стояло
+  // tapeWy = scroll + H − 120 — это экранная высота 30 px, то есть В КАДРЕ:
+  // лента и весь лагерь прибытия возникали разом. Теперь ставим за
+  // FIN_SPAWN_M метров до конца, когда самый дальний от ленты актёр прибытия
+  // (до 300 px за лентой) ещё над экраном. Мировое место ленты прежнее —
+  // за 150 px до конца дистанции (1 м = 25 px).
+  if (g.tapeWy < 0 && g.dist >= level().len - FIN_SPAWN_M){
+    g.tapeWy = g.scroll + (level().len - g.dist) * PX_PER_M - 150;
     g.landSide = 1;                       // к какому берегу причалим
     spawnCamp(g.tapeWy);
   }
@@ -4400,32 +4855,15 @@ function upd(){
     // Бревно плывёт по течению, но медленнее байдарок — мы его нагоняем.
     // Камни и мель неподвижны, поэтому их wy не меняется вовсе.
     // Баржа идёт своим ходом, медленнее течения — мы её нагоняем.
-    if(o.type=="barge") o.wy+=g.sp*sm*0.30;
+    if(o.type=="barge") bargeStep(o, g.sp*sm*DRIFT_SPEED.barge);
     if(o.type=="branch"){
-      o.wy+=g.sp*sm*0.30;                      // ветка легче — течение тащит быстрее
+      o.wy+=g.sp*sm*DRIFT_SPEED.branch;        // ветка легче — течение тащит быстрее
       o.t+=Math.sin(o.wy*0.028)*0.0009;        // рыскание заметнее, чем у бревна
+      // Как и бревно, течение обносит её вокруг того, что впереди.
+      o.vt=(o.vt||0)*0.9+aheadPush(o,140)*0.0008;
+      o.t+=o.vt;
     }
-    if(o.type=="log"){
-      o.wy+=g.sp*sm*0.22;
-      o.t+=Math.sin(o.wy*0.02)*0.0006;          // лёгкое рыскание на воде
-      // Течение обносит бревно вокруг камня заранее, а не впечатывает в него.
-      // Без этого расталкивание срабатывало в последний момент и рывком.
-      {
-        const lhw=widthAt(o.wy)/2; let push=0;
-        for(const o2 of g.obs){
-          if(o2===o||o2.type=="log"||o2.type=="kayaker")continue;
-          const dy=o.wy-o2.wy;
-          if(dy>0&&dy<170){
-            const dx=(o.t-o2.t)*lhw;
-            const need=(o2.visHalf||24)+(o.visHalf||39);
-            if(Math.abs(dx)<need)push+=(dx>=0?1:-1);
-          }
-        }
-        o.vt=(o.vt||0)*0.92+push*0.0009;
-        o.vt=Math.max(-0.012,Math.min(0.012,o.vt));
-        o.t+=o.vt;
-      }
-    }
+    if(o.type=="log") logStep(o, g.sp*sm*0.22);
     if(o.type=="kayaker"){
       // Соперник тоже сплавляется, но медленнее течения — мы его догоняем.
       o.wy+=g.sp*sm*0.4;
@@ -4470,7 +4908,7 @@ function upd(){
           const dy=o2.wy-o.wy;
           // Впереди — уклоняется заранее; рядом — расталкивается, иначе
           // соперник наезжал на камни и спрайты сливались в кашу.
-          if(dy>0&&dy<110){const dx=(o.t-o2.t)*hw;if(Math.abs(dx)<48)danger+=dx>=0?1:-1;}
+          if(dy>0&&dy<110){const dx=(o.t-o2.t)*hw;if(Math.abs(dx)<(o2.visHalf||24)+24)danger+=dx>=0?1:-1;}
           else if(Math.abs(dy)<55){
             const dx=(o.t-o2.t)*hw, need=(o2.halfPx||20)+24;
             if(Math.abs(dx)<need)danger+=(dx>=0?1:-1)*2;
@@ -4609,7 +5047,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, logStep, bargeStep, aheadPush, sandBar, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
@@ -4628,8 +5066,10 @@ if (typeof __KAYAK_TEST__ === "undefined"){
   }
   const dayParam = new URLSearchParams(location.search).get("day");
   const dayIdx = dayFromParam(dayParam);
-  if (dayIdx == null) lp();
-  else { startDay(dayIdx); applyDebugScene(); }
+  // Цикл запускается в обоих случаях: раньше ветка ?day=N его не вызывала,
+  // и отладочные сцены стояли чёрным экраном на кадре 0.
+  if (dayIdx != null){ startDay(dayIdx); applyDebugScene(); }
+  lp();
 }
 </script>
 </body>

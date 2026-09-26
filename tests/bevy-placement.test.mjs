@@ -13,6 +13,12 @@ const W = 420;
 function recordingCtx(raw) {
   const calls = [];
   let path = [];
+  // Сдвиг системы координат: костёр и гитарист рисуются внутри translate,
+  // без учёта сдвига спрайт «оказывается» у левой кромки экрана.
+  let tx = 0, ty = 0; const stack = [];
+  raw.save = () => { stack.push([tx, ty]); };
+  raw.restore = () => { const s = stack.pop(); if (s) [tx, ty] = s; };
+  raw.translate = (x, y) => { tx += x; ty += y; };
   raw.beginPath = () => { path = []; };
   raw.closePath = () => { if (path.length) path.push(path[0]); };
   raw.moveTo = (x, y) => { path.push([x, y]); };
@@ -20,7 +26,9 @@ function recordingCtx(raw) {
   raw.arc = (x, y, r) => { path.push([x - r, y - r], [x + r, y + r]); };
   raw.ellipse = (x, y, rx, ry) => { path.push([x - rx, y - ry], [x + rx, y + ry]); };
   raw.fill = function () { if (path.length) calls.push({ pts: path.slice() }); };
-  raw.fillRect = function (x, y, w, h) { calls.push({ x, y, w, h }); };
+  raw.fillRect = function (x, y, w, h) { calls.push({ x: x + tx, y: y + ty, w, h }); };
+  // Спрайты тоже: компания у костра и пляж теперь рисуются ими целиком.
+  raw.drawImage = function (img, x, y) { calls.push({ x: x + tx, y: y + ty, w: img.width, h: img.height }); };
   return calls;
 }
 

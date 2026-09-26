@@ -26,7 +26,11 @@ function makeCtx() {
   };
 }
 
-export function loadGame(htmlPath) {
+// opts.boot = true — загрузить «как в браузере»: без флага __KAYAK_TEST__,
+// с настоящим стартовым кодом и адресной строкой opts.search. Кадры не
+// крутятся: requestAnimationFrame только считает вызовы (sandbox.__raf),
+// по нему видно, запустился ли главный цикл.
+export function loadGame(htmlPath, opts = {}) {
   const path = htmlPath || FILE;
   const html = readFileSync(path, "utf8");
   const src = html.match(/<script>([\s\S]*)<\/script>/)[1];
@@ -59,9 +63,14 @@ export function loadGame(htmlPath) {
     Audio: function () { this.play = () => Promise.resolve(); },
     performance: { now: () => 0 },
     console: { log: () => {}, warn: () => {}, error: () => {} },
-    URLSearchParams, location: { search: "" },
+    URLSearchParams, location: { search: opts.search || "" },
     __KAYAK_TEST__: true,
   };
+  if (opts.boot) {
+    delete sandbox.__KAYAK_TEST__;
+    sandbox.__raf = 0;
+    sandbox.requestAnimationFrame = () => { sandbox.__raf++; return 0; };
+  }
   sandbox.window = { innerWidth: 420, innerHeight: 720, document, addEventListener: sandbox.addEventListener, AudioContext: sandbox.AudioContext, Audio: sandbox.Audio, requestAnimationFrame: sandbox.requestAnimationFrame };
 
   createContext(sandbox);

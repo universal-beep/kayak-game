@@ -1,27 +1,23 @@
 // День 1 «Пляж»: СМЯГЧЁННАЯ песчаная отмель вдоль кромки (не прямоугольник,
 // не коса в реку), плавно переходящая в траву. ТРИ варианта (e.variant),
 // различающихся длиной отмели и набором отдыхающих, плюс КЛАССИЧЕСКИЙ:
-//   0 — короткая отмель, ОДИН КРУПНЫЙ загорающий на коврике;
-//   1 — средняя, двое КРУПНЫХ на ковриках + зонтик;
-//   2 — длинная, двое КРУПНЫХ на ковриках;
-//   3 — КЛАССИЧЕСКИЙ пляж (как на основном сайте): полотенца + зонтик +
-//       отдыхающий + ДВОЕ ДЕТЕЙ В ВОДЕ по грудь (низ скрыт водой).
-// Загорающие лежат БЕЗ одежды (силуэт: спина, руки вдоль тела, ноги, макушка
-// волос) и КРУПНЫЕ — размером с человека. Волейбола нет. Всё — один составной
-// берег ("beach").
+//   0 — короткая отмель, ОДИН загорающий на полотенце;
+//   1 — средняя, ОДИН загорающий под зонтиком;
+//   2 — длинная, ДВОЕ загорающих;
+//   3 — КЛАССИЧЕСКИЙ пляж: полотенце + зонтик + ДВОЕ ДЕТЕЙ В ВОДЕ.
+// Отдыхающие — пиксельные спрайты вида сверху (sunbather, towel, umbrella,
+// swimmer0/1). Загорающие лежат ВДОЛЬ реки и КРУПНЫЕ — длиннее стоящего
+// человека (по просьбе Максима: «вдоль реки, тогда размер будет больше»).
+// Волейбола нет. Всё — один составной берег ("beach").
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { loadGame, setupWorld } from "./harness.mjs";
 
-const HAIR = ["#4a2e17", "#8a5a2b"];
-const MATS = ["#ff5252", "#4fc3f7"];
-const WATER_LINE = "rgba(21,101,192,0.5)";
-const KID_HAIR = "#4a2e17";
 
 // Длина отмели (мир. px) по варианту — для теста «3 длины».
-const SPAN = { 0: 72, 1: 112, 2: 158 };
-// Сколько загорающих на ковриках по варианту (классический — дети, не коврики).
-const PEOPLE = { 0: 1, 1: 2, 2: 2 };
+const SPAN = { 0: 132, 1: 180, 2: 210 };
+// Сколько загорающих по варианту (классический — дети в воде).
+const PEOPLE = { 0: 1, 1: 1, 2: 2 };
 
 function recordingCtx(raw) {
   const calls = [];
@@ -38,6 +34,9 @@ function recordingCtx(raw) {
   raw.fillRect = function (x, y, w, h) {
     calls.push({ kind: "rect", x, y, w, h, color: raw.fillStyle, alpha: raw.globalAlpha });
   };
+  raw.drawImage = function (img, x, y) {
+    calls.push({ kind: "img", img, x, y, w: img.width, h: img.height });
+  };
   return calls;
 }
 
@@ -50,7 +49,9 @@ const bbox = c => {
     h: Math.max(...ys) - Math.min(...ys),
   };
 };
-const girth = c => Math.abs(c.pts[0][0] - c.pts[1][0]); // диаметр дуги (две угловые точки)
+// Картинки спрайта name (с вариантами окраски) среди отрисованного.
+const imgsOf = (K, name) => [K.SPR[name].img, ...(K.SPR[name].imgs || [])];
+const drawn = (K, calls, name) => calls.filter(c => c.kind === "img" && imgsOf(K, name).includes(c.img));
 
 function paintBeach(K, raw, side, variant) {
   setupWorld(K, { wy: 1000, t: 0 });
@@ -74,7 +75,8 @@ test("beach рисует МЯГКУЮ отмель вдоль кромки: вы
   const body = calls.find(c => c.kind === "pathfill" && bbox(c).h >= 90);
   assert.ok(body, "нарисован песчаный берег (вытянутая отмель)");
   const sz = bbox(body);
-  assert.ok(sz.w <= 58, "отмель тонка поперёк (не коса, не квадрат): w=" + sz.w);
+  // Глубина песка под полотенца (~40 px от воды) с запасом, но не коса в полберега.
+  assert.ok(sz.w <= 90, "отмель не шире 90 px поперёк: w=" + sz.w);
   // Мокрая кромка у воды — отдельная узкая полоса вдоль берега.
   const wet = calls.filter(c => c.kind === "pathfill" && c.color === "#c8a860");
   assert.ok(wet.length === 1 && bbox(wet[0]).h >= 90, "мокрая кромка тянется вдоль берега");
@@ -102,76 +104,61 @@ test("beach: 3 ВАРИАНТА длины отмели — длинная > с�
     hs[v] = bbox(body).h;
   }
   assert.ok(hs[0] < hs[1] && hs[1] < hs[2], "длины упорядочены: " + JSON.stringify(hs));
-  assert.ok(hs[0] < 100, "короткая отмель короткая: h=" + hs[0]);
-  assert.ok(hs[2] > 150, "длинная отмель длинная: h=" + hs[2]);
+  assert.ok(hs[0] < 150, "короткая отмель короткая: h=" + hs[0]);
+  assert.ok(hs[2] > 190, "длинная отмель длинная: h=" + hs[2]);
   // Длина тела песка согласуется с мировой длиной отмели варианта (screenYOf — 1:1).
   assert.ok(Math.abs(hs[1] - (SPAN[1] + 8)) < 14, "средняя ≈ " + (SPAN[1] + 8) + ": " + hs[1]);
 });
 
-test("beach: на КРУПНЫХ ковриках лежат РОВНО N загорающих по варианту (без одежды, силуэтом)", () => {
+test("beach: загорающих РОВНО N по варианту, каждый на своём полотенце, лежат вдоль реки и на суше", () => {
   const { K, ctx } = loadGame();
+  const person = K.spriteSize("person").h;
   for (const v of [0, 1, 2]){
     const calls = recordingCtx(ctx);
     paintBeach(K, ctx, -1, v);
-    // Загорающий = макушка волос (pathfill) + крупный коврик под ним (rect).
-    const heads = calls.filter(c => c.kind === "pathfill" && HAIR.includes(c.color));
-    const mats = calls.filter(c => c.kind === "rect" && MATS.includes(c.color));
-    assert.equal(heads.length, PEOPLE[v], "вариант " + v + ": число загорающих = " + PEOPLE[v]);
-    assert.equal(mats.length, PEOPLE[v], "вариант " + v + ": каждому загорающему — свой коврик");
-    // ЛЮДИ КРУПНЫЕ: диаметр головы > 10px (загорающий размером с человека).
-    for (const h of heads) assert.ok(girth(h) > 10, "голова загорающего крупная (диаметр " + girth(h) + ")");
-    // Коврик широкий — под целого лежащего человека, не «обрывок».
-    for (const m of mats) assert.ok(m.w >= 40, "коврик широкий (w=" + m.w + ")");
-    // Лежат НА ПЕСКЕ / НА КОВРИКЕ: силуэт не выходит за кромку воды (для ЛЕВОГО
-    // берега суша слева; голова у ИНЛАНД-конца, ноги к воде, но НЕ в воду).
-    for (const h of heads){
-      const b = bbox(h);
-      const edg = K.centerAt(1000) - K.widthAt(1000) / 2;
-      assert.ok(b.x1 <= edg + 1, "загорающий лежит на суше, не в воде: x1=" + b.x1.toFixed(1) + " edg=" + edg.toFixed(1));
+    const sun = [...drawn(K, calls, "sunbather"), ...drawn(K, calls, "sunbather_f")];
+    assert.equal(sun.length, PEOPLE[v], "вариант " + v + ": число загорающих = " + PEOPLE[v]);
+    const edg = K.centerAt(1000) - K.widthAt(1000) / 2;
+    for (const s of sun){
+      assert.ok(s.h > s.w * 1.8, "лежит вдоль реки: " + s.w + "×" + s.h);
+      assert.ok(s.h > person, "крупнее стоящего человека: " + s.h + " против " + person);
+      assert.ok(s.x + s.w <= edg + 1, "на суше, не в воде: край " + (s.x + s.w).toFixed(1) + ", кромка " + edg.toFixed(1));
     }
   }
 });
 
-test("beach: на вариантах-ковриках (0-2) ДЕТЕЙ В ВОДЕ НЕТ", () => {
+test("beach: на вариантах с загорающими (0-2) ДЕТЕЙ В ВОДЕ НЕТ", () => {
   const { K, ctx } = loadGame();
   for (const v of [0, 1, 2]){
     const calls = recordingCtx(ctx);
     paintBeach(K, ctx, -1, v);
-    const edg = K.centerAt(1000) - K.widthAt(1000) / 2;
-    assert.ok(!calls.some(c => c.kind === "rect" && c.color === WATER_LINE),
-      "вариант " + v + ": нет полупрозрачной воды по грудь");
-    // Детская голова (дуга r4.5, тёмные волосы) В ВОДЕ не рисуется.
-    const kids = calls.filter(c => c.kind === "pathfill" && c.color === KID_HAIR
-      && Math.abs(girth(c) - 9) < 0.01 && bbox(c).x0 >= edg);
-    assert.equal(kids.length, 0, "вариант " + v + ": детей в воде нет");
+    const kids = drawn(K, calls, "swimmer0").length + drawn(K, calls, "swimmer1").length;
+    assert.equal(kids, 0, "вариант " + v + ": детей в воде нет");
   }
 });
 
-test("beach: КЛАССИЧЕСКИЙ пляж (вариант 3) — полотенца, зонтик и ДВОЕ ДЕТЕЙ В ВОДЕ", () => {
+test("beach: КЛАССИЧЕСКИЙ пляж (вариант 3) — полотенце, зонтик и ДВОЕ ДЕТЕЙ В ВОДЕ", () => {
   const { K, ctx } = loadGame();
   const calls = recordingCtx(ctx);
   paintBeach(K, ctx, -1, 3);
   const edg = K.centerAt(1000) - K.widthAt(1000) / 2;
-  // Дети: головы (дуга r4.5) тёмные, В ВОДЕ (x за кромкой).
-  const kids = calls.filter(c => c.kind === "pathfill" && c.color === KID_HAIR
-    && Math.abs(girth(c) - 9) < 0.01 && bbox(c).x0 >= edg);
-  assert.equal(kids.length, 2, "в классическом пляже двое детей в воде");
-  // Низ каждого скрыт полупрозрачной водой — «наполовину видны».
-  const water = calls.filter(c => c.kind === "rect" && c.color === WATER_LINE);
-  assert.equal(water.length, 2, "у каждого ребёнка вода перекрывает низ");
-  // Полотенца, зонтик.
-  const TOWELS = ["#ff5252", "#4fc3f7", "#66bb6a", "#ab47bc"];
-  const seen = new Set(calls.filter(c => TOWELS.includes(c.color)).map(c => c.color));
-  assert.ok(seen.size >= 3, "на классическом пляже лежат полотенца: " + [...seen].join(","));
-  assert.ok(calls.some(c => c.kind === "pathfill" && c.color === "#4fc3f7"), "зонтик на классическом пляже есть");
+  const kids = [...drawn(K, calls, "swimmer0"), ...drawn(K, calls, "swimmer1")];
+  assert.equal(kids.length, 2, "в классическом пляже двое детей");
+  for (const k of kids) assert.ok(k.x >= edg, "ребёнок в воде: x=" + k.x.toFixed(1) + " кромка " + edg.toFixed(1));
+  assert.ok(drawn(K, calls, "towel").length >= 1, "на классическом пляже лежит полотенце");
+  assert.equal(drawn(K, calls, "umbrella").length, 1, "зонтик на классическом пляже есть");
+  assert.equal(drawn(K, calls, "sunbather").length + drawn(K, calls, "sunbather_f").length, 0, "загорающих на классическом нет — там дети");
 });
 
-test("beach: коврики под загорающими, волейбола нет", () => {
+test("beach: у двоих загорающих разные полотенца, у среднего пляжа зонтик, волейбола нет", () => {
   const { K, ctx } = loadGame();
-  const calls = recordingCtx(ctx);
+  let calls = recordingCtx(ctx);
+  paintBeach(K, ctx, -1, 2);
+  const imgs = new Set([...drawn(K, calls, "sunbather"), ...drawn(K, calls, "sunbather_f")].map(c => c.img));
+  assert.equal(imgs.size, 2, "двое загорающих на полотенцах разного цвета");
+  calls = recordingCtx(ctx);
   paintBeach(K, ctx, -1, 1);
-  const seen = new Set(calls.filter(c => MATS.includes(c.color)).map(c => c.color));
-  assert.ok(seen.has(MATS[0]) && seen.has(MATS[1]), "под загорающими лежат коврики: " + [...seen].join(","));
+  assert.equal(drawn(K, calls, "umbrella").length, 1, "у среднего пляжа зонтик");
   assert.ok(!calls.some(c => c.color === "#e57373"), "волейбольного мяча больше нет");
   assert.ok(!calls.some(c => c.color === "#5a4a2a"), "волейбольной сетки больше нет");
 });
@@ -197,4 +184,32 @@ test("beach СТАТИЧЕН в МИРЕ: прокрутка камеры не �
   assert.ok(Math.abs(A.w - B.w) < 0.6, "ширина отмели не меняется: " + A.w + "->" + B.w);
   // По экрану отмель обязана съехать РОВНО на величину прокрутки камеры.
   assert.ok(Math.abs((B.y0 - A.y0) - 12) < 0.6, "отмель переносится ровно на прокрутку (" + (B.y0 - A.y0) + "), а не дрейфует");
+});
+// Жалоба Максима: «загорающие сейчас на траве». Полотенца и зонтик обязаны
+// лежать на песке ЦЕЛИКОМ — на всех видах берега и составах, на обоих берегах.
+test("beach: полотенца, загорающие и зонтик целиком на песке", () => {
+  const { K, ctx } = loadGame();
+  const inside = (pts, x, y) => {
+    let c = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i], [xj, yj] = pts[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  for (const side of [-1, 1]) for (const shape of [0, 1, 2]) for (const variant of [0, 1, 2, 3]) {
+    setupWorld(K, { wy: 1000, t: 0 });
+    K.G.frame = 50; K.G.rBend = 1;
+    const calls = recordingCtx(ctx);
+    K.drwBev({ type: "beach", side, wy: 1000, off: 40, phase: 1.3, mode: "sit", variant, shape });
+    const body = calls.find(c => c.kind === "pathfill" && typeof c.color === "object");
+    assert.ok(body, "песок нарисован");
+    const items = ["sunbather", "sunbather_f", "towel", "umbrella"].flatMap(n => drawn(K, calls, n));
+    assert.ok(items.length > 0, "на пляже кто-то лежит");
+    for (const it of items) {
+      const m = 3;                                  // отступ от края спрайта (обводка)
+      for (const [x, y] of [[it.x + m, it.y + m], [it.x + it.w - m, it.y + m], [it.x + m, it.y + it.h - m], [it.x + it.w - m, it.y + it.h - m]])
+        assert.ok(inside(body.pts, x, y), "берег " + side + ", вид " + shape + ", состав " + variant + ": угол (" + x.toFixed(0) + ", " + y.toFixed(0) + ") не на песке");
+    }
+  }
 });
