@@ -58,3 +58,23 @@ test("add-sound вшивает файл в гнездо и не пускает �
   assert.throws(() => addSound("gulp", join(dir, "big.mp3"), html), /КБ/);
   assert.throws(() => addSound("whistle", wav, html), /гнезда/);
 });
+
+test("звуки распаковываются заранее, как только включён звук — первый раз играют без задержки", () => {
+  const { K } = loadGame();
+  setupWorld(K, { wy: 5000 });
+  let decoded = 0;
+  const pending = [];
+  K.SOUNDS.gulp = "data:audio/wav;base64," + Buffer.from("RIFF-test").toString("base64");
+  K.SOUNDS.voice_turclub = "data:audio/wav;base64," + Buffer.from("RIFF-voice").toString("base64");
+  const a = fakeAudio();
+  a.ctx.decodeAudioData = (arr, ok) => { decoded++; pending.push(() => ok({ fake: true })); };
+  K.setAudio(a.ctx);
+  K.preloadSounds();
+  const filled = Object.values(K.SOUNDS).filter(Boolean).length;
+  assert.equal(decoded, filled, "распаковано не всё заранее");
+  pending.forEach(f => f());                             // распаковка закончилась
+  a.log.buf = 0;
+  K.playSample("voice_turclub");
+  assert.equal(a.log.buf, 1, "первое воспроизведение не сразу");
+  assert.equal(decoded, filled, "распаковал повторно");
+});
