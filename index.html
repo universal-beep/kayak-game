@@ -5020,6 +5020,7 @@ function drwBev(e){
     const cast = Math.sin(g.frame*0.03 + ph);
     drawSprite(e.side < 0 ? kind : kind + "_l", bx, by);
     const rodX = bx - e.side*a.x, rodY = by + a.y;
+    if (e.catchT !== undefined){ drwCatch(e, rodX, rodY, ax, hw, by); return; }
     const tipX = rodX - e.side*(26 + cast*8), tipY = rodY - 22 - cast*10;
     cx.strokeStyle = PAL.n; cx.lineWidth = 3;
     cx.beginPath(); cx.moveTo(rodX, rodY); cx.lineTo(tipX, tipY); cx.stroke();
@@ -5248,6 +5249,11 @@ function updBev(e){
   if (e.type === "ducks" && !e.away
       && Math.abs(g.pwy - e.wy) < 95
       && g.t * e.side > 0.45) e.away = 1;
+  // Везучий рыбак: подплыли — клюёт; подсечка со всплеском на 30-м кадре.
+  if (e.type === "fisher" && e.lucky){
+    if (e.catchT === undefined){ if (Math.abs(g.pwy - e.wy) < 260) e.catchT = 0; }
+    else if (++e.catchT === 30) sfx("splash");
+  }
   // Велосипедисты: время старта — с первого кадра; звонок один раз, когда
   // кто-то из троих поравнялся с байдаркой.
   if (e.type === "cyclists"){
@@ -6316,7 +6322,7 @@ function spBev(){
             variant:ty==="beach"?Math.floor(Math.random()*4):0,
             shape:Math.floor(Math.random()*3)};
   if (ty === "cows") ev.seed = Math.floor(Math.random()*1000);
-  if (ty === "fisher") ev.kind = fisherKind(ev, level().river);
+  if (ty === "fisher"){ ev.kind = fisherKind(ev, level().river); ev.lucky = fisherLucky(ev); }
   if (placeBev(ev, 1) && ty === "cows") cowsWade(ev);
   g.ned=g.dist+(22+Math.random()*38)*(volga ? 4 : 1);
 }
@@ -6353,6 +6359,44 @@ function cowsWade(e){
 // Деревни Тверцы: 3–5 за день, в основном по одному берегу (80% — по
 // «своему»), равномерно по дню, не у старта и не у финиша. План считается
 // от номера дня (hsh), а не Math.random — не сдвигает случайность игры.
+// Везучий рыбак — примерно каждый пятый (от места, без Math.random). Когда
+// байдарка подплыла, у него клюёт по-настоящему (drwCatch).
+function fisherLucky(e){ return hsh(Math.round(e.wy/11)*71 + 5) < 0.2; }
+// Поклёвка и улов, e.catchT — кадр с начала: 0–30 поплавок ушёл, удочка
+// гнётся к воде, вода кипит; 30–70 подсечка — удочка вверх, рыба по дуге
+// вылетает из воды и бьётся; дальше висит на леске у кончика и трепыхается.
+function drwCatch(e, rodX, rodY, ax, hw, by){
+  const k = e.catchT, sd = e.side;
+  const hookX = ax + sd*(hw - 18), hookY = by + 26;
+  let tx, ty;
+  if (k < 30){ tx = rodX - sd*30; ty = rodY - 8 + (k/30)*8 + Math.sin(k*0.9)*2; }
+  else if (k < 70){ const u = (k - 30)/40; tx = rodX - sd*(30 - u*12); ty = rodY - u*40; }
+  else { tx = rodX - sd*18; ty = rodY - 40; }
+  cx.strokeStyle = PAL.n; cx.lineWidth = 3;
+  cx.beginPath(); cx.moveTo(rodX, rodY); cx.lineTo(tx, ty); cx.stroke();
+  let fx, fy;
+  if (k < 30){
+    fx = hookX; fy = hookY;
+    cx.fillStyle = "rgba(255,255,255,0.7)";                 // вода кипит у поплавка
+    for (let i = 0; i < 4; i++){
+      const r = 4 + ((k + i*7) % 14);
+      cx.fillRect(hookX - r, hookY + 2 - (i % 2)*3, r*2, 2);
+    }
+  } else if (k < 70){
+    const u = (k - 30)/40;
+    fx = hookX + (tx - hookX)*u; fy = hookY + (ty + 18 - hookY)*u - Math.sin(u*Math.PI)*30;
+  } else {
+    fx = tx; fy = ty + 18 + Math.sin(g.frame*0.5)*2;
+  }
+  cx.strokeStyle = "rgba(255,255,255,0.7)"; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(tx, ty); cx.lineTo(fx, fy - (k < 30 ? 0 : 8)); cx.stroke();
+  if (k >= 30){                                              // рыба бьётся на леске
+    cx.save(); cx.translate(Math.round(fx), Math.round(fy));
+    cx.rotate((Math.floor(g.frame/5) % 2 ? 1 : -1)*0.35 + Math.PI/2);
+    drawSprite("fish", 0, 0);
+    cx.restore();
+  }
+}
 // Велосипедисты едут друг за другом по колее вниз по экрану (к меньшим wy)
 // со скоростью CYC_V px мира за кадр; стартуют выше жителя по реке.
 // Колея — две тропки по ±CYC_GAP от середины CYC_OFF: по ближней к воде
@@ -6747,6 +6791,7 @@ function sceneAt(s){
     if (s === "fisher"){                         // ?scene=fisher&kind=fisher_car
       const k = typeof location !== "undefined" ? new URLSearchParams(location.search).get("kind") : null;
       g.bev[g.bev.length - 1].kind = SPR[k] ? k : fisherKind(g.bev[g.bev.length - 1], L.river);
+      g.bev[g.bev.length - 1].lucky = new URLSearchParams(location.search).get("lucky") === "1";
     }
     teleportTo(wy);
   } else {
@@ -7588,7 +7633,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fisherLucky, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,

@@ -33,3 +33,25 @@ test("по рекам: с машиной и велосипедом — Волг�
   for (let wy = 1000; wy < 60000; wy += 777) seen.add(K.fisherKind({ type: "fisher", wy }, 0));
   assert.equal(seen.size, 5, "на Волге встречаются все пятеро");
 });
+
+// Примерно каждый пятый рыбак везучий: когда байдарка подплывает, у него
+// клюёт — подсечка, рыба вылетает из воды и висит на леске.
+test("везёт примерно каждому пятому рыбаку; клюёт, когда подплыли", async () => {
+  const { K } = loadGame();
+  const { setupWorld } = await import("./harness.mjs");
+  let lucky = 0, N = 0;
+  for (let wy = 1000; wy < 200000; wy += 331) { N++; if (K.fisherLucky({ type: "fisher", wy })) lucky++; }
+  assert.ok(lucky / N > 0.15 && lucky / N < 0.25, "доля везучих " + (lucky / N).toFixed(2));
+  setupWorld(K, { wy: 400 });
+  let wy = 1000; while (!K.fisherLucky({ type: "fisher", wy })) wy += 331;
+  const e = { type: "fisher", side: 1, wy, lucky: true };
+  K.updBev(e);
+  assert.equal(e.catchT, undefined, "далеко — не клюёт");
+  K.G.pwy = wy - 200; K.G.sfxLast = "";
+  for (let i = 0; i < 40; i++) K.updBev(e);
+  assert.ok(e.catchT >= 39, "подплыли — клюёт и тянет: " + e.catchT);
+  assert.equal(K.G.sfxLast, "splash", "всплеск при подсечке");
+  const plain = { type: "fisher", side: 1, wy: wy + 5000, lucky: false };
+  K.G.pwy = plain.wy; for (let i = 0; i < 40; i++) K.updBev(plain);
+  assert.equal(plain.catchT, undefined, "невезучему не клюёт");
+});
