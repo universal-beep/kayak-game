@@ -28,3 +28,11 @@ test("трое едут сверху вниз по экрану и один ра
   assert.equal(new Set(y0).size, 3, "едут друг за другом, не в одной точке");
   assert.equal(rang, 1, "звонок один раз");
 });
+
+test("колея из двух широких тропок: по одной едет один, по другой — двое", () => {
+  const { K } = loadGame();
+  const lanes = [0, 1, 2].map(i => K.cyclistLane(i));
+  assert.notEqual(lanes[0], lanes[1], "первый — на своей тропке");
+  assert.equal(lanes[1], lanes[2], "двое других — на второй");
+  assert.ok(Math.abs(lanes[0] - lanes[1]) >= 36, "тропки разнесены: " + Math.abs(lanes[0] - lanes[1]));
+});
