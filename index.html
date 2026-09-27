@@ -905,6 +905,49 @@ const SPR = {
     "......kgggggggggk...........",
     "......kgggggggggk...........",
     ".......kkkkkkkkk............"]},
+  // Велосипедист спереди (Медведица, едет по колее вдоль берега): кепка,
+  // руки на руле поперёк, узкое колесо; два кадра педалей. Футболка
+  // перекрашивается — трое в разных.
+  cyclist0:{map:[".....kkkk.....",
+    "....kzzzzk....",
+    "...kzzzzzzk...",
+    "....ktKKtk....",
+    "....kttttk....",
+    "...krrrrrrk...",
+    "..kkrrrrrrkk..",
+    ".krrrrrrrrrrk.",
+    "ktjjjjjjjjjjtk",
+    ".kkkRRRRRRkkk.",
+    "...kZkjjjZk...",
+    "...kKkjjjZk...",
+    "....kkKKkZk...",
+    ".....kKgkZk...",
+    "....kKKgKKk...",
+    "....kKKgKk....",
+    "....kKKgKk....",
+    ".....kKgk.....",
+    ".....kKKk.....",
+    "......kk......"], variants:[{}, {r:"z", z:"r"}, {r:"v", z:"A"}]},
+  cyclist1:{map:[".....kkkk.....",
+    "....kzzzzk....",
+    "...kzzzzzzk...",
+    "....ktKKtk....",
+    "....kttttk....",
+    "...krrrrrrk...",
+    "..kkrrrrrrkk..",
+    ".krrrrrrrrrrk.",
+    "ktjjjjjjjjjjtk",
+    ".kkkRRRRRRkkk.",
+    "...kZkjjjZk...",
+    "...kZkjjjKk...",
+    "...kZkKKkk....",
+    "...kZkKgk.....",
+    "...kKKKgKk....",
+    "....kKKgKk....",
+    "....kKKgKk....",
+    ".....kKgk.....",
+    ".....kKKk.....",
+    "......kk......"], variants:[{}, {r:"z", z:"r"}, {r:"v", z:"A"}]},
   // Семья лосей (Тверца, вместо медведя): лось с рогами-лопатами, лосиха,
   // лосёнок. Горб в холке, тяжёлая голова с горбатым носом и бородкой,
   // светлые ноги. Кадры «_b» — голова опущена к воде (пьют).
@@ -1270,7 +1313,10 @@ const SPR = {
     "knnnnnkOOkknnnnk",
     "knnnnnkOOkknnnnk",
     "knnnnnkOOkknnnnk",
-    "kkkkkkkkkkkkkkkk"]},
+    "kkkkkkkkkkkkkkkk"],
+    // Деревни на Тверце: крыша красная, шиферная, зелёная, синяя, бурая;
+    // стены — тёс разных оттенков.
+    variants:[{}, {r:"g"}, {r:"v", n:"a"}, {r:"Z", n:"h"}, {r:"R", n:"S"}]},
   // Наша машина — синий универсал (вид сбоку, нос вправо): блик E по плечу,
   // крыша до самого зада, багажник на крыше, водитель в переднем окне, колёса
   // с дисками в арках. Карты машин нарисованы под масштаб 1 в мульте — пиксель
@@ -1616,15 +1662,6 @@ const SPR = {
     rep(".",6)+"kkkkkkkkkkkkkk"+rep(".",90),
     rep(".",90)+"kkkkkkkkkkkkkk"+rep(".",6)
   ]},
-  tower:{map:[".......kk.......","......kIIk......",".....kIIIIk.....","....kIIIIIIk....",
-    "...kIIIIIIIIk...","..kIIIIIIIIIIk..",".kIIIIIIIIIIIIk.","kkkkkkkkkkkkkkkk",
-    "kOwwwwwwwwwwwwOk","kOwkkwwkkwwkkwOk","kOwwwwwwwwwwwwOk","kOOOOOOOOOOOOOOk",
-    "kkkkkkkkkkkkkkkk","kOk.kOk..kOk.kOk","kkkkkkkkkkkkkkkk",
-    "..kOk......kOk..","..kOk......kOk..","..kOkkkkkkkkOk..",
-    "..kOk......kOk..","..kOk.kkkk.kOk..","..kOk......kOk..",
-    "..kOkkkkkkkkOk..","..kOk......kOk..","..kOk.kkkk.kOk..",
-    "..kOk......kOk..",".kOOk......kOOk.",".kOOk......kOOk.",
-    "kOOOk......kOOOk","kkkkk......kkkkk"],noOutline:true},
   bush:{map:["...kkkk...","..kvvvvk..",".kvvvvvvk.","kvvvVvvvvk","kvvVvvvvVk",
     ".kvvvvvvk.","..kVVVVk..","...kkkk..."]},
   tree:{map:["......kk..........",
@@ -1915,10 +1952,50 @@ SPR.sitter_b = { map: swapPalette(SPR.sitter.map, { r:"N", Z:"j" }), noOutline:t
 // Байдарка на прицепе — жёлтая, как игровая: корпус в тёплый жёлтый (был тёмный O),
 // тёмный кокпит (K) оставляем для контраста и читаемости корпуса.
 SPR.kayak_side   = { map: swapPalette(SPR.kayak_side.map, { O:"Y" }) };
+// Дождевик (дождливые дни на Тверце): капюшон цвета плаща закрывает голову
+// и лоб — открыто лицо; плащ на ряд ниже куртки (поверх штанов Z); на плаще
+// блик f. coat — ключ куртки (он же — цвет плаща, поэтому варианты
+// перекраски дают дождевики разных цветов), fam — все тона куртки.
+function rainify(map, coat, fam){
+  fam = fam || coat;
+  const g = map.map(r => [...r]), H = g.length;
+  const isCoat = ch => fam.includes(ch);
+  const coatRow = g.findIndex(r => r.some(isCoat));
+  const faceRows = [];
+  for (let y = 0; y < coatRow; y++) if (g[y].includes("t")) faceRows.push(y);
+  for (let y = 0; y < coatRow; y++) for (let x = 0; x < g[y].length; x++){
+    const ch = g[y][x];
+    if (ch === "." || ch === "k" || ch === "K" || ch === "t" || ch === "T") continue;
+    g[y][x] = coat;                                   // шапка, волосы, поля — капюшон
+  }
+  faceRows.forEach((y, i) => {
+    const xs = g[y].map((ch, x) => ch === "t" || ch === "T" ? x : -1).filter(x => x >= 0);
+    if (!xs.length) return;
+    if (i === 0 && faceRows.length >= 3) xs.forEach(x => { g[y][x] = coat; });   // лоб под капюшоном
+    else { g[y][xs[0]] = coat; if (xs.length > 2) g[y][xs[xs.length - 1]] = coat; }
+  });
+  let last = -1;
+  for (let y = 0; y < H; y++) if (g[y].some(isCoat)) last = y;
+  if (last >= 0 && last + 1 < H)                      // плащ длиннее: поверх штанов
+    for (let x = 0; x < g[last + 1].length; x++) if (g[last + 1][x] === "Z") g[last + 1][x] = coat;
+  for (const y of [coatRow + 1, coatRow + 2]){         // блик по плащу
+    if (y >= H) continue;
+    const x0 = g[y].findIndex(isCoat);
+    if (x0 >= 0 && isCoat(g[y][x0 + 1] || "")) g[y][x0 + 1] = "f";
+  }
+  return g.map(r => r.join(""));
+}
+const RAIN_WEAR = { person:["r"], person_w1:["r"], person_paddle:["r"], girl:["H"], girl_w1:["H"],
+  sitter:["r"], fisher:["v", "FvV"], rower:["z"], rower_flip:["z"], kayak_center:["r"] };
 // Жители, смотрящие на воду: на правом берегу — отражённые копии «_l».
-for (const n of ["fisher", "heron", "heron_fly0", "heron_fly1", "cow", "cow_b", "cow_water", "shepherd",
+for (const [n, [coat, fam]] of Object.entries(RAIN_WEAR)) if (SPR[n])
+  SPR[n + "_rain"] = { map: rainify(SPR[n].map, coat, fam), variants: SPR[n].variants, noOutline: SPR[n].noOutline };
+SPR.kayak_left_rain  = { map: shearMap(SPR.kayak_center_rain.map, -1) };
+SPR.kayak_right_rain = { map: shearMap(SPR.kayak_center_rain.map,  1) };
+for (const n of ["fisher", "fisher_rain", "heron", "heron_fly0", "heron_fly1", "cow", "cow_b", "cow_water", "shepherd",
                  "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf"])
   SPR[n + "_l"] = { map: SPR[n].map.map(r => [...r].reverse().join("")) };
+SPR.fisher_l_rain = SPR.fisher_rain_l; delete SPR.fisher_rain_l;
 // Попутная красная (нижняя полоса, едет вправо) — нос вправо.
 SPR.car_red_r    = { map: SPR.car_red.map.map(r => [...r].reverse().join("")) };
 // Палатка с освещённым изнутри входом: вся тёмная лента входа становится
@@ -1983,8 +2060,15 @@ function prerenderAll(){
   }
   SPR.shallows = { map: new Array(15).fill(rep(".",34)), img: rasterizeShallows() };
 }
+// Имя спрайта с учётом погоды: в дождливый день у людей и гребцов —
+// дождевик (name_rain), у остального — как есть.
+function wearName(name){
+  const L = LEVELS[g.day];
+  return L && L.rain && SPR[name + "_rain"] ? name + "_rain" : name;
+}
+function cutWear(sc, name){ return sc.rain && SPR[name + "_rain"] ? name + "_rain" : name; }
 function drawSprite(name, x, y, variant){
-  const spr = SPR[name];
+  const spr = SPR[wearName(name)] || SPR[name];
   if (!spr) return;
   const img = (variant != null && spr.imgs) ? spr.imgs[variant] : spr.img;
   if (!img) return;
@@ -2026,6 +2110,8 @@ function setMusic(mode){
 // tools/add-sound.mjs («Звук батона.bat», «Звук виски.bat» — перетащить файл).
 // Пустое гнездо — играет общий звон бонуса.
 const SOUNDS = {
+  // Велосипедный звонок: пусто — звучит синтез (sfx «ring»).
+  ring: "",
   // Мычание коровы: пусто — звучит синтез (sfx «moo»); свою запись
   // вписывает tools/add-sound.mjs.
   moo: "",
@@ -2139,6 +2225,12 @@ function sfx(kind){
   if (!actx) return;
   if (kind.startsWith("voice_")){ playSample(kind); return; }   // голос — только свой файл
   if (kind === "moo"){ if (!playSample(kind)) mooTone(); return; }
+  if (kind === "ring"){                  // «дзынь-дзынь» велосипедного звонка
+    if (playSample(kind)) return;
+    const t0 = actx.currentTime;
+    for (const d of [0, 0.17]){ tone(2400, t0 + d, 0.14, "triangle", 0.07); tone(3150, t0 + d, 0.10, "sine", 0.03); }
+    return;
+  }
   if (kind === "crunch" || kind === "gulp"){
     if (playSample(kind)) return;
     kind = "bonus";                     // своего файла нет — общий звон бонуса
@@ -2317,7 +2409,7 @@ function centerAt(w){
 // падает на cut, ось уходит на cut/2 от сцены, дальний берег не двигается.
 // Жители Волги появляются дальше за верхней кромкой (BEV_AHEAD), так что
 // сужение в кадре не видно.
-const BEV_ROOM = { beach: 74, guitar: 66, camp: 120, fire: 56, fisher: 60, tower: 58, bear: 100, tree: 60, bush: 40, heron: 20, cows: 150, moose: 150 };
+const BEV_ROOM = { beach: 74, guitar: 66, camp: 120, fire: 56, fisher: 60, bear: 100, tree: 60, bush: 40, heron: 20, cows: 150, moose: 150, village: 170, cyclists: 110 };
 const ROOM_FULL = 120, ROOM_TAPER = 150;
 function roomNeed(e){
   if (e.roomDef === undefined){
@@ -3389,7 +3481,7 @@ function drwCut(){
   }
   for (const a of sc.actors){
     const st = cutState(a, g.cut.t);
-    const spr = SPR[st.spr];
+    const spr = SPR[cutWear(sc, st.spr)];
     if (!spr || !spr.img || st.al <= 0.01) continue;
     cx.save(); cx.globalAlpha = st.al;
     const img = spr.imgs && spr.imgs[st.var] ? spr.imgs[st.var] : spr.img;
@@ -4324,6 +4416,15 @@ function drwBg(){
       cx.fillRect(L + 8 + ((wy*7) % Math.max(1, R - L - bw - 16)), y, bw, BAND);
     }
 
+    // Осуга — лесная: участками по 900 px глухой лес (половина участков),
+    // под ним тёмная лесная подстилка по обоим берегам.
+    const osugaDense = level().river === 3 && hsh(Math.floor(wy/900)*37 + 3) < 0.5;
+    if (osugaDense){
+      cx.fillStyle = "rgba(8,36,18,0.22)";
+      if (L > 3) cx.fillRect(0, y, L - 3, BAND);
+      if (R < W - 3) cx.fillRect(R + 3, y, W - R - 3, BAND);
+    }
+
     // Береговой декор: кусты, деревья, камыш. Живут на травяных полосах,
     // поэтому с руслом (геймплеем) не пересекаются. Рисуются детерминированно
     // по мировому сантиметру и не шевелятся, когда камера плывёт.
@@ -4367,6 +4468,18 @@ function drwBg(){
       if (vwx % 3 === 0 && s3 > (volga ? 0.82 : 0.55)){
         const side = s1 > 0.5 ? 1 : -1;
         place(s2 > 0.7 ? "sbirch" : "sfir", side, 4 + Math.floor(s2*22));
+      }
+      // Осуга: в глухом лесу ёлки в три ряда вглубь с обоих берегов (редкие
+      // прогалины), в остальном — лишний ряд ёлок поглубже.
+      if (level().river === 3){
+        if (hsh(Math.floor(swy/900)*37 + 3) < 0.5){
+          if (vwx % 3 === 0) for (const side of [-1, 1]) for (let r = 0; r < 3; r++){
+            if (hsh(vwx*31 + r*7 + side*3) < 0.15) continue;
+            place(hsh(vwx*11 + r) > 0.82 ? "sbirch" : "sfir", side, 4 + r*30 + Math.floor(hsh(vwx*5 + r)*8));
+          }
+        } else if (vwx % 3 === 1 && s3 > 0.45){
+          place("sfir", s2 > 0.5 ? 1 : -1, 30 + Math.floor(s1*30));
+        }
       }
       if (s1 > 0.30 && s1 < 0.44 && (wy % 22) < BAND){
         cx.fillStyle = "#4d6b35";
@@ -4598,6 +4711,52 @@ function drwBev(e){
     return;
   }
 
+  // Колея вдоль берега (две тропки, на CYC_OFF вглубь от кромки) и трое
+  // велосипедистов: едут сверху вниз по экрану, навстречу байдарке.
+  if (e.type === "cyclists"){
+    const edgAt = w => centerAt(w) + e.side*widthAt(w)/2;
+    if (!bankVisible(e.side, edgAt(e.wy))) return;
+    cx.fillStyle = "#8a7048";
+    for (let w = e.wy - CYC_SPAN; w <= e.wy + CYC_SPAN; w += 8){
+      const sy = screenYOf(w);
+      if (sy < -12 || sy > H + 12) continue;
+      const x = edgAt(w) + e.side*CYC_OFF;
+      cx.fillRect(Math.round(x - 8), Math.round(sy), 3, 9);
+      cx.fillRect(Math.round(x + 5), Math.round(sy), 3, 9);
+    }
+    for (let i = 0; i < 3; i++){
+      const w = cyclistWy(e, i);
+      if (Math.abs(w - e.wy) > CYC_SPAN) continue;
+      const fr = Math.floor(g.frame/6 + i) % 2;
+      drawSprite("cyclist" + fr, edgAt(w) + e.side*CYC_OFF, screenYOf(w) - 24, i);
+    }
+    return;
+  }
+
+  // Деревня на берегу: 3–5 домов разного цвета в два ряда (у воды и глубже),
+  // иногда церковь, берёза, житель у воды. Состав — от e.seed, стабилен.
+  if (e.type === "village"){
+    const edg = ax + e.side*hw;
+    if (!bankVisible(e.side, edg)) return;
+    const h = k => hsh((e.seed || 0)*13 + k*101);
+    const n = 3 + Math.floor(h(1)*3);
+    const spots = [[34,-78],[104,-52],[56,14],[124,46],[76,100]];
+    const items = [];
+    for (let i = 0; i < n; i++){
+      const [off, dy] = spots[i];
+      const church = i === 1 && h(2) < 0.35;
+      items.push([church ? "church" : "house", off, dy, church ? null : Math.floor(h(10 + i)*5)]);
+    }
+    items.push(["sbirch", 160, -10, null]);
+    items.push(["person", 18, 60, Math.floor(h(3)*5)]);
+    items.sort((p, q) => p[2] - q[2]);
+    for (const [spr, off, dy, v] of items){
+      const x = bankAnchor(edg, e.side, edg + e.side*off, spriteSize(spr).w/2 + 3);
+      drawSprite(spr, x, by + dy, v == null ? undefined : v);
+    }
+    return;
+  }
+
   // Семья лосей у воды: лосиха и лосёнок у самой кромки, лось чуть глубже.
   // Взрослые по очереди пьют (голова к воде); байдарка рядом (e.alert) —
   // все поднимают головы и смотрят.
@@ -4693,20 +4852,17 @@ function drwBev(e){
   // Костёр: пламя живёт своей жизнью, рядом сидит турист и греется.
   if (e.type === "fire"){
     const flick = 0.85 + Math.sin(g.frame*0.35 + ph)*0.10 + Math.sin(g.frame*0.71 + ph*2)*0.05;
-    cx.save();
-    cx.translate(bx, by + 10);
-    cx.scale(1, flick);                       // пламя пляшет по высоте
-    drawSprite("fire", 0, -10);
-    cx.restore();
+    // Турист сидит за костром и греется: выше по кадру и рисуется раньше —
+    // огонь перед ним. Раньше сидел под огнём, и костёр горел у него на голове.
+    drawSprite("sitter", bx, by - 20 + Math.sin(g.frame*0.04 + ph)*1.2);
+    const fi = SPR.fire.img, fh = Math.round(fi.height*flick);   // пламя пляшет по высоте
+    cx.drawImage(fi, Math.round(bx - fi.width/2), Math.round(by + 10 - fh), fi.width, fh);
     // искры над костром
     for (let i = 0; i < 3; i++){
       const t = (g.frame*0.9 + i*37 + ph*20) % 60;
       cx.fillStyle = "rgba(255," + (150 + i*30) + ",60," + (1 - t/60).toFixed(2) + ")";
       cx.fillRect(bx - 6 + Math.sin(t*0.2 + i)*7, by - 12 - t*0.8, 3, 3);
     }
-    // Турист сидит у костра ВДОЛЬ берега (под огнём), а не вглубь суши: на
-    // узком берегу вглубь — это за краем экрана, его срезало.
-    drawSprite("sitter", bx, by + 30 + Math.sin(g.frame*0.04 + ph)*1.2);
     return;
   }
 
@@ -4875,6 +5031,12 @@ function updBev(e){
   if (e.type === "ducks" && !e.away
       && Math.abs(g.pwy - e.wy) < 95
       && g.t * e.side > 0.45) e.away = 1;
+  // Велосипедисты: время старта — с первого кадра; звонок один раз, когда
+  // кто-то из троих поравнялся с байдаркой.
+  if (e.type === "cyclists"){
+    if (e.f0 === undefined) e.f0 = g.frame;
+    if (!e.rang && [0, 1, 2].some(i => Math.abs(cyclistWy(e, i) - g.pwy) < 120)){ e.rang = true; sfx("ring"); }
+  }
   // Лоси поднимают головы, пока байдарка рядом.
   if (e.type === "moose") e.alert = Math.abs(g.pwy - e.wy) < 160;
   // Стадо мычит один раз, когда байдарка подплыла.
@@ -5787,27 +5949,54 @@ function spBn(){
   if(bt===null)return;
   g.bns.push({t:bt,wy,type:ty,visHalf:bVis,visHalfY:spriteSize(BN_SPRITE[ty]||"bread").h/2});
 }
-// Палаточный городок у финиша: несколько палаток, костёр и люди
-// на том берегу, к которому причаливаем.
-const ARRIVALS = {
-  // Палаточный лагерь: компактная сцена ~7 актёров, как было до расширения.
-  // Площадь «под лагерь» теперь даёт сам рельеф финиша (см. finishGain):
-  // река сужается и уходит в сторону, берег причаливания широкий.
-  // 4-й элемент кортежа — variant.
-  camp: [["ducks",8,14,1],["fisher",30,24,0],
-    ["tent",90,46,2],["tent2",150,52,1],
-    ["fire",120,36,0],["sitter",112,34,0],["pack",132,54,0]],
-  church:  [["church",20,44],["house",130,38],["tree",210,54],
-            ["person",70,26],["person",96,28],["house",250,42]],
-  village: [["house",0,34],["house",90,40],["person",50,26],["tree",170,52],
-            ["house",210,36],["person",130,28]],
-  town:    [["church",0,46],["house",100,36],["house",170,42],["house",240,34],
-            ["person",60,26],["person",140,28],["tree",300,52]]
-};
-
-// Другой берег при причаливании: своё кострище и пара встречающих.
-const ARRIVAL_OPP = [["fire",120,44,0],["person",90,26,4],["person",150,32,1],
-  ["tree",60,52,0]];
+// Девять финишей — у каждого дня своя стоянка по месту прибытия. Строка:
+// [житель, back — сколько px ниже ленты по реке, off — вглубь берега от
+// кромки воды, variant]. near — берег причаливания, opp — другой берег (там
+// суши мало, поэтому немного и только где она есть). Раскладка в две
+// колонки: у воды и глубже на суше, чтобы не стояло всё столбиком; на берегу
+// причаливания не больше восьми жителей — стоянка, а не толпа.
+const FINISHES = [
+  // 1. Волга, палаточный городок: палатки, костёр, гитара, рюкзак,
+  //    байдарка на берегу, рыбак у воды. Зверей у стоянок нет — к людям
+  //    не подходят.
+  { near:[["tent",40,50,0], ["tent2",130,44,1], ["pack",140,100], ["kayak_side",215,58],
+          ["fire",330,95], ["guitar",390,40], ["sbush",480,30], ["fisher",560,24]],
+    opp:[] },
+  // 2. Волга, Старица: церковь на берегу, дома, люди у воды, рыбак.
+  { near:[["church",30,60], ["house",150,40], ["person",150,96,1], ["tree",250,70],
+          ["house",350,30], ["sbush",350,92], ["person",440,30,3], ["fisher",540,24]],
+    opp:[] },
+  // 3. Медведица, стоянка в лесу: поляна среди ёлок, две палатки, костёр;
+  //    на том берегу лес.
+  { near:[["sfir",-30,40], ["tent2",70,60,2], ["sfir",60,140], ["fire",170,40], ["person",170,112,4],
+          ["tent",280,60,1], ["sbirch",280,140], ["sfir",400,40]],
+    opp:[["sfir",40,40], ["sbirch",150,40], ["sfir",260,50]] },
+  // 4. Медведица, лагерь: ёлки, палатки, гитара у огня, рюкзак, байдарка.
+  { near:[["sfir",20,120], ["tent",70,48,2], ["tent2",180,50,5], ["guitar",200,126], ["fire",310,44],
+          ["pack",300,110], ["tent",420,48,4], ["kayak_side",520,62]],
+    opp:[["fisher",100,24], ["sfir",220,40]] },
+  // 5. Тверца, деревня: дома в два ряда, берёза, жители.
+  { near:[["house",0,40], ["house",10,122], ["person",110,30,2], ["sbirch",110,110], ["house",210,70],
+          ["person",340,50,4], ["tree",470,50], ["sbush",470,120]],
+    opp:[] },
+  // 6. Тверца, Торжок: церковь и городские дома, горожане, дерево.
+  { near:[["church",0,50], ["house",10,140], ["person",110,40,2], ["person",110,96,4], ["house",110,142],
+          ["house",220,50], ["house",220,135], ["tree",330,90]],
+    opp:[] },
+  // 7. Осуга, первый порог: валуны, палатки, костёр, байдарки сохнут.
+  { near:[["boulder_side",0,34], ["tent2",20,125,6], ["fire",120,40], ["person",120,112,3],
+          ["kayak_side",220,60], ["kayak_side",270,80], ["tent",370,60,5], ["pack",370,150]],
+    opp:[["boulder_side",0,36], ["sfir",100,60], ["sfir",200,40]] },
+  // 8. Осуга, каньон: россыпь валунов, ёлки, палатка, костёр.
+  { near:[["boulder_side",0,30], ["boulder_side",20,96], ["sfir",20,150], ["tent2",130,60,3],
+          ["fire",240,40], ["person",240,110,2], ["boulder_side",330,150], ["tent",420,70,6]],
+    opp:[["boulder_side",0,40], ["boulder_side",70,96], ["sfir",170,50]] },
+  // 9. Осуга, устье — последняя стоянка: разноцветные палатки, гитара,
+  //    костёр, друзья, байдарки в ряд.
+  { near:[["tent",0,48,0], ["person",0,125,1], ["tent2",110,60,4], ["guitar",120,130], ["fire",240,50],
+          ["tent",350,60,5], ["kayak_side",460,60], ["kayak_side",505,76]],
+    opp:[["fisher",60,24], ["sfir",190,40]] }
+];
 
 // ---------- Отпечаток жителя берега ----------
 // Прямоугольник, который житель РЕАЛЬНО занимает при рисовании во всех кадрах
@@ -5869,16 +6058,15 @@ function placeBev(e, dir){
 
 function spawnCamp(wy){
   const sd = g.landSide;
-  const kind = level().arrive || "camp";
-  const rows = ARRIVALS[kind] || ARRIVALS.camp;
+  const F = FINISHES[g.day] || FINISHES[0];
   // Актёры ставятся по отпечаткам: кто налезает на уже стоящего — отходит
   // вдоль берега ВПЕРЁД (за ленту), пока не найдёт свободное место. Назад —
   // нельзя: лагерь выставляется над экраном и не должен въезжать в кадр.
-  for (const [type, back, off, variant] of rows)
+  for (const [type, back, off, variant] of F.near)
     placeBev({ type, side:sd, wy: wy - back + 40, off,
                phase:Math.random()*6.28, mode:"sit", atCamp:true,
                variant: variant != null ? variant : 0 }, 1);
-  for (const [type, back, off, variant] of ARRIVAL_OPP)
+  for (const [type, back, off, variant] of F.opp)
     placeBev({ type, side:-sd, wy: wy - back + 40, off,
                phase:Math.random()*6.28, mode:"sit", atCamp:true,
                variant: variant != null ? variant : 0 }, 1);
@@ -5887,10 +6075,10 @@ function spawnCamp(wy){
 // Пулы береговых сцен по рекам. Каждая река — свой характер:
 // Волга людная и пляжная, лесные реки — дикие. Индекс — номер реки.
 const BEV_POOLS = [
-  ["beach","beach","guitar","guitar","camp","fire","ducks","tower","fisher","bush","tree"],
-  ["bear","camp","fire","heron","tower","fisher","bush","tree","tree"],
-  ["moose","camp","fire","ducks","tower","fisher","bush","tree","tree"],
-  ["bear","camp","fire","ducks","tower","fisher","cows","cows","bush","tree","tree"]
+  ["beach","beach","guitar","guitar","camp","fire","ducks","fisher","bush","tree"],
+  ["bear","camp","fire","heron","fisher","cyclists","bush","tree","tree"],
+  ["moose","camp","fire","ducks","fisher","bush","tree","tree"],
+  ["bear","camp","fire","ducks","fisher","cows","cows","bush","tree","tree"]
 ];
 
 // Волга — большая вода: жителей на её узких берегах вчетверо реже, и
@@ -5927,6 +6115,36 @@ function cowsWade(e){
     if (!spaceFree(t, wy, sz.w/2)) continue;
     g.obs.push({ type:"rock", cow:true, sprite: e.side < 0 ? "cow_water" : "cow_water_l",
                  t, wy, vt:0, size:40, visHalf:sz.w/2, visHalfY:sz.h/2, halfPx:sz.w/2*0.75, swingT:-1 });
+  }
+}
+// Деревни Тверцы: 3–5 за день, в основном по одному берегу (80% — по
+// «своему»), равномерно по дню, не у старта и не у финиша. План считается
+// от номера дня (hsh), а не Math.random — не сдвигает случайность игры.
+// Велосипедисты едут друг за другом по колее вниз по экрану (к меньшим wy)
+// со скоростью CYC_V px мира за кадр; стартуют выше жителя по реке.
+const CYC_OFF = 58, CYC_SPAN = 380, CYC_V = 1.6;
+function cyclistWy(e, i){ return e.wy + 260 - i*62 - (g.frame - (e.f0 || 0))*CYC_V; }
+function villagePlan(day){
+  const L = LEVELS[day];
+  if (!L || L.river !== 2) return [];
+  const n = 3 + Math.floor(hsh(day*977 + 13)*3);
+  const main = hsh(day*31 + 7) < 0.5 ? -1 : 1;
+  const a0 = 60, span = (L.len - 90) - a0 - 20;
+  const plan = [];
+  for (let i = 0; i < n; i++){
+    const at = Math.round(a0 + span*(i + 0.5)/n + (hsh(day*101 + i*17) - 0.5)*span/n*0.4);
+    plan.push({ at, side: hsh(day*53 + i*29) < 0.8 ? main : -main, seed: Math.floor(hsh(day*7 + i*11)*1000) });
+  }
+  let minor = plan.filter(v => v.side !== main).length;
+  for (const v of plan) if (minor > Math.floor(n*0.4) && v.side !== main){ v.side = main; minor--; }
+  return plan;
+}
+function spVillage(){
+  if (!g.villages) g.villages = villagePlan(g.day);
+  for (const v of g.villages){
+    if (v.done || g.dist < v.at) continue;
+    v.done = true;
+    placeBev({ type:"village", side:v.side, wy:spawnWy(), off:40, phase:(v.seed % 628)/100, seed:v.seed }, 1);
   }
 }
 function spPt(x,y,cl,c){
@@ -6202,7 +6420,7 @@ function dayFromParam(v){
 // Хочется смотреть береговые картинки (пляж, финиш, утки, палаточный лагерь),
 // не доезжая до них греблей. Три дебаг-параметра в URL:
 //   ?day=N            — день (как обычно);
-//   ?scene=NAME       — телепорт на готовую сцену: beach|finish|camp|ducks|heron|cows|moose;
+//   ?scene=NAME       — телепорт на готовую сцену: beach|finish|camp|ducks|heron|cows|moose|village|cyclists;
 //   ?at=METERS        — телепорт на произвольный метр русла M.
 // Все три ставят [g.scroll, g.pwy, g.dist] на точку и сразу спавнят нужную
 // сцену, чтобы кадр был готов в момент входа в уровень.
@@ -6216,6 +6434,8 @@ const DEBUG_SCENES = {
   heron: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   cows:  { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   moose: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  village: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  cyclists: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   // Финиш: река уже сузилась (finishGain), лента впереди, палатки по стороне
   // причаливания. Камера чуть ниже ленты, чтобы сухой берег был виден.
   finish: { wy: null },
@@ -6254,13 +6474,13 @@ function sceneAt(s){
     g.tapeWy = tape; g.landSide = 1;
     spawnCamp(tape);
     teleportTo(Math.max(0, tape - 150));
-  } else if (s === "beach" || s === "ducks" || s === "heron" || s === "cows" || s === "moose"){
+  } else if (s === "beach" || s === "ducks" || s === "heron" || s === "cows" || s === "moose" || s === "village" || s === "cyclists"){
     const wy = DEBUG_SCENES[s].wy;
     // На широкий берег (widerBevSide) и в дебаге: картинка должна показывать,
     // как сцена сидит на берегу вживую — тем же правилом, что и в спавне.
     const side = widerBevSide(wy, DEBUG_SCENES[s].side);
     g.bev.push({ type:s, side, wy, off:34, phase:1.7, mode:"swim", atCamp:false,
-                 variant: DEBUG_SCENES.beach.variant });
+                 variant: DEBUG_SCENES.beach.variant, seed: Math.floor(Math.random()*1000) });
     if (s === "cows") cowsWade(g.bev[g.bev.length - 1]);
     teleportTo(wy);
   } else {
@@ -6339,7 +6559,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
@@ -6597,9 +6817,11 @@ const LOG_HIT = 0.85;             // доля скорости, которую �
 const LOG_RUB = 0.985;            // трение о песок за кадр
 const LOG_RECOVER = 0.02;         // как быстро течение разгоняет обратно
 // За сколько метров до конца выставлять ленту и лагерь прибытия. Лента на
-// экране: PY − (осталось·25 − 150); дальний актёр прибытия на 260 px выше
-// ленты и сам ~70 px ростом. 46 м — все они ещё над верхней кромкой.
-const FIN_SPAWN_M = 46;
+// экране: PY − (осталось·25 − 150); стоянка финиша (FINISHES) тянется до
+// ~600 px ниже ленты, самый дальний житель ~110 px ростом. 60 м — лента на
+// −720, все жители стоянки ещё над верхней кромкой (было 46 м под лагерь
+// в 260 px).
+const FIN_SPAWN_M = 60;
 // Пикселей мира в метре дистанции: за кадр камера уходит на step px,
 // а дистанция растёт на step·0.04 м.
 const PX_PER_M = 25;
@@ -6752,6 +6974,7 @@ function upd(){
   waveStep();
   if(Math.random()<0.003)spBn();
   if(g.dist>=g.ned)spBev();
+  spVillage();
   for(let i=g.obs.length-1;i>=0;i--){
     const o=g.obs[i];
     // Бревно плывёт по течению, но медленнее байдарок — мы его нагоняем.
@@ -7099,12 +7322,12 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, cyclistWy, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
   campaignSum,
-  GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, ARRIVALS, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
+  GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined"){

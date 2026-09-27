@@ -23,7 +23,7 @@ test("лагерь у финиша компактный (людей не бол�
   assert.ok(K.G.bev.length <= 14, "всего в сцене (обе стороны) не больше 14: " + K.G.bev.length);
   const kinds = new Set(singleBank.map(e => e.type));
   assert.ok(kinds.has("tent") && kinds.has("tent2"), "обе формы палаток");
-  assert.ok(kinds.has("fire") && kinds.has("ducks") && kinds.has("fisher"), "костёр и утки с рыбаком у воды");
+  assert.ok(kinds.has("fire") && kinds.has("fisher") && !kinds.has("ducks"), "костёр и рыбак у воды; зверей у людей нет");
 });
 
 test("палатки в лагере разных цветов (variant доходит до справйта)", () => {

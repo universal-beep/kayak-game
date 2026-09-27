@@ -51,7 +51,7 @@ test("финишная лента и лагерь выставляются за�
     K.G.day = day;
     const L = K.level();
     K.G.s = "playing"; K.G.tapeWy = -1; K.G.bev = [];
-    K.G.dist = L.len - 45;                               // за 45 м до конца
+    K.G.dist = L.len - K.FIN_SPAWN_M + 1;                // в момент, когда игра выставляет лагерь
     K.G.pwy = K.G.scroll;
     K.upd();
     assert.ok(K.G.tapeWy > 0, "день " + (day + 1) + ": лента не выставлена за 45 м до конца");

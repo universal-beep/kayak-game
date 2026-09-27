@@ -68,7 +68,7 @@ test("лагерь прибытия на финише: актёры не нал�
 test("декор берега не налезает на жителей — по их настоящему размеру", () => {
   const { K, ctx } = loadGame();
   const bad = [];
-  for (const [type, variant] of [["camp", 0], ["guitar", 0], ["beach", 2], ["fisher", 0], ["bear", 0], ["tower", 0]]) {
+  for (const [type, variant] of [["camp", 0], ["guitar", 0], ["beach", 2], ["fisher", 0], ["bear", 0]]) {
     for (const side of [-1, 1]) for (const wy0 of [5000, 9000, 13000]) {
       setupWorld(K, { wy: wy0 - K.PY + 360 });
       K.G.rBend = 1; K.G.frame = 0;
