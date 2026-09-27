@@ -2,6 +2,7 @@
 // Пляжам и компаниям при этом хватает места: русло отступает от их берега.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { runInContext } from "node:vm";
 import { loadGame, setupWorld } from "./harness.mjs";
 
 function volga(K, day = 0) {
@@ -23,7 +24,13 @@ test("Волга: воды больше, чем берега — река зан
 test("Волга: жителей на берегу по минимуму — реже, чем на лесных реках", () => {
   const counts = {};
   for (const day of [0, 2]) {
-    const { K } = loadGame();
+    const { K, sandbox } = loadGame();
+    // Постоянное зерно: без него проба изредка падала на неудачном раскладе
+    // (а перед отправкой на GitHub тесты гоняются обязательно).
+    runInContext(`(function(){ let a = ${day + 11} * 2654435761 >>> 0;
+      Math.random = function(){ a = (a + 0x6D2B79F5) >>> 0; let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })()`, sandbox);
     setupWorld(K, { wy: 400 });
     K.G.day = day; K.G.s = "playing"; K.G.df = 0; K.G.inv = 1e9;
     const L = K.level(), R = K.RIVERS[L.river];

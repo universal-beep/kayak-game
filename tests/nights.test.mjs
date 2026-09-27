@@ -246,3 +246,47 @@ test("во всех ночах у палаток кто-то сидит, кто-
     assert.ok(stand.length >= 1, n + ": у палаток никто не стоит");
   }
 });
+
+test("в каждой ночи есть девушки — хотя бы две; говорящие остаются парнями (голоса мужские)", () => {
+  const { K } = loadGame();
+  for (const n of ["night", "night2", "night3", "night4", "night5"]) {
+    const sc = K.CUTS[n];
+    const girls = sc.actors.filter(a => /^(girl|sitter_girl)/.test(a.spr) || (a.cycle && Array.from(a.cycle.spr).some(x => /^girl/.test(x))));
+    assert.ok(girls.length >= 2, n + ": девушек " + girls.length);
+    assert.ok(!sc.actors.some(a => a.talk && /girl/.test(a.spr)), n + ": девушка говорит мужским голосом");
+  }
+  for (const name of ["sitter_girl", "girl_w1"]) assert.ok(K.SPR[name], "нет спрайта " + name);
+  assert.equal(K.SPR.girl_w1.variants.length, K.SPR.girl.variants.length, "у кадра шага девушки нет её вариантов окраски — платье будет мигать");
+});
+
+test("во всех ночах идущие не проходят по сидящим", () => {
+  const { K } = loadGame();
+  const bad = [];
+  for (const n of ["night", "night2", "night3", "night4", "night5"]) {
+    const sc = K.CUTS[n];
+    const at = (a, f) => { const k = a.keys; let i = 0; while (i < k.length - 2 && f > k[i+1][0]) i++;
+      const k0 = k[i], k1 = k[Math.min(i+1, k.length-1)], u = Math.max(0, Math.min(1, (f - k0[0]) / Math.max(1e-6, k1[0] - k0[0])));
+      return [k0[1] + (k1[1] - k0[1])*u, k0[2] + (k1[2] - k0[2])*u, k0[4] + (k1[4] - k0[4])*u]; };
+    const moves = a => a.keys.some(k => k[1] !== a.keys[0][1] || k[2] !== a.keys[0][2]);
+    const walkers = sc.actors.filter(a => ["person", "girl", "guitar_walk0", "andr_walk0"].includes(a.spr) && moves(a));
+    const sitters = sc.actors.filter(a => /^sitter|^night_guitar$/.test(a.spr) && !moves(a));
+    for (const w of walkers) for (let f = 0; f <= 1; f += 0.004) {
+      const [x, y, al] = at(w, f);
+      if (al < 0.5) continue;
+      for (const st of sitters) {
+        const [sx, sy, sal] = at(st, f);
+        if (sal < 0.5) continue;
+        // Настоящие прямоугольники спрайтов (опора — низ): стоящий выше
+        // сидящего и может закрыть его, даже когда их точки опоры далеко.
+        const box = (spr, px, py, scl) => { const m = K.SPR[spr].map; const w = m[0].length*3*scl, h = m.length*3*scl; return [px - w/2, py - h, px + w/2, py]; };
+        const wscl = w.keys[0][3], sscl = st.keys[0][3];
+        const A = box(w.cycle ? w.cycle.spr[0] : w.spr, x, y, wscl), B = box(st.spr, sx, sy, sscl);
+        const ox = Math.min(A[2], B[2]) - Math.max(A[0], B[0]), oy = Math.min(A[3], B[3]) - Math.max(A[1], B[1]);
+        // Позади и нарисован раньше — законно закрыт сидящим; иначе «идёт по нему».
+        const behindOk = y < sy - 4 && sc.actors.indexOf(w) < sc.actors.indexOf(st);
+        if (ox > 6 && oy > 6 && !behindOk) bad.push(n + ": " + w.spr + (w.var || "") + " по " + st.spr + " @" + sx + "," + sy + " в " + (f*sc.len/60).toFixed(1) + " с, идущий " + Math.round(x) + "," + Math.round(y));
+      }
+    }
+  }
+  assert.deepEqual([...new Set(bad)], [], "идут по сидящим");
+});
