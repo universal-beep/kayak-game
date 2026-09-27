@@ -21,7 +21,7 @@ export const INDEX = fileURLToPath(new URL("../index.html", import.meta.url));
 // Группы для редактора и листа спрайтов. Спрайт, которого здесь нет,
 // попадает в «Катсцены и прочее».
 export const GROUPS = [
-  ["Река: препятствия", ["log", "branch", "snag", "boulder", "fang", "slab", "barge", "boat", "shallows"]],
+  ["Река: препятствия", ["log", "branch", "snag", "boulder", "fang", "slab", "mossy", "pebbles", "barge", "boat", "shallows"]],
   ["Бонусы", ["bread", "whisky", "medkit", "axe", "sun"]],
   ["Лодки", ["kayak_center", "kayak_left", "kayak_right", "rower", "rower_flip", "oar"]],
   ["Берег и финиш: природа", ["tree", "sfir", "sbirch", "sbush", "bush", "bear", "bear_b", "duck", "duckfly0", "duckfly1", "fish"]],

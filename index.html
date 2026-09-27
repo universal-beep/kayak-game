@@ -664,18 +664,87 @@ const SPR = {
     ".kk........"]},
   sun:{map:["....k.....","..k.kk.k..","...kYYk...",".kkYYYYkk.","kYYYYYYYYk",
     ".kkYYYYkk.","...kYYk...","..k.kk.k..","....k....."],noOutline:true},
-  boulder:{map:[".....kkkkk......","...kkGGGGGkk....","..kGGGGGGGGGkk..",".kGGGGGGjjjjGGkk",
-    ".kGGGGjjjjjjjGk.","kGGGjjjjjjjjjGk.","kGGjjjjjjjjjjjGk","kGjjjjjggggjjjGk",
-    "kGjjjjggggggjjGk","kGjjjggggggggjGk","kGjjggggggggggGk",".kjjgggggggggGk.",
-    ".kkgggggggggGkk.","..kkgggggggkkk..","....kkkkkkkk...."]},
-  fang:{map:["......kk......",".....kGGk.....",".....kGGk.....","....kGGjjk....",
-    "....kGGjjk....","...kGGGjjjk...","...kGGGjjjk...","..kGGGGjjjjk..",
-    "..kGGGjjjjjk..",".kGGGGjjjjjjk.",".kGGGjjjjgggk.","kGGGjjjjgggggk",
-    "kGjjjjgggggggk","kGjjjggggggggk","kjjggggggggggk",".kkgggggggggk.","..kkkkkkkkkk.."]},
-  slab:{map:["......kkkkkk............","...kkkGGGGGGkkkk........","..kGGGGGGGGGGGGGkkkkk...",
-    ".kGGGGGGjjjjjjGGGGGGGGk.","kGGGGjjjjjjjjjjjjGGGGGGk","kGjjjjjjjjjjjjjjjjjjjjGk",
-    "kjjjjjjjggggggggjjjjjjjk","kjjjjggggggggggggggjjjjk","kjjggggggggggggggggggjjk",
-    ".kkggggggggggggggggggkk.","...kkgggggggggggggkkk...","......kkkkkkkkkkk......."]},
+  // Камни в реке — вид сверху, свет сверху-слева, мокрая тёмная кромка у
+  // воды (генератор по геометрии, 28.09.2026). Пять силуэтов: валун с
+  // трещиной (круг), клык (гранёный клин остриём против течения), плита
+  // (длинная, слоистая), мшистый валун (зелёная шапка), россыпь (три камня).
+  boulder:{map:["......kkkkk.......",
+    "...kkkWWWWWkk.....",
+    "..kWWWWWWWjGGkk...",
+    ".kWWWWWgWGGjGGGk..",
+    ".kWWWWWWgGGGGGGk..",
+    "kWWWWGGWgGGjGGjjk.",
+    "kWWGGGGGWgGGjjjjjk",
+    "kWGGGGGGGWgjjjjjjk",
+    "kGGGGjGjjjgjjjjjgk",
+    "kGGGGGGjjjjjjjgggk",
+    "kGGjGjjjjjjjjggggk",
+    ".kGjjjjjjGjgggggk.",
+    "..kggggjjggggggk..",
+    "...kggggggggkkk...",
+    "....kkkkkkkk......"]},
+  fang:{map:["......k.......",
+    ".....kGk......",
+    "....kWGjk.....",
+    "...kGWGjk.....",
+    "...kGWGjjk....",
+    "..kGGWGjjjk...",
+    ".kGGGWWGjjk...",
+    ".kGGGWWGjjgk..",
+    ".kGGGWWGjjjk..",
+    "kGGjjWWjjjjk..",
+    "kGGGGWWGjjjgk.",
+    "kGGGGGGGjjjgk.",
+    "kGGGGGGGjjjgk.",
+    "kGGGGGGGjjjggk",
+    ".kGGGGGGGjjgk.",
+    ".kgggggggggk..",
+    "..kgggggggk...",
+    "...kkkkkkk...."]},
+  slab:{map:[".........kkkkkkkk........",
+    ".....kkkkWWWWWWWWkkkk....",
+    "..kkkWWWWWWWWWWWWWWWWkk..",
+    ".kGGjjjGGGGGGGWGjjGGGGGk.",
+    "kjjjGWGGGGGGGjjjGGGGGGGGk",
+    "jGGGWGWGGGjjjGGGGGGGGGjjk",
+    "GGGGGGGjjjGGGGGGGGGjjjGGk",
+    "kGGGjjjGGGGGGGGGGjjGGGGGk",
+    ".kgjGGGGGGGGWGjjGGGGGGgk.",
+    "..kkgggggggggggggggggggk.",
+    "....kkkkgggggggggggggkk..",
+    "........kkkkggggggkkk....",
+    "............kkkkkk......."]},
+  mossy:{map:["......kkkkkk......",
+    ".....kFFFFFFk.....",
+    "....kFFFFFFvvk....",
+    "...kFFFFFvvFFvk...",
+    "..kFFFFvFvvvvvvk..",
+    ".kFFFFvvvvvvvvvVk.",
+    ".kFFGFvvvvvvvVVVVk",
+    "kFvvGvvvvvGjVVVVVk",
+    "kvFGGGvFvvjjjjVVVk",
+    "kvvGGGGjVVjjjjjVgk",
+    "kGGGGjjjjjjjjggVk.",
+    "kGGGjjjjjjjjgggk..",
+    ".kggggjjjjggggk...",
+    "..kggggggggggk....",
+    "...kkggggggkk.....",
+    ".....kkkkkk......."]},
+  pebbles:{map:["......kkkkkk..........",
+    ".....kkkWWGkk.kkk.....",
+    "....kkWWWGGGkkkkkkk...",
+    "...kkWWGGjGjkkkWWkkk..",
+    "...kkGGGGjjkkWWWWGGkk.",
+    "..kkkGGjjjkkWWWWGGGkk.",
+    ".kkkkkkjjgkWWWGGGGGGkk",
+    "kkkWWWWkkkWWGGGGGGjjkk",
+    "kkWWWGGjGkkGGGGGjjjjkk",
+    "kWWGGGGGjjkGGGGjjGGjgk",
+    "kWGGGjjjjjkkGjjjjjjggk",
+    "kkGGGjjjjgkjjjjjjgggkk",
+    "kkjjjjjgggkkggggggggkk",
+    ".kkggggggkkkkkggggkkk.",
+    "..kkkkkkkk.kkkkkkkkk.."]},
   // Бревно вида сверху: цилиндр со светом сверху (светлая кора по верху,
   // тёмная снизу), продольные штрихи коры, светлый спил с кольцом справа,
   // обломанный конец со щепками слева и сучок сверху. Сучок и рваный конец
@@ -3162,13 +3231,17 @@ function drwCutTalk(sc, t, s, xf, yf){
 // Волга — большая вода. Множители превращают это в механику, а не в подпись.
 const RIVERS = [
   { name:"ВОЛГА",     width:1.5,  bend:0.55, rocks:0.8, speed:1.00, rapids:false,
-    grass:"#4b9c48", water:"#0f6bc4", note:"Большая вода, много туристов" },
+    grass:"#4b9c48", water:"#0f6bc4", note:"Большая вода, много туристов",
+    stones:{ boulder:3, slab:3, pebbles:2, mossy:1, fang:1 } },
   { name:"МЕДВЕДИЦА", width:0.85, bend:1.55, rocks:1.2, speed:1.10, rapids:true,
-    grass:"#367f3c", water:"#125e9e", note:"Извилистая, лесная, топляк и мели" },
+    grass:"#367f3c", water:"#125e9e", note:"Извилистая, лесная, топляк и мели",
+    stones:{ mossy:4, boulder:2, pebbles:2, slab:1, fang:1 } },
   { name:"ТВЕРЦА",    width:1.25, bend:1.00, freq:0.5, rocks:1.0, speed:1.05, rapids:true,
-    grass:"#47973f", water:"#136fb8", note:"Старый водный путь на Торжок" },
+    grass:"#47973f", water:"#136fb8", note:"Старый водный путь на Торжок",
+    stones:{ boulder:3, slab:2, pebbles:2, mossy:2, fang:1 } },
   { name:"ОСУГА",     width:0.72, bend:0.80, rocks:1.8, speed:1.20, rapids:true,
-    grass:"#3f8f43", water:"#1565c0", note:"Малая река, пороги и камни" }
+    grass:"#3f8f43", water:"#1565c0", note:"Малая река, пороги и камни",
+    stones:{ fang:3, pebbles:3, boulder:2, slab:1, mossy:1 } }
 ];
 
 // Девять дней похода. У каждого своя река, конечная длина и своя цель
@@ -5178,6 +5251,14 @@ function spaceFree(t, wy, visHalf){
   return true;
 }
 
+// Вид камня для реки по случайному r ∈ [0, 1): веса из RIVERS[river].stones.
+function rockKind(river, r){
+  const w = (RIVERS[river] || RIVERS[0]).stones;
+  const ks = Object.keys(w), sum = ks.reduce((a, k) => a + w[k], 0);
+  let c = 0;
+  for (const k of ks){ c += w[k]/sum; if (r < c) return k; }
+  return ks[ks.length - 1];
+}
 function spOb(){
   const wy=spawnWy(),rw=widthAt(wy),rb=rapidBlend(wy);
   const L=level();
@@ -5206,11 +5287,12 @@ function spOb(){
     for (const fk of g.forks) if (fk.end > wy - 300 && fk.start < wy + 1100) return;
   }
   const sz=ty=="log"?36+Math.random()*24:ty=="branch"?22+Math.random()*12:14+Math.random()*8;
-  // Камень бывает трёх форм: валун, клык и плита. Разные габариты дают
-  // разные способы уворота, а плита ещё и не всегда влезает в русло.
+  // Камень — пять видов (валун, клык, плита, мшистый, россыпь), у каждой
+  // реки свой набор (RIVERS[].stones). Разные габариты дают разные способы
+  // уворота, а плита ещё и не всегда влезает в русло.
   let sprite=null, halfPx;
   if(ty=="rock"){
-    sprite=["boulder","fang","slab"][Math.floor(Math.random()*3)];
+    sprite=rockKind(L.river, Math.random());
     halfPx=spriteSize(sprite).w/2*0.82;
   } else {
     halfPx=obHalfPx(ty,sz);
@@ -6538,7 +6620,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
