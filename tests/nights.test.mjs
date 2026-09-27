@@ -290,3 +290,31 @@ test("во всех ночах идущие не проходят по сидя�
   }
   assert.deepEqual([...new Set(bad)], [], "идут по сидящим");
 });
+
+// Палатки 28.09.2026 стали шире и объёмнее — стоявший «у своей палатки»
+// оказался ногами на ткани и рисовался поверх неё. Кто нарисован после
+// палатки, не должен стоять ногами внутри её рисунка (выше её низа).
+test("никто не стоит на палатке: ноги рисуемого поверх — не на ткани", () => {
+  const { K } = loadGame();
+  const SC = 3, size = n => { const m = K.SPR[n].map; return [m[0].length*SC, m.length*SC]; };
+  const skip = /tent|fire|kayak|fir|sfir|sbirch|sunrise|oar|note|canary|bear|seat_log|sil|boulder/;
+  const bad = new Set();
+  for (const name of ["night", "night2", "night3", "night4", "night5", "morning", "morning_rain"]) {
+    const sc = K.CUTS[name], acts = sc.actors;
+    const tents = acts.map((a, i) => [a, i]).filter(([a]) => /^tent2?$/.test(a.spr));
+    for (let f = 0; f <= 1; f += 0.02) {
+      const t = f * (sc.len || 300);
+      acts.forEach((a, i) => {
+        if (skip.test(a.spr)) return;
+        const s = K.cutState(a, t); if (s.al <= 0.01) return;
+        for (const [tn, ti] of tents) {
+          const ts = K.cutState(tn, t); if (ts.al <= 0.01 || i < ti) continue;
+          const [w, h] = size(tn.spr).map(v => v * ts.scl);
+          if (Math.abs(s.x - ts.x) < w/2 - 3 && s.y < ts.y - 2 && s.y > ts.y - h + 3)
+            bad.add(name + ": " + a.spr + " на " + tn.spr + " (" + ts.x + "," + ts.y + ")");
+        }
+      });
+    }
+  }
+  assert.deepEqual([...bad], []);
+});

@@ -714,6 +714,12 @@ const SPR = {
     "....kkkkgggggggggggggkk..",
     "........kkkkggggggkkk....",
     "............kkkkkk......."]},
+  // Валун вида сбоку — для пейзажей мультов (горизонт пятой ночи); в реке
+  // камни вида сверху.
+  boulder_side:{map:[".....kkkkk......","...kkGGGGGkk....","..kGGGGGGGGGkk..",".kGGGGGGjjjjGGkk",
+    ".kGGGGjjjjjjjGk.","kGGGjjjjjjjjjGk.","kGGjjjjjjjjjjjGk","kGjjjjjggggjjjGk",
+    "kGjjjjggggggjjGk","kGjjjggggggggjGk","kGjjggggggggggGk",".kjjgggggggggGk.",
+    ".kkgggggggggGkk.","..kkgggggggkkk..","....kkkkkkkk...."]},
   mossy:{map:["......kkkkkk......",
     ".....kFFFFFFk.....",
     "....kFFFFFFvvk....",
@@ -842,48 +848,334 @@ const SPR = {
     "..kbbbbmmmmmBBBk..",
     "..kbbbbBBBBbbbbbk.",
     "...kkkkkkkkkbbbbk."]},
-  fisher:{map:[rep(".",5)+"kkkk"+rep(".",7),rep(".",4)+"k"+"yyyy"+"k"+rep(".",6),
-    rep(".",3)+"kk"+"yyyyyy"+"kk"+rep(".",3),rep(".",5)+"k"+"tt"+"k"+rep(".",7),
-    rep(".",5)+"k"+"tt"+"k"+rep(".",7),rep(".",4)+"k"+"rrrr"+"k"+rep(".",6),
-    rep(".",3)+"k"+"rrrrrr"+"k"+rep(".",5),rep(".",3)+"k"+"rrrrrr"+"k"+rep(".",5),
-    rep(".",3)+"k"+"rrrrrr"+"k"+rep(".",5),rep(".",3)+"k"+"ZZZZZZ"+"k"+rep(".",5),
-    rep(".",3)+"k"+"ZZZZZZ"+"k"+rep(".",5),rep(".",3)+"k"+"ZZ"+"kk"+"ZZ"+"k"+rep(".",5),
-    rep(".",3)+"k"+"ZZ"+"kk"+"ZZ"+"k"+rep(".",5),rep(".",3)+"k"+"ZZ"+"kk"+"ZZ"+"k"+rep(".",5),
-    ".."+"kk"+"OO"+"kk"+"OO"+"kk"+rep(".",4),".."+"kkkk"+"kk"+"kkkk"+rep(".",4)],noOutline:true},
+  // Цапля (Медведица, вместо уток): серая, стоит на одной ноге у берега,
+  // белая шея буквой S, чёрный хохол, длинный жёлтый клюв. Два кадра полёта:
+  // шея втянута, ноги назад, крыло вверх / вниз. Смотрит вправо — к воде
+  // на левом берегу; для правого берега — копии с «_l».
+  heron:{map:[".........kkkkkkkk...",
+    "........kKKKKKKuukk.",
+    ".........kkkwwwyyyyk",
+    "...........kwWkkkkk.",
+    "...........kwWk.....",
+    "..........kwWk......",
+    "..........kwWk......",
+    "....kkkkkkkkwKk.....",
+    "...kWWWWWWWkwKk.....",
+    "..kWWWWWWWWwWk......",
+    ".kGGGGGGGGwwwk......",
+    ".kGjjjjjjGwwwk......",
+    "kgggjjjjjGwwwk......",
+    "kgggggggggwwwk......",
+    ".kkkgggggggkk.......",
+    "....kkkkMMMk........",
+    ".......kMkk.........",
+    ".......kMk..........",
+    ".......kMk..........",
+    ".......kMk..........",
+    ".......kMk..........",
+    ".......kMk..........",
+    ".......kMk..........",
+    ".......kMk..........",
+    "......kMMMk.........",
+    ".......kkk.........."]},
+  heron_fly0:{map:["........kkkkkk..............",
+    ".......kggggggk.............",
+    ".......kggggggk.............",
+    ".......kgggggggk............",
+    ".......kjjjjjjjk............",
+    "........kjjjjjjjk....kk.....",
+    "........kjjjjjjjkk.kkwKkkkk.",
+    ".......kWjjjjjjjjWkwwwwyyyyk",
+    "......kGGGGGGGGGGGGwwwkkkkk.",
+    "....kkkGGGGGGGGGGGGwwwk.....",
+    ".kkkMMMMGGGGGGGGGGkkkk......",
+    "kMMMMMMMkkkGGGGkkk..........",
+    "kMMMMkkk...kkkk.............",
+    ".kkkk......................."]},
+  heron_fly1:{map:["...........kkkk......kk.....",
+    "........kkkWWWWkkk.kkwKkkkk.",
+    ".......kWWWWWWWWWWkwwwwyyyyk",
+    "......kGGGGGGGGGGGGwwwkkkkk.",
+    "....kkkGGGGGGGGGGGGwwwk.....",
+    ".kkkMMMMGjjjjjjjjGkkkk......",
+    "kMMMMMMMkjjjjjjjjk..........",
+    "kMMMMkkkjjjjjjjjjk..........",
+    ".kkkk..kjjjjjjjjk...........",
+    ".......kjjjjjjjjk...........",
+    "......kgggggggggk...........",
+    "......kgggggggggk...........",
+    ".......kkkkkkkkk............"]},
+  // Семья лосей (Тверца, вместо медведя): лось с рогами-лопатами, лосиха,
+  // лосёнок. Горб в холке, тяжёлая голова с горбатым носом и бородкой,
+  // светлые ноги. Кадры «_b» — голова опущена к воде (пьют).
+  moose:{map:[".................k.kk......k.k..k.",
+    "................kskssk....kskskksk",
+    ".................ksskkk...kSSSSSk.",
+    ".................ksssssk..kSSSSSk.",
+    "..................ksssskkkSSSSSk..",
+    "...................kssssbkSSSSk...",
+    "....................kkksbkSkkk....",
+    "......................kBBBBBBkk...",
+    "......................kBBBKBBBBk..",
+    "......................kCCCCCCCCCk.",
+    ".....................kCCCCCCCCCCk.",
+    ".....................kCCkCCCCCCKCk",
+    "................kkkkkCCk.kbkkbbbk.",
+    "...............kBBBBCkk..kbk.kkk..",
+    ".............kkBBBBBBk...kbk......",
+    "............kBBBBBBBBBk...k.......",
+    "...........kCCCCCCCCCCCk..........",
+    ".......kkkkCCCCCCCCCCCCCk.........",
+    "..kkkkkCCCCCCCCCCCCCCCCCk.........",
+    ".kCCCCCCCCCCCCCCCCCCCCCCk.........",
+    "kbCCCCCCCCCCCCCCCCCCCCCCk.........",
+    ".kCCCCCCCCCCCCCCCCCCCCCCk.........",
+    ".kCCCCCCCCCCCCCCCCCCCCCCk.........",
+    ".kbbbbbbbbbbbbbbbbbbbbbbk.........",
+    ".kbbbbbbbbbbbbbbbbbbbbbbk.........",
+    "..kkbbkbbkkkkkkkkkbbkbbk..........",
+    "...kGGkGGk.......kGGkGGk..........",
+    "...kGGkGGk.......kGGkGGk..........",
+    "...kGGkGGk.......kGGkGGk..........",
+    "...kGGkGGk.......kGGkGGk..........",
+    "...kGGkGGk.......kGGkGGk..........",
+    "...kGGkGGk.......kGGkGGk..........",
+    "...kGGkGGk.......kGGkGGk..........",
+    "...kggkggk.......kggkggk..........",
+    "....kk.kk.........kk.kk..........."]},
+  moose_b:{map:["................kkkk..............",
+    "...............kBBBBk.............",
+    ".............kkBBBBBBk............",
+    "............kBBBBBBBBCkk..........",
+    "...........kCCCCCCCCCCCCk.........",
+    ".......kkkkCCCCCCCCCCCCCCk........",
+    "..kkkkkCCCCCCCCCCCCCCCCCCk........",
+    ".kCCCCCCCCCCCCCCCCCCCCCCCk........",
+    "kbCCCCCCCCCCCCCCCCCCCCCCCCk.k.k.k.",
+    ".kCCCCCCCCCCCCCCCCssCsCCCCkksksksk",
+    ".kCCCCCCCCCCCCCCCCssCCCCCCkSSSSSSk",
+    ".kbbbbbbbbbbbbbbbbbssssCCCCSSSSSk.",
+    ".kbbbbbbbbbbbbbbbbbsssssCCCSSSSk..",
+    "..kkbbkbbkkkkkkkkkbbssssbbCSSSk...",
+    "...kGGkGGk.......kGGkGGssbSSkk....",
+    "...kGGkGGk.......kGGkGGkBBBBBBk...",
+    "...kGGkGGk.......kGGkGGkBBKBBBBk..",
+    "...kGGkGGk.......kGGkGGkCCCCCCCCk.",
+    "...kGGkGGk.......kGGkGGkCCCCCCCCCk",
+    "...kGGkGGk.......kGGkGGkkkCCCCCCKk",
+    "...kGGkGGk.......kGGkGGk.kbbkbbbk.",
+    "...kggkggk.......kggkggk.kbbkkkk..",
+    "....kk.kk.........kk.kk..kbbk.....",
+    "..........................kk......"]},
+  moosecow:{map:["......................kk........",
+    ".....................kbbk.......",
+    ".....................kbbkkkk....",
+    ".....................kBBBBBBk...",
+    ".....................kBBKBBBBk..",
+    ".....................kCCCCCCCCk.",
+    "....................kCCCCCCCCCKk",
+    ".................kk.kCCkkCCCCCCk",
+    "...............kkBBkCCkkbbkkbbk.",
+    "..............kBBBBCkk.kbbk.kk..",
+    "............kkBBBBBBBk.kbbk.....",
+    "...........kBBBBBBBBBBk.kk......",
+    ".........kkCCCCCCCCCCCk.........",
+    "....kkkkkCCCCCCCCCCCCCCk........",
+    ".k.kCCCCCCCCCCCCCCCCCCCk........",
+    "kbkCCCCCCCCCCCCCCCCCCCCk........",
+    ".kkCCCCCCCCCCCCCCCCCCCCk........",
+    "..kbbbbbbbbbbbbbbbbbbbbk........",
+    "..kbbbbbbbbbbbbbbbbbbbbk........",
+    "..kbbbbbbbbbbbbbbbbbbbbk........",
+    "...kbbkbbkkkkkkkkbbkbbk.........",
+    "...kGGkGGk......kGGkGGk.........",
+    "...kGGkGGk......kGGkGGk.........",
+    "...kGGkGGk......kGGkGGk.........",
+    "...kGGkGGk......kGGkGGk.........",
+    "...kGGkGGk......kGGkGGk.........",
+    "...kGGkGGk......kGGkGGk.........",
+    "...kggkggk......kggkggk.........",
+    "....kk.kk........kk.kk.........."]},
+  moosecow_b:{map:[".................kk.............",
+    "...............kkBBk............",
+    "..............kBBBBBk...........",
+    "............kkBBBBBBBk..........",
+    "...........kBBBBBBBBCCk.........",
+    ".........kkCCCCCCCCCCCCk........",
+    "....kkkkkCCCCCCCCCCCCCCCk.......",
+    ".k.kCCCCCCCCCCCCCCCCCCCCk.......",
+    "kbkCCCCCCCCCCCCCCCCCCCCCk.......",
+    ".kkCCCCCCCCCCCCCCCCCCCCCCk......",
+    "..kbbbbbbbbbbbbbbbbbbbCCCk......",
+    "..kbbbbbbbbbbbbbbbbbbbCCCk......",
+    "..kbbbbbbbbbbbbbbbbbbbbCCCk.....",
+    "...kbbkbbkkkkkkkkbbkbbkbCCk.....",
+    "...kGGkGGk......kGGkGGkbBBBkk...",
+    "...kGGkGGk......kGGkGGkBBKBBBk..",
+    "...kGGkGGk......kGGkGGkCCCCCCCk.",
+    "...kGGkGGk......kGGkGGkCCCCCCCCk",
+    "...kGGkGGk......kGGkGGkkCCCCCCKk",
+    "...kGGkGGk......kGGkGGk.kbkbbbk.",
+    "...kggkggk......kggkggk.kbkkkk..",
+    "....kk.kk........kk.kk..kbk.....",
+    ".........................k......"]},
+  moosecalf:{map:["...............k......",
+    "..............kok.....",
+    "..............kokkk...",
+    "..............knKnnk..",
+    "..............khhhhhk.",
+    "...........kkkhhhhhhKk",
+    "..........knnkhkkkkkk.",
+    "........kknnnnk.......",
+    ".......knnnnnnnk......",
+    ".kkkkkkhhhhhhhhhk.....",
+    "kohhhhhhhhhhhhhhk.....",
+    ".khhhhhhhhhhhhhhk.....",
+    ".kooooooooooooook.....",
+    ".kooooooooooooook.....",
+    "..kooookkkkkoook......",
+    "..kGGGGk...kGGGk......",
+    "..kGGGGk...kGGGk......",
+    "..kGGGGk...kGGGk......",
+    "..kggggk...kgggk......",
+    "...kkkk.....kkk......."]},
+  // Пастух с коровами (Осуга): бурёнки белые с чёрными пятнами, рога, вымя;
+  // cow — пасётся, голова к траве; cow_b — подняла голову; cow_water —
+  // стоит по колено в воде (низ ног срезан, воду и рябь рисует игра).
+  cow:{map:["....kkkkkkkkkkkkkkkkkk.....",
+    "...kwwwwwwwwwwwwwwwgwwk....",
+    "..kjwwggggwwwwwwwwgggwkk...",
+    ".kjjwggggggwwwwwwwKKKwWWk..",
+    ".kjWWKKKKKKWWggggWWKWWWWk..",
+    ".kjWWWKKKKWWggggggWWWWWWek.",
+    "kjjWWWWWWWWWKKKKKKWWWWwwWWk",
+    "kjkWWWWWWWWWWKKKKWWWWWwKWWk",
+    "kKkGGGGGGGGGGGGGGGGGGGwwWHk",
+    ".k.kGGGGGGHHHGGGGGGGGGwwWHk",
+    "....kWWkWWkkkkkkkWWkWWkkkk.",
+    "....kWWkWWk.....kWWkWWk....",
+    "....kWWkWWk.....kWWkWWk....",
+    "....kKKkKKk.....kKKkKKk....",
+    ".....kk.kk.......kk.kk....."]},
+  cow_b:{map:["......................k.k..",
+    ".....................kekek.",
+    "....kkkkkkkkkkkkkkkkkkwwWWk",
+    "...kwwwwwwwwwwwwwwwgwwwKWWk",
+    "..kjwwggggwwwwwwwwgggwwwWHk",
+    ".kjjwggggggwwwwwwwKKKwwwWHk",
+    ".kjWWKKKKKKWWggggWWKWWkkkk.",
+    ".kjWWWKKKKWWggggggWWWWk....",
+    "kjjWWWWWWWWWKKKKKKWWWWk....",
+    "kjkWWWWWWWWWWKKKKWWWWWk....",
+    "kKkGGGGGGGGGGGGGGGGGGGk....",
+    ".k.kGGGGGGHHHGGGGGGGGGk....",
+    "....kWWkWWkkkkkkkWWkWWk....",
+    "....kWWkWWk.....kWWkWWk....",
+    "....kWWkWWk.....kWWkWWk....",
+    "....kKKkKKk.....kKKkKKk....",
+    ".....kk.kk.......kk.kk....."]},
+  cow_water:{map:["......................k.k..",
+    ".....................kekek.",
+    "....kkkkkkkkkkkkkkkkkkwwWWk",
+    "...kwwwwwwwwwwwwwwwgwwwKWWk",
+    "..kjwwggggwwwwwwwwgggwwwWHk",
+    ".kjjwggggggwwwwwwwKKKwwwWHk",
+    ".kjWWKKKKKKWWggggWWKWWkkkk.",
+    ".kjWWWKKKKWWggggggWWWWk....",
+    "kjjWWWWWWWWWKKKKKKWWWWk....",
+    "kjkWWWWWWWWWWKKKKWWWWWk....",
+    "kKkGGGGGGGGGGGGGGGGGGGk....",
+    ".k.kGGGGGGHHHGGGGGGGGGk....",
+    "....kWWkWWkkkkkkkWWkWWk...."]},
+  // Пастух: кепка, стёганый ватник, сапоги, длинный посох.
+  shepherd:{map:["..........k.",
+    "..kkk....kOk",
+    ".kgggkkk.kok",
+    "kgggggKKkkok",
+    ".kttttkk.kok",
+    ".ktttKtk.kok",
+    ".kttttk..kok",
+    ".kTTTtk..kok",
+    "kGGGGGGkkkok",
+    "kGjjjjjjjkok",
+    "kGggggjjjtok",
+    "kGjjjjgkkkok",
+    "kGgggggk.kok",
+    "kGjjjjgk.kok",
+    "kGgggggk.kok",
+    "kGjjjjgk.kok",
+    ".kZZzzk..kok",
+    ".kZZzzk..kok",
+    ".kZZzzk..kok",
+    ".kZZzzk..kok",
+    ".kKKKKKk.kok",
+    ".kKKKKKk.kok",
+    "..kkkkk...k."]},
+  // Рыбак (28.09.2026): сидит в профиль на перевёрнутом ведре лицом к воде —
+  // панама, оливковая куртка, резиновые сапоги, в руках комель удочки (саму
+  // удочку, леску и клёв рисует код). Для правого берега — fisher_l.
+  fisher:{map:["....kkk......",
+    "..kkssskk....",
+    ".kdSSSSSdk...",
+    "..kOtttkk....",
+    "..kOttKtk....",
+    "..kktTTk...k.",
+    ".kFFFFFkkkkOk",
+    ".kFvvvvvvvtOk",
+    ".kFvvvVVVVtk.",
+    ".kFvvvVkkkk..",
+    ".kFvvvVkkk...",
+    ".kkzzzzzzzk..",
+    "kWWZZZZZZZk..",
+    "kggggggkkZZk.",
+    "kGjjjgk.kgKk.",
+    "kGjjjgk.kKKKk",
+    ".kkkkk...kkk."],noOutline:true},
   // Палатка широкая и низкая — узкий высокий треугольник читался как конус.
   // Тёмная полоса по центру — вход, он и делает силуэт узнаваемым.
   // Палатка: конёк по гребню, откинутый полог с тёмным нутром,
   // оттяжки к колышкам по бокам — без них силуэт читался как конус.
-  tent:{map:["............kk............",".....k.....kOk.....k......",
-    "....k.....krrrk.....k.....","...k.....krrrrrk.....k....",
-    "..k.....krrrKKrrk.....k...",".k.....krrrKKKKrrk.....k..",
-    "k.....krrrrKKKKrrrk.....k.","k....krrrrrKKKKrrrrk....k.",
-    ".k..krrrrrrKKKKrrrrrk..k..","..k.krrrrrrrKKrrrrrrk.k...",
-    "...krrrrrrrrKKrrrrrrrrk...","..krrrrrrrrrKKrrrrrrrrrk..",
-    ".krrrrrrrrrrKKrrrrrrrrrrk.","kkkkkkkkkkkkKKkkkkkkkkkkkk",
-    "..k.....................k."],noOutline:true,
-    // Цвета палаток: тело (r) перекрашивается по вариантам — в ночной сцене
-    // лагерь из разномастных палаток читается живее, чем ряд одинаковых.
-    // var 0 — базовая красная (как везде), дальше синяя, зелёная, янтарная,
-    // розовая, оранжевая, песочная. Там, где у входа темнота, остаётся K.
-    variants:[{}, {r:"z"}, {r:"v"}, {r:"A"}, {r:"H"}, {r:"p"}, {r:"a"}]},
-  // Палатка-«купол»/тоннель: округлая арка вместо острого треугольника `tent`.
-  // Крупнее в ширину, вход — тёмная арка спереди. Так в лагере два силуэта
-  // палаток разных форм, а не клоны. Цвета — те же варианты, что у `tent`.
-  tent2:{map:[
-    "..........kk...........",
-    "........krrkk..........",
-    ".......krrrrrrk........",
-    "......krrrrrrrrk.......",
-    ".....krrrrrrrrrrk......",
-    ".....krrrrrrrrrrrk.....",
-    "....krrrrrKKKrrrrrk....",
-    "...krrrrrrKKKrrrrrrk...",
-    "..krrrrrrrKKKrrrrrrrk..",
-    "..kkrrrrrrKKKrrrrrrrkk.",
-    "..kkkkkkkkkkkkkkkkkkk..",
-    "..kk...............kk.."],noOutline:true,
-    variants:[{}, {r:"z"}, {r:"v"}, {r:"A"}, {r:"H"}, {r:"p"}, {r:"a"}]},
+  tent:{map:[".........kkk.................",
+    "........kkQrkkkkkkk..........",
+    "........kkQRrrrrrrrkkkkkk....",
+    ".......kkQQrRRRRRRRrrrrrkk...",
+    ".......kkQQrRRRRRRRRRRRRk....",
+    "......kkQQrrrRRRRRRRRRRRRk...",
+    ".....kkQQQRrrrRRRRRRRRRRRk...",
+    ".....kkQQKKrrrRRRRRRRRRRRk...",
+    "....kkQQQKKRrrrRRRRRRRRRRRk..",
+    "....kQQQKKKKrrrRRRRRRRRRRRk..",
+    "...kkQQQKKKKRrrrRRRRRRRRRRk..",
+    "..kkQQrQKKKKRrrrrRRRRRRRRRRk.",
+    "..kkQQQKKKKKKRrrrRRRRRRRRRRk.",
+    ".kkQQrQKKKKKKRrrrrRRRRRRRRRk.",
+    "kkQQQQQKKKKKKRRrrrrRRRRRRRRRk",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "O...........................O"],noOutline:true,
+    // Двускатная палатка в три четверти (28.09.2026): передний треугольник со
+    // светом слева, боковой скат уходит назад-вправо в тени, вход открыт —
+    // темнота K (в tent_lit светится), полы откинуты. Ткань в три тона
+    // Q/r/R, варианты перекрашивают все три: красная, синяя, зелёная,
+    // янтарная, розовая, оранжевая, песочная.
+    variants:[{}, {Q:"E", r:"z", R:"Z"}, {Q:"F", r:"v", R:"V"}, {Q:"u", r:"A", R:"q"}, {Q:"H", r:"H", R:"P"}, {Q:"A", r:"p", R:"x"}, {Q:"s", r:"a", R:"d"}]},
+  // Палатка-купол: свет сверху-слева, швы дуг каркаса, вход-арка на молнии
+  // (тёмный внутри, светлая кромка). Два силуэта палаток в лагере, а не
+  // клоны. Цвета — те же варианты в три тона, что у `tent`.
+  tent2:{map:[".........kkkkkk..........",
+    ".......kkQrrrRrkkk.......",
+    ".....kkQQrrrrrrRrrk......",
+    "....kQQQrrrrrrrRrrrk.....",
+    "...kQQQrQrrrrrrrRrrrk....",
+    "..kQQQQrrrrrrrrrRrrRRk...",
+    "..kQQQQRrrQKKKrrrRRRRRk..",
+    ".kQQQQRrrrQKKKKrrRRRRRk..",
+    "kQQQQrRrrQKKKKKrRRRRRRRk.",
+    "kQQQrrRrrQKKKKKKRRRRRRRk.",
+    "kQQrrrRrrQKKKKKKRRRRRRRRk",
+    "kQrrrrRrQKKKKKKKRRRRRRRRk",
+    "krrrrrRrQKKKKKKKRRRRRRRRk",
+    "OkkkkkkkkkkkkkkkkkkkkkkkO"],noOutline:true,
+    variants:[{}, {Q:"E", r:"z", R:"Z"}, {Q:"F", r:"v", R:"V"}, {Q:"u", r:"A", R:"q"}, {Q:"H", r:"H", R:"P"}, {Q:"A", r:"p", R:"x"}, {Q:"s", r:"a", R:"d"}]},
   person:{map:["....kkkk....","...kttttk...","...kttttk...","...kkttkk...",
     "..krrrrrrk..",".krrrrrrrrk.","krrrrrrrrrrk","krrrrrrrrrrk",
     ".krrrrrrrrk.","..kZZZZZZk..","..kZZZZZZk..","..kZZkkZZk..",
@@ -1623,6 +1915,10 @@ SPR.sitter_b = { map: swapPalette(SPR.sitter.map, { r:"N", Z:"j" }), noOutline:t
 // Байдарка на прицепе — жёлтая, как игровая: корпус в тёплый жёлтый (был тёмный O),
 // тёмный кокпит (K) оставляем для контраста и читаемости корпуса.
 SPR.kayak_side   = { map: swapPalette(SPR.kayak_side.map, { O:"Y" }) };
+// Жители, смотрящие на воду: на правом берегу — отражённые копии «_l».
+for (const n of ["fisher", "heron", "heron_fly0", "heron_fly1", "cow", "cow_b", "cow_water", "shepherd",
+                 "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf"])
+  SPR[n + "_l"] = { map: SPR[n].map.map(r => [...r].reverse().join("")) };
 // Попутная красная (нижняя полоса, едет вправо) — нос вправо.
 SPR.car_red_r    = { map: SPR.car_red.map.map(r => [...r].reverse().join("")) };
 // Палатка с освещённым изнутри входом: вся тёмная лента входа становится
@@ -1730,6 +2026,9 @@ function setMusic(mode){
 // tools/add-sound.mjs («Звук батона.bat», «Звук виски.bat» — перетащить файл).
 // Пустое гнездо — играет общий звон бонуса.
 const SOUNDS = {
+  // Мычание коровы: пусто — звучит синтез (sfx «moo»); свою запись
+  // вписывает tools/add-sound.mjs.
+  moo: "",
   n4_g1: "data:audio/mpeg;base64,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",
   n4_a1: "data:audio/mpeg;base64,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xOEhucYgAZ6gAHbxsVLE/Q5tbkTp03f//+KY5//7UsZJ+f51f/////+/++4f/HXh91INprsAy991Ads2/+Du/sLaAEa13tf281gMrSLT7eizB8Qdtp+DYVeRN25H//NExK0iIeKaWZnAAJhORR7kB9V9klCkni5wwPBodjRHl7DsVEe5vdIHFoH6WIZxAPhHIoo6/q4+okSh+JwIl07x1yNKrokOVgg0PAZD89hOH91X//////////yW8ChY//NExHch2xqwX9lAAHZ/tV5df/pUEJX//9BwYIFKoBVB6WXHRJJO/v0DhMOhvO790vqYiR11nB0FyzLYFIePjo/vr0dKFJUjQonuRv61WGOiujvN29S1kKYUn6Ny0SRj//NExEIW+xrSNspErz//+95SAwhCW/////5eMwE6VenV3+X/+UaF4RJUjSjcgH+P5cLoy1jW82ToBKGgS82mUaSOCNLVmYkHjbLaDmJOMq4bSbqmuNTv5DnmVeYhNQQd//NExDkWwrbdvnoEthHWd3OzX87kIhUSdCMV2IUxif/////9MiFUh5wgIAA7d+isQBlyWRvCge70OCQMXk/fB1KHQnyrj0pxcBcBYfjcbNvXu5Yu8nILn3J7knuhiEcm//NExDESYRr6XlnQZhTLOBNTg7+hbtgMOADgXAzuz//ysNCMIsUUAATCElgG+ZcDRnPFOJ4VGpu2KASp6lAXBiJxJtbf//4Mb+q1Oe6ETvOdXt///01dTv/kkY9jnRpz//NExDoSYnbeNgJEEaVPaHF3bA4H1/27PDOGYbVQ+AVh8oeNAJDD1Y1xcay05irexpA476/ob/9qGb9KU/9f//5v5q7TPRHdDVKysok2ZWFXs4ysFVgwoGQplOJMYBDH//NExEMSExrQ5lAFJSsX3ZB5lawwJBLa262BOmH9JSAsBUwapBgIhGBjxxIstPgwIkpXuM630ufX0jSqRY16I5SgSUIWJTGVGr+oWNGQEPpaVWZpzL6eG1LI7r6xirw0//NExE0SmQ7CXmCGeLV362bTAYcKQ1guIBKiimntNkyTc3jSn2/8gwwK2N2l4kUoNul+rK6s70nfba5INjSlQZGaghuXprqRdd/93Q4mVZfMNqu11Z1hDUjfm3qYvQTt//NExFUSSTrGXhJEPGtLn3VwY08cW///+//aKLr//zR5FOkno7xR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",
   n4_b1: "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYyLjEyLjEwMAAAAAAAAAAAAAAA//OEwAAAAAAAAAAAAEluZm8AAAAPAAAAHQAAC6AAGBgYISEhKSkpKTExMTk5OTlCQkJKSkpKUlJSWlpaWmNjY2tra3Nzc3N7e3uEhISEjIyMlJSUlJycnKWlpaWtra21tbW9vb29xsbGzs7OztbW1t7e3t7n5+fv7+/v9/f3////AAAAAExhdmM2Mi4yOAAAAAAAAAAAAAAAACQETwAAAAAAAAugdBxkwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//NExAASKIoQAUwYAbr169evMyWDcAAAgHCYySwbgfEcRBIEgwMDxYsWAYGBgYGLcPAAAAAAMPDw8PAAAAAAMPDw8PAAAAAEYeHh4eAAAAI3//7v/9oEWkWngbDcbjYb//NExAoVARs2/49ARgwGAwAH6LFv0J59FjgnIIHnjPLgXRD/w+ND9CQ//yR5gwCYeCO3/ki7sg4eMUZ/+ynzewlEe/SchdIJO+hCGv/8gx7wIj//J3XJAG2urK6B18yi//NExAkUYWLVl88wAqkSrFDMcaSOiA/h53NR4qH7+lMwd1R6RBR683May6pTT72GuzZJQoGR+3sZ//87Zl5j6JKKI0YZFjl//Lh9RzIP//8QDX85/rpgmVuVtybDAWE0//NExAoUwe8CXmLKrv8Vyj88Wq6lxMU2F0Tv/3ZVZSQDzIP4Nqr629qdaZDmECioazWd2Z+15YaGEihjsh1RTK3HihGuQcboTq/LcSxyf///1APIHJ8BKMBqG5KOmQ5E//NExAoU8w7RtnpEbsohHqBsckNDpQ2HZD5mhUfnTFbsulBR2lm7KU6e6HZjGqyf/9WoiuRju38KUq1L6tr/qVqm//////1RdUobqyiWAhUKJGNlECoyAKjKihN4gF7g//NExAkU4Wa5v08QAsUW3A+RKsSHKVWvmnobAZrPHz2b11a2rGcBAQHwI5UFGOXR5QoCgpTuAhBPT/8zI4UgEOUxxERSCvvqHiIklan6f/+kjKrENy3ZqssPTpSwySwg//NExAgUkxrVlYxoAUBOfSe6BcI1CDKCId5u+H5c5upATJAkb54+aHg+hgC3l36008OYZEN3//Pux7/9lpv05wmf9Tf3LEf/////1LoP/////+udMpTiau93uEYORoZc//NExAgUmyLg18gQAmijgWHZ1KHQWZDIvVXmkkdQQYUgpirR1TeoGdRhOjo6Zm3SRNinUcYMy+UrIZnpf///////9H//sStSFrl20YxxJFMrMqFVHYEMlcyU/bkThgMh//NExAgSGTr6PHpGmkYtJCycIc3sKPYSycVeT9yWIJokPRpY6v68dmtkqrJxWdRG5MTjpoSyO3b0wnsrTzWe9pkCJYRDgrsunf////1KrGcJSbm3vFAPk4HocjAeV4yx//NExBISSMb5vmsMKmk78xAJKVzK5s//K5aOS7at4yjylrBcuy4XSYU1oIAtcHAOtDn1nEiP/6gTE/xodkajX//+VVdVcDigfh/5wR8cy12CAB1QCXfXAtVmwNpt/i9r//NExBsSSgLQRnoElBgbgBoQlhBa1dyjhUs6bpk86e6oVnptOyf/////uhziQr//+xoZOJQXXmhAuMeqAJjSJRd4YHyQSMei0uKk9ECLFMCAhdd2H0LFD1+n802sBGDW//NExCQR+U7NvnpGanV8ofhllyY7SRTWzy1KHROxhlnWeAtn/EqAa///kW8UleWlnwB+19XAOvHBQYcRzR+hkNE6VlmdoQ7kdebmyU2ItlZmEAIrHz2K7kKpBphBhBpO//NExC8SesLRjnhKy6/VlRCVF3//////qc72/////+dCEIKHfi5+rA7ISLncA+xL7G7HYVUixPWRrQEWKho0M+lD25/MruEkVY3Pw2dVVX6gwFydlvc+/N9+GJtpIEZx//NExDgSaVrVFnjSdAYjAgY//9Is///8uoKsInVgvUSa/tXVntAxDUaZTBpfNs8qBKV451BKcUUOZ8OfCdMAAQ4Emdne8iMbFMb/onbnVSsY9af////8pihBv//vHCcM//NExEESOf8CVmDE0qFlhcoPCgTQAAMmghMdsDzE0eiAsDLKjWMcUhskDw2wsz0ZO/+rx6XSiwURKIllq//du12plgmbGgGOU9Yw+OWx57//1h0X//1ycUtqvEdFQIA8//NExEsR6PLWVnoMdAO3ET00qntYB+uO66ri39v//QUDYrWu6X/milKv/s+392/b1f9t0+eTC2MHkCBBCHJ1vYgg5NNjFE6y/+hOf/EEo7/rvYmOOAjgi2FnP///793///NExFYR8iLIVHiM3Mhv////P/hqfXmKLpBOCTXd1hYcQOQ2IVtWQVKWQekiWfR/poFo1n7a75+972F5puFp2Hr0+f3f9PBrt+QVABN6vZeLGQAYMMMTjPC2Y8HFQ6Es//NExGES0qbQAChM3bBY2E0nBcBEddOlNuj2f7G1BI6SK1mA0VDdAdFgQHlQQX+4NgIPvKkyIMiYIkDqoaKhYOhJJaVvkkaIFQpDjwBQsXvr4PrZltDUm7e9KEMoQUsN//NExGgScE7rHgiGJCwaKjAWCIacwjOiV3GYtF6P5YctXWYWNGuQi//yINPWePCJ547Fn5UbelW5YbCgO1NpMC8OSpfwT0du84pusWfOfnf/9Ce7uVQoMgQYKIFUtiLr//NExHER6KbWWjmENuKKyqSee9amvgrKmSK3DCoSDVsFiIi+RwGaAQiE03nb8fVp0my2RN1qZKADYC4BmBIKRKKoCBzOU8pT8CJcMmAWGYNTTSuNKF4D4eV5BAfnoOYW//NExHwSmLahuU8QABGLUJe7yBQUHC73EFlFB9msi/4oKJlyKkSKxzAVq/8XCMUFBQX4EEQYSF/lwoJTTSOj3cdNp+HTINQGo767g9pHGv/XFJ1fvN8V/NGHwNtvt/sQ//NExIQhks6+VYxAASR/FYAAEGBDKv1bHrcdiAhG1dMseoydkjdkACqhchUjJHv1RTEOYXZW/ZaVApgEy56iLMRXVTkWjIMBEQHBoOuNFJRqRsqsa/+Uy5UenEZtFN9v//NExFAaucKiEdhQAOPvy5QfD7gsVBUFbCxF6oBBVx3JfiJIND0vKBI8sgerAN9Bk4NQBqAOiBiAOhOb1AKDofB0Kp0zVESzaF9ofzGlIjkOQ5DgYYC0SALsxU2/mTck//NExDgbmgqQEMvKtK9/folNTvE28McCsY6JTZoiQuZQSt25csyZjFqX+v8vpMpdObRy+8weCwUaj/95DIwVd9IjTbXAdt/CgKrFvK3L5VyxeNRp0l/Rs1XNTUjB6LS6//NExBwTkN6gPMLEdDbtc7zAxDEdpMRtHb+uXKGhrwO5iZV508Dka0yNQPWgWOnyY1iVsD22NiJlv/+3/+xSVSlVEo7tbaBwTPVQBxUwpYT3mo3MXXVfPw8vjNVCjASl//NExCASabapvmDKytZ8yl0AY4dDrth0dG/3zIZ6tXfdq+Z1qvTiL/Hkiy3W7/LfpbLN1dPwKgsOYgZiyDRRYQOUAvbBToqnJlUDlKQYSZw6YBbZvyJXcVQPkrbhELkq//NExCkRENI4AMpGrCFRY1vlq/V4pWAR46In/9X//1PHlZ7U14a/+qpxjGpPScWYYwKrmIpaEuinKIXAbz9PizVW5CUgCCIaTdcGkKWdZOC4IgmSEQFlQkeWEgCAn1/0//NExDcQYIn8AM4SEB76P++26S57/+GqALVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NExEgAWAQAAEgAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -1781,6 +2080,22 @@ function playSample(kind){
   return decodeSample(kind, play);
 }
 
+// Мычание синтезом: низкая пила 150→105 Гц с дрожью голоса, через фильтр
+// гласной «у» (полоса ~420 Гц) — «му-у» на секунду с небольшим.
+function mooTone(){
+  const t = actx.currentTime, o = actx.createOscillator(), lfo = actx.createOscillator(), dep = actx.createGain();
+  const f1 = actx.createBiquadFilter(), f2 = actx.createBiquadFilter(), amp = actx.createGain();
+  o.type = "sawtooth";
+  o.frequency.setValueAtTime(150, t); o.frequency.linearRampToValueAtTime(128, t + 0.35);
+  o.frequency.linearRampToValueAtTime(105, t + 1.2);
+  lfo.frequency.value = 5.5; dep.gain.value = 3; lfo.connect(dep); dep.connect(o.frequency);
+  f1.type = "lowpass"; f1.frequency.value = 700;
+  f2.type = "bandpass"; f2.frequency.value = 420; f2.Q.value = 1.2;
+  amp.gain.setValueAtTime(0.0001, t); amp.gain.exponentialRampToValueAtTime(0.35, t + 0.12);
+  amp.gain.setValueAtTime(0.35, t + 0.9); amp.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
+  o.connect(f1); f1.connect(f2); f2.connect(amp); amp.connect(actx.destination);
+  o.start(t); lfo.start(t); o.stop(t + 1.35); lfo.stop(t + 1.35);
+}
 function tone(freq, at, dur, type, vol){
   if (!freq) return;
   const o = actx.createOscillator(), amp = actx.createGain();
@@ -1823,6 +2138,7 @@ function sfx(kind){
   g.sfxLast = kind;                     // для проб: какой звук прозвучал последним
   if (!actx) return;
   if (kind.startsWith("voice_")){ playSample(kind); return; }   // голос — только свой файл
+  if (kind === "moo"){ if (!playSample(kind)) mooTone(); return; }
   if (kind === "crunch" || kind === "gulp"){
     if (playSample(kind)) return;
     kind = "bonus";                     // своего файла нет — общий звон бонуса
@@ -2001,7 +2317,7 @@ function centerAt(w){
 // падает на cut, ось уходит на cut/2 от сцены, дальний берег не двигается.
 // Жители Волги появляются дальше за верхней кромкой (BEV_AHEAD), так что
 // сужение в кадре не видно.
-const BEV_ROOM = { beach: 74, guitar: 66, camp: 120, fire: 56, fisher: 60, tower: 58, bear: 100, tree: 60, bush: 40 };
+const BEV_ROOM = { beach: 74, guitar: 66, camp: 120, fire: 56, fisher: 60, tower: 58, bear: 100, tree: 60, bush: 40, heron: 20, cows: 150, moose: 150 };
 const ROOM_FULL = 120, ROOM_TAPER = 150;
 function roomNeed(e){
   if (e.roomDef === undefined){
@@ -2134,6 +2450,8 @@ const CLOUDS = () => [
   { spr:"cloud", keys:[[0,520,185,0.7,1],[1,440,185,0.7,1]] },
   { spr:"cloud", keys:[[0,-300,120,0.9,1],[1,-420,120,0.9,1]] },
   { spr:"cloud", keys:[[0,1100,160,0.8,1],[1,980,160,0.8,1]] } ];
+// Утро перед днём: если в этот день дождь (Тверца, дни 5–6) — дождливое.
+function morningName(day){ return LEVELS[day] && LEVELS[day].rain ? "morning_rain" : "morning"; }
 function driveName(river){ return ["drive1", "drive2", "drive3"][river] || "drive2"; }
 // Волга → Медведица: сельская асфальтовая дорога в две полосы, вдали деревня
 // с церковью и лес, вдоль дороги столбы с проводами. Встречных немного —
@@ -2288,7 +2606,7 @@ const CUTS = {
       { spr:"person", var:1, keys:[[0,70,305,0.9,1],[.1071,70,307,0.9,1],[.2141,70,304,0.9,1],[.3212,70,307,0.9,1],[.4282,70,304,0.9,1],[.5353,70,305,0.9,1],[.5736,70,305,0.9,1],[.6347,61,302,0.9,1],[.6577,60,300,0.9,0],[.7647,60,300,0.9,0]] },
       { spr:"person", var:2, keys:[[0,160,300,0.9,1],[.1071,160,302,0.9,1],[.2141,160,299,0.9,1],[.3212,160,302,0.9,1],[.4282,160,299,0.9,1],[.5353,160,300,0.9,1],[.6118,160,300,0.9,1],[.7188,150,262,0.9,1],[.7417,150,262,0.9,0],[.7647,150,262,0.9,0]] },
       { spr:"person", var:3, keys:[[0,72,364,0.9,1],[.1071,72,366,0.9,1],[.2141,72,363,0.9,1],[.3212,72,366,0.9,1],[.4282,72,363,0.9,1],[.5353,72,364,0.9,1],[.6729,72,364,0.9,1],[.7647,44,359,0.9,1],[.7647,42,360,0.9,1],[.7647,42,360,0.9,0]] },
-      { spr:"person", var:4, keys:[[0,395,345,0.9,1],[.1071,395,347,0.9,1],[.2141,395,344,0.9,1],[.3212,395,347,0.9,1],[.4282,395,344,0.9,1],[.5353,395,345,0.9,1],[.7112,395,345,0.9,1],[.7647,386,349,1,1],[.7647,385,350,1,1],[.7647,385,350,1,0]] },
+      { spr:"person", var:4, keys:[[0,398,364,0.9,1],[.1071,398,366,0.9,1],[.2141,398,363,0.9,1],[.3212,398,366,0.9,1],[.4282,398,363,0.9,1],[.5353,398,364,0.9,1],[.7112,398,364,0.9,1],[.7647,386,349,1,1],[.7647,385,350,1,1],[.7647,385,350,1,0]] },
       { spr:"tent_lit", keys:[[0,360,300,0.9,0],[.52,360,300,0.9,0],[.5812,360,300,0.9,1],[.7647,360,300,0.9,1]] },
       { spr:"sil", keys:[[0,360,296,0.32,0],[.5812,360,296,0.32,0],[.6424,360,296,0.32,1],[.7647,360,296,0.32,1]] }
     ] },
@@ -2533,7 +2851,7 @@ function night4Scene(){
   circle[4].talk = [say("b1"), say("b2")];         // второй: «наконец-то… да ничего, в мафию»
   circle.sort((p, q) => p.keys[0][2] - q.keys[0][2]);
   // Андрюха: ходит между палаток, останавливается у круга, в конце садится.
-  const W = [[0,330,296],[f(1.2),262,272],[f(2.2),226,300],[f(2.8),204,338]];
+  const W = [[0,316,304],[f(1.2),262,272],[f(2.2),226,300],[f(2.8),204,338]];
   const walk1 = { spr:"andr_walk0", andr:true, cycle:{ per:9, spr:["andr_walk0","andr_walk1"] },
     // В конце — в обход круга (справа и спереди, у воды), не сквозь людей.
     keys:W.map(([t, x, y]) => [t, x, y, 0.9, 1]).concat([[f(2.85),204,338,0.9,0],[f(14.3),204,338,0.9,0],[f(14.35),204,338,0.9,1],
@@ -2548,8 +2866,8 @@ function night4Scene(){
   // свои двое у красной палатки: один стоит, другой сидит.
   sc.actors = sc.actors.filter(a => !["night_guitar","tent_lit","sil","girl"].includes(a.spr) && !a.baseSitter && !a.tentSit &&
     !(a.spr === "person" && a.var !== 4));
-  for (const a of sc.actors) if (a.spr === "person") a.keys = [[0,395,345,0.9,1],[1,395,345,0.9,1]];
-  sc.actors = sc.actors.concat([still("sitter_e", 370, 330, 0.8, { tentSit:true }), still("seat_log", 138, 410, 0.55)], circle, [walk1, stand, sit]);
+  for (const a of sc.actors) if (a.spr === "person") a.keys = [[0,398,364,0.9,1],[1,398,364,0.9,1]];   // перед куполом, не на нём
+  sc.actors = sc.actors.concat([still("sitter_e", 346, 368, 0.8, { tentSit:true }), still("seat_log", 138, 410, 0.55)], circle, [walk1, stand, sit]);
   forestAround(sc, { maxY:360, frontY:280, skip:0.6, sideSkip:0.56 });
   return sc;
 }
@@ -2569,7 +2887,7 @@ function night3Scene(){
       // Гитарист идёт от палатки к костру (зелёная куртка, как у сидящего
       // с гитарой) и на подходе садится — дальше рисуется night_guitar.
       { spr:"guitar_walk0", walkIn:true, cycle:{ per:9, spr:["guitar_walk0","guitar_walk1"] },
-        keys:[[0,330,296,0.9,1],[f(2.4),198,348,0.9,1],[f(2.45),198,348,0.9,0],[1,198,348,0.9,0]] },
+        keys:[[0,316,304,0.9,1],[f(2.4),198,348,0.9,1],[f(2.45),198,348,0.9,0],[1,198,348,0.9,0]] },
       // Канарейка порхает над костром, пока он поёт.
       { spr:"canary0", cycle:{ per:7, spr:["canary0","canary1"] },
         keys:[[0,120,300,0.9,0],[f(T.g2 + 0.3),120,300,0.9,0],[f(T.g2 + 0.5),130,292,0.9,1],
@@ -2610,6 +2928,13 @@ function night2Scene(){
   });
   return storyLeave(sc, 0.745, 0.905);
 }
+// Дождливое утро: тот же лагерь, но серое небо, солнце не встаёт, птиц нет
+// (они только в солнечном «morning»), дождь с кругами на воде и шум дождя.
+CUTS.morning_rain = Object.assign({}, CUTS.morning, {
+  sky:"rain", rain:0.8, rainSound:true, caption:"Утро. Дождь — всё равно идём дальше",
+  fx:{ smoke:CUTS.morning.fx.smoke },
+  actors:CUTS.morning.actors.filter(a => a.spr !== "sunrise")
+});
 Object.assign(CUTS, {
   // Вторая ночь — Медведица, лес. Сцена отражена, горизонт — густой ельник,
   // полумесяц. Гитарист поёт «о-о, батарейка»; двое сидят рядом у костра и
@@ -2637,9 +2962,9 @@ Object.assign(CUTS, {
   night5: makeNight({
     scene:{ ground:"#1b2c25", water:466, caption:"Осуга. Последняя ночь", moon:{ x:356, y:66, r:16, phase:1 } },
     tentVars:[5, 1, 6, 3, 4, 2],
-    skyline: firs => [ still("boulder", 22, 236, 1.5), still("boulder", 74, 232, 1.1),
+    skyline: firs => [ still("boulder_side", 22, 236, 1.5), still("boulder_side", 74, 232, 1.1),
       ...[120, 150, 180, 210, 240, 270, 300].map((x, i) => still("sfir", x, 228 + (i % 2)*4, 0.85 + (i % 3)*0.1)),
-      still("boulder", 350, 234, 1.2), still("boulder", 400, 238, 1.6) ]
+      still("boulder_side", 350, 234, 1.2), still("boulder_side", 400, 238, 1.6) ]
   })
 });
 
@@ -2647,6 +2972,7 @@ const CUT_SKY = {
   night:   ["#0b1524","#16283f"],
   morning: ["#f6c78a","#8fc2e0"],
   day:     ["#7ec8e3","#a8d8ea"],
+  rain:    ["#5f6b76","#9aa6ae"],
   evening: ["#3a2a4a","#c2704f"]
 };
 
@@ -2656,6 +2982,32 @@ const NIGHT_AUDIO_ONE = "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2
 const _cutSrc = [], _cutEls = [];
 let _cutId = 0;
 function cutSources(){ return _cutSrc; }
+function rainNoise(dur){
+  if (!actx || !musicOn) return;
+  const sr = actx.sampleRate, len = sr*2, buf = actx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+  let lp = 0;
+  for (let i = 0; i < len; i++){
+    const w = Math.random()*2 - 1;
+    lp += 0.08*(w - lp);
+    d[i] = w*0.35 + lp*1.4;                      // шипение плюс глуше «стена» дождя
+  }
+  for (let k = 0; k < 90; k++){                  // отдельные капли: короткие щелчки
+    const at = Math.floor(Math.random()*(len - 400)), a = 0.3 + Math.random()*0.5;
+    for (let j = 0; j < 300; j++) d[at + j] += a*Math.exp(-j/40)*(Math.random()*2 - 1);
+  }
+  const src = actx.createBufferSource(), hp = actx.createBiquadFilter(), lpf = actx.createBiquadFilter(), amp = actx.createGain();
+  src.buffer = buf; src.loop = true;
+  hp.type = "highpass"; hp.frequency.value = 350;
+  lpf.type = "lowpass"; lpf.frequency.value = 6000;
+  const t0 = actx.currentTime;
+  amp.gain.setValueAtTime(0.0001, t0);
+  amp.gain.exponentialRampToValueAtTime(0.3, t0 + 0.8);
+  amp.gain.setValueAtTime(0.3, t0 + Math.max(1, dur - 1));
+  amp.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(hp); hp.connect(lpf); lpf.connect(amp); amp.connect(actx.destination);
+  src.start(t0); src.stop(t0 + dur + 0.1);
+  _cutSrc.push(src);
+}
 function stopCutAudio(){
   for (const src of _cutSrc.splice(0)) { try { src.stop(); } catch (e) { /* уже остановлен */ } }
   for (const el of _cutEls.splice(0)) { try { el.pause(); } catch (e) { /* норм */ } }
@@ -2729,6 +3081,7 @@ function playCut(name, then){
   if (csc.sky === "night" && csc.song !== false) nightAudioStart();
   if (csc.sounds && actx){ const t0 = actx.currentTime; for (const sd of csc.sounds) cutPlay(sd.key, t0 + sd.at, g.cut.id); }
   if (name === "morning") startBirds();
+  if (csc.rainSound) rainNoise(g.cut.len/60);
   setMusic(csc.sky === "night" ? "camp" : "river");
 }
 
@@ -3076,6 +3429,7 @@ function drwCut(){
   }
   if (sc.mirror) cx.restore();
   cx.restore();                                  // камера
+  if (sc.rain) drwCutRain(sc, cw, ch, s, yf);
   drwCutTalk(sc, g.cut.t, s, xf, yf);
   // подпись — всегда внизу экрана
   const capH = Math.max(34, Math.round(44*s));
@@ -3177,6 +3531,32 @@ function drwRoad(sc, s, xf, yf, cw){
       cx.fillStyle = "#9fb8cf"; cx.fillRect(xf(x - 3), yf(y - 1.2), 5*s, 1*s); });
     cx.fillStyle = "#a88a5c"; rep(23, (x, i) => { if (hsh(i*7) < 0.5) cx.fillRect(xf(x), yf(rTop + 3 + hsh(i*13)*40), 2*s, 1.5*s); });
   }
+}
+// Дождь в мульте: лёгкое затемнение, косые струи по всему кадру (от ширины
+// экрана), круги от капель на воде. Детерминировано по времени мульта.
+function drwCutRain(sc, cw, ch, s, yf){
+  const r = sc.rain, t = g.cut.t;
+  cx.save();
+  cx.fillStyle = "rgba(24,34,48," + (0.16*r).toFixed(2) + ")"; cx.fillRect(0, 0, cw, ch);
+  cx.strokeStyle = "rgba(205,225,245," + (0.45*r).toFixed(2) + ")";
+  cx.lineWidth = Math.max(1, 0.7*s);
+  const n = Math.round(cw/800*150*r), dl = 14*s;
+  cx.beginPath();
+  for (let i = 0; i < n; i++){
+    const x = ((i*137.3 + t*5*s) % (cw + 60)) - 30, y = ((i*211.7 + t*19*s) % (ch + 40)) - 20;
+    cx.moveTo(x, y); cx.lineTo(x - 4*s, y + dl);
+  }
+  cx.stroke();
+  if (sc.water){                               // круги на воде
+    const wy = yf(sc.water);
+    for (let i = 0; i < Math.round(cw/800*26*r); i++){
+      const k = ((t*1.4 + i*23) % 50)/50, cyc = Math.floor((t*1.4 + i*23)/50);
+      const x = hsh(i*97 + cyc*31)*cw, y = wy + (6 + hsh(i*53 + cyc*17)*(ch - wy - 60));
+      cx.strokeStyle = "rgba(230,240,255," + (0.5*(1 - k)*r).toFixed(2) + ")";
+      cx.beginPath(); cx.ellipse(x, y, (1 + k*7)*s, (0.5 + k*2.4)*s, 0, 0, Math.PI*2); cx.stroke();
+    }
+  }
+  cx.restore();
 }
 // Пыль за прицепом на грунтовке: клубы от заднего края прицепа отлетают
 // назад и вверх, растут и тают. Детерминировано по времени мульта.
@@ -3798,7 +4178,7 @@ document.getElementById("nextBtn").addEventListener("click",()=>{
   recordFinish();
   nextDay();
 });
-document.getElementById("goBtn").addEventListener("click",()=>{ leaveCamp(); playCut("morning", ()=>startDay(g.day)); });
+document.getElementById("goBtn").addEventListener("click",()=>{ leaveCamp(); playCut(morningName(g.day), ()=>startDay(g.day)); });
 document.getElementById("againBtn").addEventListener("click",()=>{ recordFinish(); startDay(g.day); });
 document.getElementById("retryBtn").addEventListener("click",()=>startDay(g.day));
 document.getElementById("toMapBtn").addEventListener("click",showMap);
@@ -4095,7 +4475,13 @@ function drwOb(o){
       drwPaddle(x, y, o.wy);
     }
   }
-  if (o.type === "rock"){
+  if (o.cow){
+    // Вода у ног коровы: светлая рябь по низу, покачивается.
+    const sw = Math.sin(g.frame*0.05 + o.wy)*2;
+    cx.fillStyle = "rgba(255,255,255,0.35)";
+    cx.fillRect(x - sz.w*0.45 + sw, y + sz.h/2 - 2, sz.w*0.9, 2);
+    cx.fillRect(x - sz.w*0.3 - sw, y + sz.h/2 + 3, sz.w*0.6, 2);
+  } else if (o.type === "rock"){
     // Пена там, где вода разбивается о камень.
     cx.fillStyle = PAL.f;
     cx.fillRect(x - sz.w*0.32, y + sz.h/2 - 4, sz.w*0.26, 3);
@@ -4177,6 +4563,58 @@ function drwBev(e){
     return;
   }
 
+  // Цапля стоит на одной ноге в воде у самой кромки, лицом к реке. Подошли к её берегу — улетает вверх и
+  // к суше, медленно взмахивая крыльями, и убирается.
+  if (e.type === "heron"){
+    const bx = ax + e.side*(hw - 10);
+    if (bx < -60 || bx > W + 60) return;
+    const L = e.side > 0 ? "_l" : "";
+    if (e.away){
+      const k = e.fl || 0;
+      const fr = Math.floor(g.frame/9) % 2 ? "heron_fly0" : "heron_fly1";
+      drawSprite(fr + (e.side < 0 ? "_l" : ""), bx + e.side*k*1.3, by - 24 - k*1.4);
+      return;
+    }
+    cx.fillStyle = "rgba(255,255,255,0.28)";
+    cx.fillRect(bx - 12, by + 36, 24, 2); cx.fillRect(bx - 7, by + 40, 14, 2);
+    drawSprite("heron" + L, bx, by);
+    return;
+  }
+
+  // Пастух с коровами на берегу: коровы пасутся у воды (то опускают голову к
+  // траве, то поднимают), пастух с посохом стоит глубже на суше. Пара коров
+  // заходит в воду у этого берега — это препятствия (cowsWade).
+  if (e.type === "cows"){
+    const edg = ax + e.side*hw;
+    if (!bankVisible(e.side, edg)) return;
+    const L = e.side > 0 ? "_l" : "";
+    const up = i => Math.floor((g.frame + ph*50 + i*90)/140) % 2;
+    const c1 = bankAnchor(edg, e.side, edg + e.side*44, 42);
+    drawSprite((up(0) ? "cow_b" : "cow") + L, c1, by - 18);
+    const c2 = bankAnchor(edg, e.side, edg + e.side*50, 42);
+    drawSprite((up(1) ? "cow_b" : "cow") + L, c2, by + 30);
+    const sx = bankAnchor(edg, e.side, edg + e.side*112, 20);
+    drawSprite("shepherd" + L, sx, by + 4);
+    return;
+  }
+
+  // Семья лосей у воды: лосиха и лосёнок у самой кромки, лось чуть глубже.
+  // Взрослые по очереди пьют (голова к воде); байдарка рядом (e.alert) —
+  // все поднимают головы и смотрят.
+  if (e.type === "moose"){
+    const edg = ax + e.side*hw;
+    if (!bankVisible(e.side, edg)) return;
+    const L = e.side > 0 ? "_l" : "";
+    const drink = i => !e.alert && Math.floor((g.frame + ph*60 + i*110)/170) % 2 === 0;
+    const bull = bankAnchor(edg, e.side, edg + e.side*80, 52);
+    drawSprite((drink(0) ? "moose_b" : "moose") + L, bull, by - 34);
+    const cowX = bankAnchor(edg, e.side, edg + e.side*44, 48);
+    drawSprite((drink(1) ? "moosecow_b" : "moosecow") + L, cowX, by + 20);
+    const calf = bankAnchor(edg, e.side, edg + e.side*30, 34);
+    drawSprite("moosecalf" + L, calf, by + 70 + (e.alert ? 0 : Math.abs(Math.sin(g.frame*0.08 + ph))*2));
+    return;
+  }
+
   // Медведь бродит вдоль берега.
   if (e.type === "bear"){
     const edg = ax + e.side*hw;
@@ -4200,10 +4638,12 @@ function drwBev(e){
   if (e.type === "fisher"){
     const edg = ax + e.side*hw;
     if (!bankVisible(e.side, edg)) return;
-    const bx = bankAnchor(edg, e.side, edg + e.side*e.off, 27);   // fisher 48px: тело на суше, удочка/поплавок — над водой
+    const bx = bankAnchor(edg, e.side, edg + e.side*e.off, 20);   // fisher 39px: на суше, удочка/поплавок — над водой
     const cast = Math.sin(g.frame*0.03 + ph);
-    drawSprite("fisher", bx, by);
-    const rodX = bx - e.side*4, rodY = by - 14;
+    // Сидит лицом к воде: на левом берегу вода справа — спрайт как есть,
+    // на правом — отражённый. Удочка идёт из рук (комель на +15, −6 от центра).
+    drawSprite(e.side < 0 ? "fisher" : "fisher_l", bx, by);
+    const rodX = bx - e.side*15, rodY = by - 6;
     const tipX = rodX - e.side*(26 + cast*8), tipY = rodY - 22 - cast*10;
     cx.strokeStyle = PAL.n; cx.lineWidth = 3;
     cx.beginPath(); cx.moveTo(rodX, rodY); cx.lineTo(tipX, tipY); cx.stroke();
@@ -4435,9 +4875,17 @@ function updBev(e){
   if (e.type === "ducks" && !e.away
       && Math.abs(g.pwy - e.wy) < 95
       && g.t * e.side > 0.45) e.away = 1;
+  // Лоси поднимают головы, пока байдарка рядом.
+  if (e.type === "moose") e.alert = Math.abs(g.pwy - e.wy) < 160;
+  // Стадо мычит один раз, когда байдарка подплыла.
+  if (e.type === "cows" && !e.mooed && Math.abs(g.pwy - e.wy) < 300){ e.mooed = true; sfx("moo"); }
+  // Цапля пугливее уток: взлетает раньше — издалека и уже с середины реки.
+  if (e.type === "heron" && !e.away
+      && Math.abs(g.pwy - e.wy) < 140
+      && g.t * e.side > 0.3) e.away = 1;
   if (e.away){
     e.fl = (e.fl || 0) + 1;
-    if (e.fl > 70) e.dead = true;
+    if (e.fl > (e.type === "heron" ? 110 : 70)) e.dead = true;
   }
 }
 
@@ -5440,9 +5888,9 @@ function spawnCamp(wy){
 // Волга людная и пляжная, лесные реки — дикие. Индекс — номер реки.
 const BEV_POOLS = [
   ["beach","beach","guitar","guitar","camp","fire","ducks","tower","fisher","bush","tree"],
-  ["bear","camp","fire","ducks","tower","fisher","bush","tree","tree"],
-  ["bear","camp","fire","ducks","tower","fisher","bush","tree","tree"],
-  ["bear","camp","fire","ducks","tower","fisher","bush","tree","tree"]
+  ["bear","camp","fire","heron","tower","fisher","bush","tree","tree"],
+  ["moose","camp","fire","ducks","tower","fisher","bush","tree","tree"],
+  ["bear","camp","fire","ducks","tower","fisher","cows","cows","bush","tree","tree"]
 ];
 
 // Волга — большая вода: жителей на её узких берегах вчетверо реже, и
@@ -5456,13 +5904,30 @@ function spBev(){
   // Сцена кладётся на БОЛЕЕ ШИРОКИЙ берег (widerBevSide): там спрайт и группа
   // помещаются целиком. Раньше случайная сторона давала сцены, которые на узкой
   // полосе суши резались краем кадра.
-  placeBev({type:ty,side:widerBevSide(wy, Math.random()<0.5?-1:1),wy:wy,
+  const ev = {type:ty,side:widerBevSide(wy, Math.random()<0.5?-1:1),wy:wy,
             off:26+Math.random()*38,
             phase:Math.random()*6.28,
             mode:Math.random()<0.6?"swim":"sit",
             variant:ty==="beach"?Math.floor(Math.random()*4):0,
-            shape:Math.floor(Math.random()*3)}, 1);
+            shape:Math.floor(Math.random()*3)};
+  if (placeBev(ev, 1) && ty === "cows") cowsWade(ev);
   g.ned=g.dist+(22+Math.random()*38)*(volga ? 4 : 1);
+}
+// Одна-две коровы заходят в воду у берега пастуха: стоят близко к кромке
+// (t от 0,55 до 0,7 к своему берегу) — мешают проплыть вдоль берега, но
+// середина реки свободна. Тип «rock»: соперники обходят, удар — урон; но
+// флаг cow — не разлетается от виски и топора и не пропадает после удара.
+function cowsWade(e){
+  const n = Math.random() < 0.5 ? 1 : 2;
+  const sz = spriteSize("cow_water");
+  for (let i = 0; i < n; i++){
+    const wy = e.wy + (i ? -70 : 40) + Math.random()*30;
+    if (forkAt(wy)) continue;
+    const t = e.side*(0.55 + Math.random()*0.15);
+    if (!spaceFree(t, wy, sz.w/2)) continue;
+    g.obs.push({ type:"rock", cow:true, sprite: e.side < 0 ? "cow_water" : "cow_water_l",
+                 t, wy, vt:0, size:40, visHalf:sz.w/2, visHalfY:sz.h/2, halfPx:sz.w/2*0.75, swingT:-1 });
+  }
 }
 function spPt(x,y,cl,c){
   for(let i=0;i<c;i++){g.pts.push({x,y,vx:(Math.random()-0.5)*7,vy:(Math.random()-0.5)*7,lf:30+Math.random()*20,ml:50,cl,sz:2+Math.random()*3});}
@@ -5517,6 +5982,15 @@ function chkCl(){
         return;
       }
       continue;
+    }
+    if(o.cow && Math.hypot(dx,dy)<kr+(o.halfPx||16)){
+      // Корова: под виски или неуязвимостью байдарку просто отжимает к
+      // середине; иначе удар и «МУ-У!» — корова стоит где стояла.
+      if (g.inv > 0 || g.whiskyT > 0){ g.t -= Math.sign(o.t || 1)*0.02; g.vt = 0; continue; }
+      popText("МУ-У!", "#f2f2f2");
+      damage();
+      sfx("moo");
+      return;
     }
     if(Math.hypot(dx,dy)<kr+(o.halfPx||16)){
       const ox=screenXOf(o.t,o.wy),oy=screenYOf(o.wy);
@@ -5582,7 +6056,7 @@ function damage(){
   if (rapidBlend(g.pwy) > 0.5) g.cleanRun = false;
   g.t = 0; g.vt = 0;
   g.sp = Math.max(1.8, g.sp*0.55);
-  g.obs = g.obs.filter(o => Math.abs(o.wy - g.pwy) > 150);
+  g.obs = g.obs.filter(o => o.cow || Math.abs(o.wy - g.pwy) > 150);   // коровы остаются стоять
   if (g.hp > 0){ sfx("hit"); popText("-1 СЕРДЦЕ","#ff5252"); return; }
   // Спасажилет — второй шанс: раз в день не даёт опрокинуться и потерять попытку.
   if (hasGear("vest") && !g.vestUsed){
@@ -5689,6 +6163,7 @@ function apBn(b){
       // НА КУРСЕ: боковое отклонение штрафуется сильнее расстояния.
       let n = null, best = Infinity;
       for (const o of g.obs){
+        if (o.cow) continue;                     // корову топор не трогает
         const d = o.wy - g.pwy;
         if (d < 60 || d > AXE_RANGE) continue;
         const lateral = Math.abs(o.t - g.t) * widthAt(o.wy)/2;
@@ -5727,7 +6202,7 @@ function dayFromParam(v){
 // Хочется смотреть береговые картинки (пляж, финиш, утки, палаточный лагерь),
 // не доезжая до них греблей. Три дебаг-параметра в URL:
 //   ?day=N            — день (как обычно);
-//   ?scene=NAME       — телепорт на готовую сцену: beach|finish|camp|ducks;
+//   ?scene=NAME       — телепорт на готовую сцену: beach|finish|camp|ducks|heron|cows|moose;
 //   ?at=METERS        — телепорт на произвольный метр русла M.
 // Все три ставят [g.scroll, g.pwy, g.dist] на точку и сразу спавнят нужную
 // сцену, чтобы кадр был готов в момент входа в уровень.
@@ -5738,6 +6213,9 @@ const DEBUG_SCENES = {
   // Утки: стая на воде у кромки; side подбирается к берегу, мы их нагоняем
   // сзади, чтобы видно было и покой, и разлёт вплотную.
   ducks: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  heron: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  cows:  { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  moose: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   // Финиш: река уже сузилась (finishGain), лента впереди, палатки по стороне
   // причаливания. Камера чуть ниже ленты, чтобы сухой берег был виден.
   finish: { wy: null },
@@ -5776,13 +6254,14 @@ function sceneAt(s){
     g.tapeWy = tape; g.landSide = 1;
     spawnCamp(tape);
     teleportTo(Math.max(0, tape - 150));
-  } else if (s === "beach" || s === "ducks"){
+  } else if (s === "beach" || s === "ducks" || s === "heron" || s === "cows" || s === "moose"){
     const wy = DEBUG_SCENES[s].wy;
     // На широкий берег (widerBevSide) и в дебаге: картинка должна показывать,
     // как сцена сидит на берегу вживую — тем же правилом, что и в спавне.
     const side = widerBevSide(wy, DEBUG_SCENES[s].side);
     g.bev.push({ type:s, side, wy, off:34, phase:1.7, mode:"swim", atCamp:false,
                  variant: DEBUG_SCENES.beach.variant });
+    if (s === "cows") cowsWade(g.bev[g.bev.length - 1]);
     teleportTo(wy);
   } else {
     // Произвольная точка (?at=M): одна случайная береговая сцена из пула,
@@ -6620,7 +7099,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
