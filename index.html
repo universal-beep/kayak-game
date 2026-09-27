@@ -1099,7 +1099,7 @@ const SPR = {
     "....kWWkWWk.....kWWkWWk....",
     "....kWWkWWk.....kWWkWWk....",
     "....kKKkKKk.....kKKkKKk....",
-    ".....kk.kk.......kk.kk....."]},
+    ".....kk.kk.......kk.kk....."], variants:[{}, {K:"o", g:"h"}, {w:"n", W:"h", G:"o", K:"B", g:"o"}]},
   cow_b:{map:["......................k.k..",
     ".....................kekek.",
     "....kkkkkkkkkkkkkkkkkkwwWWk",
@@ -1116,7 +1116,7 @@ const SPR = {
     "....kWWkWWk.....kWWkWWk....",
     "....kWWkWWk.....kWWkWWk....",
     "....kKKkKKk.....kKKkKKk....",
-    ".....kk.kk.......kk.kk....."]},
+    ".....kk.kk.......kk.kk....."], variants:[{}, {K:"o", g:"h"}, {w:"n", W:"h", G:"o", K:"B", g:"o"}]},
   cow_water:{map:["......................k.k..",
     ".....................kekek.",
     "....kkkkkkkkkkkkkkkkkkwwWWk",
@@ -1129,7 +1129,94 @@ const SPR = {
     "kjkWWWWWWWWWWKKKKWWWWWk....",
     "kKkGGGGGGGGGGGGGGGGGGGk....",
     ".k.kGGGGGGHHHGGGGGGGGGk....",
-    "....kWWkWWkkkkkkkWWkWWk...."]},
+    "....kWWkWWkkkkkkkWWkWWk...."], variants:[{}, {K:"o", g:"h"}, {w:"n", W:"h", G:"o", K:"B", g:"o"}]},
+  // Бык: крупнее коровы, тёмно-бурый, холка горбом, большие рога в стороны,
+  // кольцо в носу. Телёнок: маленький, голенастый, с ушами, масти как у
+  // коров (те же варианты перекраски).
+  bull:{map:["......................k.......k.",
+    ".....................ksk.....ksk",
+    "......................kekk..kkek",
+    "..................kkkkkkeekkeek.",
+    "................kkBBBBBBkBBBCCk.",
+    ".....kkkkkkkkkkkBBBBBBBBBBBKCCk.",
+    "...kkBBBBBBBBBBBBBBBBBBBBBBBCHk.",
+    "..kbBBBBBBBBBBBBBBBBBBBBBBBBCHk.",
+    "..kbCCCCCCCCCCCCCCCCCCCCCBBBCHk.",
+    ".kbCCCCCCCCCCCCCCCCCCCCCCCkkkyk.",
+    ".kbCCCCCCCCCCCCCCCCCCCCCCCk..k..",
+    ".kbCCCCCCCCCCCCCCCCCCCCCCCk.....",
+    "kbkCCCCCCCCCCCCCCCCCCCCCCCk.....",
+    "kbkCCCCCCCCCCCCCCCCCCCCCCCk.....",
+    "kKkbbbbbbbbbbbbbbbbbbbbbbbk.....",
+    ".k.kkbbbbbbbbbbbbbbbbbbbbk......",
+    ".....kCCCCCCkkkkkkkkCCCCCCk.....",
+    ".....kCCCCCCk......kCCCCCCk.....",
+    ".....kCCCCCCk......kCCCCCCk.....",
+    ".....kCCCCCCk......kCCCCCCk.....",
+    ".....kKKKKKKk......kKKKKKKk.....",
+    "......kkkkkk........kkkkkk......"]},
+  calf:{map:["...............k...",
+    "..............kWkk.",
+    "...kkkkkkkkkkkkwWWk",
+    "..kwwwwwwwwwggGwKHk",
+    ".kGggggWWWWWKKWwWHk",
+    ".kGKKKKWWWWWWWWkkk.",
+    "kGWWWWWWggggWWWk...",
+    "kGGGGGGGKKKKGGGk...",
+    "kKkGGGGGGGGGGGk....",
+    ".kkGkGkkkkkGkGk....",
+    "..kGkGk...kGkGk....",
+    "..kGkGk...kGkGk....",
+    "..kKKKKk..kKKKKk...",
+    "...kkkk....kkkk...."], variants:[{}, {K:"o", g:"h"}, {w:"n", W:"h", G:"o", K:"B", g:"o"}]},
+  // Пастухи: дед в шляпе с седой бородой и пиджаке; пастушка в платке и
+  // длинной юбке; у обоих посох.
+  shepherd_old:{map:["..........k.",
+    "..kkkk...kOk",
+    ".kSSSSk..kok",
+    "kddddddk.kok",
+    ".kttttk..kok",
+    ".ktttKtk.kok",
+    ".kWWWWk..kok",
+    ".kWWWWk..kok",
+    "knnWWnnkkkok",
+    "knhhhhhhhkok",
+    "knhhhhhhhtok",
+    "knhohhokkkok",
+    "knhhhhok.kok",
+    "knhohhok.kok",
+    "knhhhhok.kok",
+    "knhhhhok.kok",
+    ".kZZzzk..kok",
+    ".kZZzzk..kok",
+    ".kZZzzk..kok",
+    ".kZZzzk..kok",
+    ".kKKKKKk.kok",
+    ".kKKKKKk.kok",
+    "..kkkkk...k."]},
+  shepherd_girl:{map:["...........k.",
+    "..kkkkk...kOk",
+    ".kHHHHHk..kok",
+    ".kHHHHHk..kok",
+    ".kHttttk..kok",
+    ".kHtttKtk.kok",
+    ".kHttttk..kok",
+    "kPHttttk..kok",
+    ".kQQQQQQkkkok",
+    ".kQrrrrrrrkok",
+    ".kQrrrrrrrtok",
+    ".kQrrrrRkkkok",
+    ".kQrrrrRk.kok",
+    ".kQrrrrRk.kok",
+    ".kzzzzzZk.kok",
+    ".kzzzzzZk.kok",
+    ".kzzzzzZk.kok",
+    ".kzzzzzZk.kok",
+    ".kzzzzzZk.kok",
+    ".kzzzzzZk.kok",
+    ".kzzzzzZk.kok",
+    "..kKKKKk..kok",
+    "...kkkk....k."]},
   // Пастух: кепка, стёганый ватник, сапоги, длинный посох.
   shepherd:{map:["..........k.",
     "..kkk....kOk",
@@ -1154,6 +1241,91 @@ const SPR = {
     ".kKKKKKk.kok",
     ".kKKKKKk.kok",
     "..kkkkk...k."]},
+  // Ещё четыре рыбака (все лицом к воде, комель удочки в руках — удочку
+  // рисует код): стоит в кепке и жилете; папа в панаме с сыном — у сына своя
+  // короткая удочка в рисунке; на раскладном стуле у «Нивы», поставленной
+  // носом к воде; на ведре у велосипеда на подножке.
+  fisher_stand:{map:["..kkk.......",
+    ".krrrkkk....",
+    "krrrrrRRk...",
+    ".kttttkk....",
+    "kOtttKtk....",
+    "kOttttk...k.",
+    ".kttttk..kOk",
+    "kFFFFFFkktk.",
+    "kFvvvvvvvk..",
+    "kFvvvvVkk...",
+    "kFvVvVVk....",
+    "kFvvvvVk....",
+    "kFvVvvVk....",
+    "kFvvvvVk....",
+    ".kZZzzk.....",
+    ".kZZzzk.....",
+    ".kZZzzk.....",
+    ".kKKKKKk....",
+    ".kKKKKKk....",
+    ".kKKKKKk....",
+    "..kkkkk....."]},
+  fisher_kid:{map:["...kkk...........................",
+    ".kkssskk.........................",
+    "kSSSSSSSk.......................n",
+    ".kkttttk........kkk............n.",
+    ".kOtttKtk......kzzzkkk.......nn..",
+    ".kOttttk...k..kzzzzzZZk.....nn...",
+    "..kttttk..kOk..kttttkk.....nn....",
+    ".kFFFFFFkktk..kOtttKtk....n......",
+    ".kFvvvvvvvk...kOttttk...nn.......",
+    ".kFvvvvVkk.....kttttk..kOk.......",
+    ".kFvVvVVk.....kAAAAAAkktk........",
+    ".kFvvvvVk.....kApppppppk.........",
+    ".kFvVvvVk.....kAppppxkk..........",
+    ".kFvvvvVk.....kAppppxk...........",
+    "..kZZzzk......kAppppxk...........",
+    "..kZZzzk.......kZZzzk............",
+    "..kZZzzk.......kZZzzk............",
+    "..kKKKKKk......kZZzzk............",
+    "..kKKKKKk......kKKKKKk...........",
+    "..kKKKKKk......kKKKKKk...........",
+    "...kkkkk........kkkkk............"]},
+  fisher_car:{map:["..................................kkk.......",
+    "................................kkkkkkk.....",
+    "...............................kkkssskkk....",
+    "..............................kkdSSSSSdkk...",
+    "...............................kkOtttkkk....",
+    "...kkkkkkkkkkkkk...............kkOttKtkk.k..",
+    "..kwwwwwwwwwwwwwk..............kkktTTkkkkkk.",
+    "..kWiiiiiWiiiiiWWk............kkFFFFFkkkkOkk",
+    "..kWiiiiiWiiiifffWk...........kkFvvvvvvvtOkk",
+    ".kWWIIIIIWIIIfffIIWkkkk.......kkFvvvVVVVtkk.",
+    ".kWWWWWWWWWwwwwwwwwwwwwkk.....kkFvvvVkkkkk..",
+    "kwwwwwwwwwGwwwwwwwwwwwwwwk....kkFvvvVkkkk...",
+    "krWWWWWWWWGWWWWWWWWWWWWWWuk...kkkzzzzzzzkk..",
+    "kWWWKKKKWWGWWWWWWWWKKKKWWWk..kkzzzzzzZZZkk..",
+    "kjjKKggKKjjjjjjjjjKKggKKjjjk.kkjkkkkjkkZZkk.",
+    ".kkKKggKKkkkkkkkkkKKggKKkkk..kkkjjjjkkkgKkk.",
+    "..kKKggKKk.......kKKggKKk....kkkkjjkkkkKKKkk",
+    "...kKKKKk.........kKKKKk......kjjkkjjkkkkkk.",
+    "....kkkk...........kkkk.......kjkkkkjk.kkk..",
+    "...............................k....k......."]},
+  fisher_bike:{map:["........................kkk.......",
+    "......................kkkkkkk.....",
+    ".....................kkkssskkk....",
+    "....................kkdSSSSSdkk...",
+    ".....................kkOtttkkk....",
+    ".....................kkOttKtkk.k..",
+    "..............kkk....kkktTTkkkkkk.",
+    "......kkk....kKKKk..kkFFFFFkkkkOkk",
+    ".....kKKKkkkkkjkk...kkFvvvvvvvtOkk",
+    "...kkkkrrrrrrrjkk...kkFvvvVVVVtkk.",
+    "..kKKKkrkkkkkrrKKkk.kkFvvvVkkkkk..",
+    ".kKkkkrkrk.krrKrkKKkkkFvvvVkkkk...",
+    "kKk.krrKrkkrrKkrkkKkkkkzzzzzzzkk..",
+    "kKk.krkKrrrkKkkrrkkKkWWZZZZZZZkk..",
+    "kKkkjrrrrjkkKk.krkkKkggggggkkZZkk.",
+    "kKk.kkkKkjjkkKk.kkKkkGjjjgkkkgKkk.",
+    ".kKkkkKk.kjkkKKkkKKkkGjjjgkkkKKKkk",
+    "..kKKKk...kjkkkKKkk.kkkkkkk.kkkkk.",
+    "...kkk.....k...kk....kkkkk...kkk.."]},
   // Рыбак (28.09.2026): сидит в профиль на перевёрнутом ведре лицом к воде —
   // панама, оливковая куртка, резиновые сапоги, в руках комель удочки (саму
   // удочку, леску и клёв рисует код). Для правого берега — fisher_l.
@@ -1986,16 +2158,18 @@ function rainify(map, coat, fam){
   return g.map(r => r.join(""));
 }
 const RAIN_WEAR = { person:["r"], person_w1:["r"], person_paddle:["r"], girl:["H"], girl_w1:["H"],
-  sitter:["r"], fisher:["v", "FvV"], rower:["z"], rower_flip:["z"], kayak_center:["r"] };
+  sitter:["r"], fisher:["v", "FvV"], fisher_stand:["v", "FvV"], rower:["z"], rower_flip:["z"], kayak_center:["r"] };
 // Жители, смотрящие на воду: на правом берегу — отражённые копии «_l».
 for (const [n, [coat, fam]] of Object.entries(RAIN_WEAR)) if (SPR[n])
   SPR[n + "_rain"] = { map: rainify(SPR[n].map, coat, fam), variants: SPR[n].variants, noOutline: SPR[n].noOutline };
 SPR.kayak_left_rain  = { map: shearMap(SPR.kayak_center_rain.map, -1) };
 SPR.kayak_right_rain = { map: shearMap(SPR.kayak_center_rain.map,  1) };
-for (const n of ["fisher", "fisher_rain", "heron", "heron_fly0", "heron_fly1", "cow", "cow_b", "cow_water", "shepherd",
+for (const n of ["fisher", "fisher_rain", "fisher_stand", "fisher_stand_rain", "fisher_kid", "fisher_car", "fisher_bike", "heron", "heron_fly0", "heron_fly1", "cow", "cow_b", "cow_water", "shepherd",
+                 "bull", "calf", "shepherd_old", "shepherd_girl",
                  "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf"])
-  SPR[n + "_l"] = { map: SPR[n].map.map(r => [...r].reverse().join("")) };
+  SPR[n + "_l"] = { map: SPR[n].map.map(r => [...r].reverse().join("")), variants: SPR[n].variants };
 SPR.fisher_l_rain = SPR.fisher_rain_l; delete SPR.fisher_rain_l;
+SPR.fisher_stand_l_rain = SPR.fisher_stand_rain_l; delete SPR.fisher_stand_rain_l;
 // Попутная красная (нижняя полоса, едет вправо) — нос вправо.
 SPR.car_red_r    = { map: SPR.car_red.map.map(r => [...r].reverse().join("")) };
 // Палатка с освещённым изнутри входом: вся тёмная лента входа становится
@@ -2435,7 +2609,7 @@ const BEV_ROOM = { beach: 74, guitar: 66, camp: 120, fire: 56, fisher: 60, bear:
 const ROOM_FULL = 120, ROOM_TAPER = 150;
 function roomNeed(e){
   if (e.roomDef === undefined){
-    const need = BEV_ROOM[e.type] || 0;
+    const need = (e.kind && FISH_ROOM[e.kind]) || BEV_ROOM[e.type] || 0;
     const hw = widthRaw(e.wy)/2, c = baseCenter(e.wy);
     const bank = e.side < 0 ? c - hw : W - (c + hw);
     e.roomDef = e.atCamp ? 0 : Math.max(0, need - bank);
@@ -4724,12 +4898,15 @@ function drwBev(e){
     if (!bankVisible(e.side, edg)) return;
     const L = e.side > 0 ? "_l" : "";
     const up = i => Math.floor((g.frame + ph*50 + i*90)/140) % 2;
-    const c1 = bankAnchor(edg, e.side, edg + e.side*44, 42);
-    drawSprite((up(0) ? "cow_b" : "cow") + L, c1, by - 18);
-    const c2 = bankAnchor(edg, e.side, edg + e.side*50, 42);
-    drawSprite((up(1) ? "cow_b" : "cow") + L, c2, by + 30);
-    const sx = bankAnchor(edg, e.side, edg + e.side*112, 20);
-    drawSprite("shepherd" + L, sx, by + 4);
+    const herd = herdOf(e);
+    const spots = [[44, -26], [50, 22], [58, 66]];
+    herd.animals.forEach((a, i) => {
+      const nm = a.spr === "cow" ? (up(i) ? "cow_b" : "cow") : a.spr;
+      const x = bankAnchor(edg, e.side, edg + e.side*spots[i][0], spriteSize(nm).w/2 + 3);
+      drawSprite(nm + L, x, by + spots[i][1], a.spr === "bull" ? undefined : a.v);
+    });
+    const sx = bankAnchor(edg, e.side, edg + e.side*118, 20);
+    drawSprite(herd.shepherd + L, sx, by + 4);
     return;
   }
 
@@ -4738,17 +4915,29 @@ function drwBev(e){
   if (e.type === "cyclists"){
     const edgAt = w => centerAt(w) + e.side*widthAt(w)/2;
     if (!bankVisible(e.side, edgAt(e.wy))) return;
-    cx.fillStyle = "#8a7048";
-    for (let w = e.wy - CYC_SPAN; w <= e.wy + CYC_SPAN; w += 8){
-      const sy = screenYOf(w);
-      if (sy < -12 || sy > H + 12) continue;
-      const x = edgAt(w) + e.side*CYC_OFF;
-      cx.fillStyle = "#8a7048";                  // две широкие тропки
-      cx.fillRect(Math.round(x - CYC_GAP - 4), Math.round(sy), 8, 9);
-      cx.fillRect(Math.round(x + CYC_GAP - 4), Math.round(sy), 8, 9);
-      cx.fillStyle = "#6f5836";                  // края тропок темнее
-      cx.fillRect(Math.round(x - CYC_GAP - 4), Math.round(sy), 1, 9);
-      cx.fillRect(Math.round(x + CYC_GAP + 3), Math.round(sy), 1, 9);
+    // Полевая грунтовка: земляное полотно, две накатанные колеи темнее, между
+    // ними трава с проплешинами, края рвёт трава, камушки, изредка лужа в
+    // колее. Полосами по 6 px мира — дорога гнётся вместе с берегом.
+    const grass = g.rGrass || river().grass;
+    const RW = CYC_GAP + 11;
+    for (let w = e.wy - CYC_SPAN; w <= e.wy + CYC_SPAN; w += 6){
+      const sy = Math.round(screenYOf(w));
+      if (sy < -8 || sy > H + 8) continue;
+      const x = Math.round(edgAt(w) + e.side*CYC_OFF), n = Math.floor(w/6);
+      const r1 = hsh(n*17 + 3), r2 = hsh(n*29 + 11), r3 = hsh(n*41 + 7);
+      cx.fillStyle = "#a08354"; cx.fillRect(x - RW, sy, RW*2, 7);           // полотно
+      cx.fillStyle = "#7c6342";                                              // колеи
+      cx.fillRect(x - CYC_GAP - 4, sy, 9, 7); cx.fillRect(x + CYC_GAP - 4, sy, 9, 7);
+      if (r1 > 0.28){ cx.fillStyle = "#6e8a3f"; cx.fillRect(x - 4, sy, 8, 7); }   // трава посередине
+      cx.fillStyle = grass;                                                  // рваные края
+      cx.fillRect(x - RW, sy, 1 + Math.floor(r2*5), 7);
+      const rr = 1 + Math.floor(r3*5); cx.fillRect(x + RW - rr, sy, rr, 7);
+      if (r2 > 0.86){ cx.fillStyle = "#c9b082"; cx.fillRect(x - RW + 6 + Math.floor(r3*(RW*2 - 14)), sy + 2, 2, 2); }  // камушек
+      if (hsh(Math.floor(w/48)*7 + 1) > 0.86 && (n % 8) < 3){                // лужа в колее
+        const lx = hsh(Math.floor(w/48)*13) > 0.5 ? CYC_GAP : -CYC_GAP;
+        cx.fillStyle = "#6c86a0"; cx.fillRect(x + lx - 4, sy, 9, 7);
+        cx.fillStyle = "#a9c1d6"; cx.fillRect(x + lx - 2, sy + 2, 4, 1);
+      }
     }
     for (let i = 0; i < 3; i++){
       const w = cyclistWy(e, i);
@@ -4823,12 +5012,14 @@ function drwBev(e){
   if (e.type === "fisher"){
     const edg = ax + e.side*hw;
     if (!bankVisible(e.side, edg)) return;
-    const bx = bankAnchor(edg, e.side, edg + e.side*e.off, 20);   // fisher 39px: на суше, удочка/поплавок — над водой
+    // Какой рыбак (e.kind): сидит, стоит, с сыном, у машины, у велосипеда.
+    // Лицом к воде: на левом берегу — как нарисован, на правом — отражённый.
+    // Удочка идёт из рук — от комля в рисунке (rodAnchor).
+    const kind = e.kind || "fisher", a = rodAnchor(kind);
+    const bx = bankAnchor(edg, e.side, edg + e.side*e.off, spriteSize(kind).w/2);
     const cast = Math.sin(g.frame*0.03 + ph);
-    // Сидит лицом к воде: на левом берегу вода справа — спрайт как есть,
-    // на правом — отражённый. Удочка идёт из рук (комель на +15, −6 от центра).
-    drawSprite(e.side < 0 ? "fisher" : "fisher_l", bx, by);
-    const rodX = bx - e.side*15, rodY = by - 6;
+    drawSprite(e.side < 0 ? kind : kind + "_l", bx, by);
+    const rodX = bx - e.side*a.x, rodY = by + a.y;
     const tipX = rodX - e.side*(26 + cast*8), tipY = rodY - 22 - cast*10;
     cx.strokeStyle = PAL.n; cx.lineWidth = 3;
     cx.beginPath(); cx.moveTo(rodX, rodY); cx.lineTo(tipX, tipY); cx.stroke();
@@ -6124,6 +6315,8 @@ function spBev(){
             mode:Math.random()<0.6?"swim":"sit",
             variant:ty==="beach"?Math.floor(Math.random()*4):0,
             shape:Math.floor(Math.random()*3)};
+  if (ty === "cows") ev.seed = Math.floor(Math.random()*1000);
+  if (ty === "fisher") ev.kind = fisherKind(ev, level().river);
   if (placeBev(ev, 1) && ty === "cows") cowsWade(ev);
   g.ned=g.dist+(22+Math.random()*38)*(volga ? 4 : 1);
 }
@@ -6131,6 +6324,19 @@ function spBev(){
 // (t от 0,55 до 0,7 к своему берегу) — мешают проплыть вдоль берега, но
 // середина реки свободна. Тип «rock»: соперники обходят, удар — урон; но
 // флаг cow — не разлетается от виски и топора и не пропадает после удара.
+// Стадо по seed: mode same — все одной масти (две коровы и телёнок в
+// масть), pair — две одной масти и третья другой (или бык), mixed — все
+// разные (иногда вместо одной — бык). Пастух — один из трёх.
+function herdOf(e){
+  const s = e.seed || 0, h = k => hsh(s*131 + k*977);
+  const mode = ["same", "pair", "mixed"][s % 3];
+  const v = Math.floor(h(1)*3), w = (v + 1 + Math.floor(h(2)*2)) % 3, u = 3 - v - w;
+  let animals;
+  if (mode === "same") animals = [{spr:"cow", v}, {spr:"cow", v}, {spr:"calf", v}];
+  else if (mode === "pair") animals = [{spr:"cow", v}, {spr:"cow", v}, h(3) < 0.4 ? {spr:"bull", v:0} : {spr:"cow", v:w}];
+  else animals = [{spr:"cow", v}, {spr:"cow", v:w}, h(3) < 0.5 ? {spr:"bull", v:0} : {spr:"cow", v:u}];
+  return { mode, animals, shepherd: ["shepherd", "shepherd_old", "shepherd_girl"][Math.floor(h(4)*3)] };
+}
 function cowsWade(e){
   const n = Math.random() < 0.5 ? 1 : 2;
   const sz = spriteSize("cow_water");
@@ -6140,6 +6346,7 @@ function cowsWade(e){
     const t = e.side*(0.55 + Math.random()*0.15);
     if (!spaceFree(t, wy, sz.w/2)) continue;
     g.obs.push({ type:"rock", cow:true, sprite: e.side < 0 ? "cow_water" : "cow_water_l",
+                 variant: herdOf(e).animals.filter(a => a.spr !== "bull")[i].v,
                  t, wy, vt:0, size:40, visHalf:sz.w/2, visHalfY:sz.h/2, halfPx:sz.w/2*0.75, swingT:-1 });
   }
 }
@@ -6153,6 +6360,31 @@ function cowsWade(e){
 const CYC_OFF = 64, CYC_GAP = 21, CYC_SPAN = 380, CYC_V = 1.6;
 function cyclistLane(i){ return i === 0 ? -CYC_GAP : CYC_GAP; }
 function cyclistWy(e, i){ return e.wy + [230, 280, 214][i] - (g.frame - (e.f0 || 0))*CYC_V; }
+// Рыбаки по рекам: с машиной и велосипедом — на Волге (дороги к воде); на
+// дождливой Тверце — только те, у кого есть дождевик. Вид — от места
+// (hsh по wy), без Math.random: случайность игры не сдвигается.
+const FISHER_KINDS = [
+  ["fisher", "fisher_stand", "fisher_kid", "fisher_car", "fisher_bike"],
+  ["fisher", "fisher_stand", "fisher_kid"],
+  ["fisher", "fisher_stand"],
+  ["fisher", "fisher_stand", "fisher_kid"]
+];
+const FISH_ROOM = { fisher_stand: 60, fisher_kid: 110, fisher_car: 150, fisher_bike: 125 };
+function fisherKind(e, river){
+  const list = FISHER_KINDS[river] || FISHER_KINDS[0];
+  return list[Math.floor(hsh(Math.round(e.wy/7)*131 + 17)*list.length) % list.length];
+}
+// Комель удочки: самый правый пиксель «O» в рисунке (у папы с сыном — у
+// папы, в левой части). Смещение от центра спрайта в пикселях экрана.
+const _rod = {};
+function rodAnchor(name){
+  if (_rod[name]) return _rod[name];
+  const m = SPR[name].map, lim = name === "fisher_kid" ? 16 : 1e9;
+  let bx = -1, by = 0;
+  m.forEach((r, y) => { for (let x = 0; x < Math.min(r.length, lim); x++) if (r[x] === "O" && x > bx){ bx = x; by = y; } });
+  const S = scaleOf(name);
+  return (_rod[name] = { x:(bx + 0.5)*S - m[0].length*S/2, y:(by + 0.5)*S - m.length*S/2 });
+}
 function villagePlan(day){
   const L = LEVELS[day];
   if (!L || L.river !== 2) return [];
@@ -6449,7 +6681,7 @@ function dayFromParam(v){
 // Хочется смотреть береговые картинки (пляж, финиш, утки, палаточный лагерь),
 // не доезжая до них греблей. Три дебаг-параметра в URL:
 //   ?day=N            — день (как обычно);
-//   ?scene=NAME       — телепорт на готовую сцену: beach|finish|camp|ducks|heron|cows|moose|village|cyclists;
+//   ?scene=NAME       — телепорт на готовую сцену: beach|finish|camp|ducks|heron|cows|moose|village|cyclists|fisher (&kind=…);
 //   ?at=METERS        — телепорт на произвольный метр русла M.
 // Все три ставят [g.scroll, g.pwy, g.dist] на точку и сразу спавнят нужную
 // сцену, чтобы кадр был готов в момент входа в уровень.
@@ -6465,6 +6697,7 @@ const DEBUG_SCENES = {
   moose: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   village: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   cyclists: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  fisher: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   // Финиш: река уже сузилась (finishGain), лента впереди, палатки по стороне
   // причаливания. Камера чуть ниже ленты, чтобы сухой берег был виден.
   finish: { wy: null },
@@ -6503,7 +6736,7 @@ function sceneAt(s){
     g.tapeWy = tape; g.landSide = 1;
     spawnCamp(tape);
     teleportTo(Math.max(0, tape - 150));
-  } else if (s === "beach" || s === "ducks" || s === "heron" || s === "cows" || s === "moose" || s === "village" || s === "cyclists"){
+  } else if (s === "beach" || s === "ducks" || s === "heron" || s === "cows" || s === "moose" || s === "village" || s === "cyclists" || s === "fisher"){
     const wy = DEBUG_SCENES[s].wy;
     // На широкий берег (widerBevSide) и в дебаге: картинка должна показывать,
     // как сцена сидит на берегу вживую — тем же правилом, что и в спавне.
@@ -6511,6 +6744,10 @@ function sceneAt(s){
     g.bev.push({ type:s, side, wy, off:34, phase:1.7, mode:"swim", atCamp:false,
                  variant: DEBUG_SCENES.beach.variant, seed: Math.floor(Math.random()*1000) });
     if (s === "cows") cowsWade(g.bev[g.bev.length - 1]);
+    if (s === "fisher"){                         // ?scene=fisher&kind=fisher_car
+      const k = typeof location !== "undefined" ? new URLSearchParams(location.search).get("kind") : null;
+      g.bev[g.bev.length - 1].kind = SPR[k] ? k : fisherKind(g.bev[g.bev.length - 1], L.river);
+    }
     teleportTo(wy);
   } else {
     // Произвольная точка (?at=M): одна случайная береговая сцена из пула,
@@ -7351,7 +7588,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,

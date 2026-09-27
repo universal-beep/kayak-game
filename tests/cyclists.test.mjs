@@ -36,3 +36,18 @@ test("колея из двух широких тропок: по одной ед
   assert.equal(lanes[1], lanes[2], "двое других — на второй");
   assert.ok(Math.abs(lanes[0] - lanes[1]) >= 36, "тропки разнесены: " + Math.abs(lanes[0] - lanes[1]));
 });
+
+test("колея — это дорога: сплошное земляное полотно, на нём колеи темнее", () => {
+  const { K, ctx } = loadGame();
+  setupWorld(K, { wy: 1400 - K.PY + 360 });
+  K.G.rBend = 0; K.G.frame = 10;
+  const rects = [];
+  const orig = ctx.fillRect;
+  ctx.fillRect = function (x, y, w, h) { rects.push({ w, h, c: this.fillStyle }); };
+  K.drwBev({ type: "cyclists", side: 1, wy: 1400, phase: 0, f0: 0 });
+  ctx.fillRect = orig;
+  const bed = rects.filter(r => r.w >= 40);
+  assert.ok(bed.length > 10, "полотно дороги: широких полос " + bed.length);
+  const colors = new Set(rects.map(r => r.c));
+  assert.ok(colors.size >= 3, "полотно, колеи и трава между ними: цветов " + colors.size);
+});

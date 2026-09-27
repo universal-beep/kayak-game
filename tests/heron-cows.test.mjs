@@ -83,3 +83,26 @@ test("корова мычит: при ударе и один раз, когда 
   K.chkCl();
   assert.equal(K.G.sfxLast, "moo", "удар о корову — мычание");
 });
+
+// Стада разные: целиком одной масти, «двое одной, третья другой» и все
+// разные; где-то бык, где-то телёнок; пастухи трёх видов.
+test("стада: одной масти, пара одной масти, все разные; бык, телёнок, разные пастухи", () => {
+  const { K } = loadGame();
+  const modes = new Set(), kinds = new Set(), herders = new Set();
+  for (let seed = 0; seed < 60; seed++) {
+    const h = K.herdOf({ seed });
+    herders.add(h.shepherd);
+    const cows = h.animals.filter(a => a.spr !== "bull");
+    const vs = cows.map(a => a.v);
+    for (const a of h.animals) kinds.add(a.spr === "cow" ? "cow" + a.v : a.spr);
+    const uniq = new Set(vs).size;
+    modes.add(uniq === 1 ? "same" : uniq === vs.length ? "mixed" : "pair");
+    assert.ok(h.animals.length >= 2 && h.animals.length <= 3, "в стаде 2–3: " + h.animals.length);
+    if (h.mode === "same") assert.equal(uniq, 1, "одной масти: " + vs);
+  }
+  assert.deepEqual([...modes].sort(), ["mixed", "pair", "same"]);
+  for (const k of ["cow0", "cow1", "cow2", "bull", "calf"]) assert.ok(kinds.has(k), "нет " + k);
+  assert.equal(herders.size, 3, "три вида пастухов");
+  for (const n of ["bull", "calf", "shepherd_old", "shepherd_girl"]) assert.ok(K.SPR[n], "нет спрайта " + n);
+  assert.equal(K.SPR.cow.variants.length, 3, "три масти коровы");
+});
