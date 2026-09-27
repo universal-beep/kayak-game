@@ -211,7 +211,10 @@ const PAL = {
   c:"#7a4a28", C:"#55301a", h:"#a3703f",
   // Светлая листва: блик кроны со стороны света. v и N почти одного тона,
   // без светлого крона деревьев на траве сливалась в плоское пятно.
-  F:"#6cb84a"
+  F:"#6cb84a",
+  // Машины мульта переезда: светлый синий (блик нашей машины), тёмно-розовый
+  // (низ розовой), светлый красный (блик красной).
+  E:"#5b95e6", P:"#c4628c", Q:"#f07565"
 };
 const rep = (ch,n) => ch.repeat(n);
 
@@ -907,18 +910,24 @@ const SPR = {
     "knnnnnkOOkknnnnk",
     "knnnnnkOOkknnnnk",
     "kkkkkkkkkkkkkkkk"]},
-  car:{map:[
-    "..........kkkkkkkk..........",
-    ".........kzzzzzzzzk.........",
-    "........kzWWWWWWWWzk........",
-    ".kkkkkkkzzWWWWWWWWzzkkkkkkk.",
-    "kzzzzzzzzzzzzzzzzzzzzzzzzzzk",
-    "kzZZZZZZZZZZZZZZZZZZZZZZZZzk",
-    "kzzzzzzzzzzzzzzzzzzzzzzzzzzk",
-    ".kkkkkkKKkkkkkkkkkkKKkkkkkk.",
-    "......kKKKk......kKKKk......",
-    "......kKgKk......kKgKk......",
-    ".......kKk........kKk......."]},
+  // Наша машина — синий универсал (вид сбоку, нос вправо): блик E по плечу,
+  // крыша до самого зада, багажник на крыше, водитель в переднем окне, колёса
+  // с дисками в арках. Карты машин нарисованы под масштаб 1 в мульте — пиксель
+  // как у людей (генератор по геометрии, 28.09.2026).
+  car:{map:["...kjjjjjjjjjjjjjjjjjkk...............",
+    "..kEEEEEEEEEEEEEEEEEEEEk..............",
+    "..kzzzzzzzzzzzzzzzzzOOzzkk............",
+    ".kzziiiiizziiiiffziOttifzzk...........",
+    ".kzziiiiizziiffffziittfffizkk.........",
+    ".kzzzzzzzzzzzzzzzzzppzzzzzzzzkkkkkk...",
+    "kEEEEEEEEEZEEEEEEZEEEEEEEEEEEEEEEEEkk.",
+    "krzzzZZZZZZzzzzEzZzzzzzzzEZZZZZZzzzyuk",
+    "kzzzZZkkkkZZzzzzzZzzzzzzzZZkkkkZZzzzk.",
+    "kjzzZkKKKKkZzzzzzZzzzzzzzZkKKKKkZzzzjk",
+    "kZZZkKKggKKkZZZZZZZZZZZZZkKKggKKkZZZk.",
+    ".kkkkKKWWKKkkkkkkkkkkkkkkkKKWWKKkkkk..",
+    ".....kKggKk...............kKggKk......",
+    ".....kKKKKk...............kKKKKk......"]},
   // Облако — белое, пушистое, плывёт в небе катсцен. w=корпус, f светлая кромка.
   cloud:{map:[
     rep(".",4)+rep("k",3)+rep(".",12),
@@ -928,78 +937,121 @@ const SPR = {
     "k"+rep("w",13)+"k"+rep(".",4),
     rep(".",1)+"kk"+rep("w",9)+"kk"+rep(".",5)
   ]},
-  // Белый джип — высокий квадратный кузов, окна f по середине, 2 колеса. Встречный.
-  jeep:{map:[
-    rep(".",3)+rep("k",10)+rep(".",13),
-    rep(".",2)+"k"+rep("w",9)+"k"+rep(".",13),
-    rep(".",2)+"k"+rep("w",9)+"k"+rep(".",13),
-    "k"+rep("f",1)+rep("w",8)+rep("f",1)+"k"+rep(".",14),
-    "k"+rep("w",2)+rep("f",6)+"k"+rep("w",1)+"k"+rep(".",14),
-    "k"+rep("w",21)+"k"+rep(".",3),
-    "k"+rep("w",21)+"k"+rep(".",3),
-    rep(".",4)+"kkkkk"+rep(".",8)+"kkkkk"+rep(".",4),
-    rep(".",4)+"kkkkk"+rep(".",8)+"kkkkk"+rep(".",4),
-    rep(".",5)+"kkk"+rep(".",10)+"kkk"+rep(".",5),
-    rep(".",5)+"kkk"+rep(".",10)+"kkk"+rep(".",5)
-  ]},
-  // Красная легковушка (вид сбоку): кабина со стеклом по центру, жёлтая фара спереди (нос),
-  // кузов по бокам, колёса с арками. Корпус r — красный.
-  car_red:{map:[
-    rep(".",4)+rep("k",6)+rep(".",18),
-    rep(".",3)+"k"+rep("r",5)+"k"+rep(".",18),
-    rep(".",3)+"k"+rep("r",5)+"k"+rep(".",18),
-    "k"+"y"+rep("r",2)+rep("f",6)+rep("r",2)+"k"+rep(".",15),
-    "k"+rep("r",3)+rep("f",6)+rep("r",3)+"k"+rep(".",14),
-    rep(".",1)+"k"+rep("r",23)+"k"+rep(".",2),
-    rep(".",3)+"kkkkk"+rep(".",12)+"kkkkk"+rep(".",3),
-    rep(".",3)+"kkkkk"+rep(".",12)+"kkkkk"+rep(".",3),
-    rep(".",4)+"kkk"+rep(".",14)+"kkk"+rep(".",4),
-    rep(".",4)+"kkk"+rep(".",14)+"kkk"+rep(".",4)
-  ]},
-  // Розовая легковушка (вид сбоку): та же форма, корпус H — розовый (на асфальте не сливается,
-  // в отличие от чёрной). Нос слева, фара y спереди.
-  car_pink:{map:[
-    rep(".",4)+rep("k",6)+rep(".",18),
-    rep(".",3)+"k"+rep("H",5)+"k"+rep(".",18),
-    rep(".",3)+"k"+rep("H",5)+"k"+rep(".",18),
-    "k"+"y"+rep("H",2)+rep("f",6)+rep("H",2)+"k"+rep(".",15),
-    "k"+rep("H",3)+rep("f",6)+rep("H",3)+"k"+rep(".",14),
-    rep(".",1)+"k"+rep("H",23)+"k"+rep(".",2),
-    rep(".",3)+"kkkkk"+rep(".",12)+"kkkkk"+rep(".",3),
-    rep(".",3)+"kkkkk"+rep(".",12)+"kkkkk"+rep(".",3),
-    rep(".",4)+"kkk"+rep(".",14)+"kkk"+rep(".",4),
-    rep(".",4)+"kkk"+rep(".",14)+"kkk"+rep(".",4)
-  ]},
-  // Автобус — длинный, жёлтый корпус с лентой окон f. Едет навстречу по верхней полосе.
-  bus:{map:[
-    ".."+rep("k",29)+"..",
-    "."+"k"+rep("Y",29)+"k"+".",
-    "."+"k"+rep("f",29)+"k"+".",
-    "."+"k"+rep("f",29)+"k"+".",
-    "."+"k"+rep("Y",29)+"k"+".",
-    "."+"k"+rep("Y",29)+"k"+".",
-    "."+"k"+rep("Y",29)+"k"+".",
-    ".."+rep("k",29)+"..",
-    rep(".",4)+"kkkkk"+rep(".",15)+"kkkkk"+rep(".",4),
-    rep(".",4)+"kkkkk"+rep(".",15)+"kkkkk"+rep(".",4),
-    rep(".",5)+"kkk"+rep(".",17)+"kkk"+rep(".",5),
-    rep(".",5)+"kkk"+rep(".",17)+"kkk"+rep(".",5)
-  ]},
-  // КамАЗ — грузовик: зелёная кабина слева, серый высокий кузов сзади. Редкий.
-  kamaz:{map:[
-    rep(".",3)+rep("k",8)+rep(".",24),
-    rep(".",2)+"k"+rep("V",6)+"k"+rep(".",25),
-    rep(".",2)+"k"+rep("v",6)+rep("k",1)+rep("G",21)+rep(".",4),
-    rep(".",1)+"k"+rep("V",7)+"k"+rep("G",22)+rep(".",3),
-    rep(".",1)+"k"+rep("V",7)+"k"+rep("G",22)+rep(".",3),
-    "k"+rep("v",8)+rep("k",1)+rep("G",23)+rep(".",2),
-    "k"+rep("v",8)+rep("k",24)+rep(".",2),
-    rep(".",1)+rep("k",33)+rep(".",1),
-    rep(".",3)+"kkkkk"+rep(".",16)+"kkkkk"+rep(".",6),
-    rep(".",3)+"kkkkk"+rep(".",16)+"kkkkk"+rep(".",6),
-    rep(".",4)+"kkk"+rep(".",18)+"kkk"+rep(".",7),
-    rep(".",4)+"kkk"+rep(".",18)+"kkk"+rep(".",7)
-  ]},
+  // Трактор «Беларус» для лесной грунтовки: красный капот с жалюзи, светлая
+  // кабина с трактористом, большое заднее колесо с грунтозацепами, труба.
+  // Встречный: нос влево.
+  tractor:{map:["...............kwwwwwwwwwwwwwwk.",
+    "........k.......kGGGGGGGGGGGGk..",
+    ".......kKk......kGGiiiGGiiiGGk..",
+    ".......kgk......kGGiOOGGiiiGGk..",
+    ".......kgk......kGGIttGGIIIGGk..",
+    ".......kgk......kGGfttGGIIIGGk..",
+    ".......kgk......kGGfzzGGIIIGGk..",
+    ".......kgk......kGGfIIGGIIIGGk..",
+    "...kkkkkgkkkkkkkkGGffIrrrrIGGk..",
+    ".kkQQQQQgQQQQQQQQGGfrrrrrrrrGk..",
+    "kurrrrrrrrrrrrrrrjjrrgKKgKgrrk..",
+    "kjrrrrrrrrrrrrrrrGrrKKKKKKKKrrk.",
+    "kjrRrrRrrRrrRrrRrrrgKKKGGKKKgrrk",
+    "kjrrrrrrrrrrrrrrrrrKKKGGGGKKKrrk",
+    "kjRRRRRRRRRRRRRRRGKKKGGjjGGKKKk.",
+    "kjRRgKRRRRRRRRRRRGgKKGGjjGGKKgk.",
+    ".kKgKKgKkkkkkkkkkGKKKGGjjGGKKKk.",
+    ".kgGGGGgk........kkKKKGGGGKKKk..",
+    ".kgGjjGgk.........kgKKKGGKKKgk..",
+    ".kgKGGKgk..........kKKKKKKKKk...",
+    "..kgKKgk............kgKgKKgk....",
+    "...kgKk..............kkkkkk....."]},
+  // Белый джип — высокий кузов, рейлинги, запаска на заднем борту, крупные
+  // колёса. Встречный: нос влево.
+  jeep:{map:["............kgggggggggggggggggggk..",
+    "...........kwwwwwwwwwwwwwwwwwwwwwk.",
+    "..........kWiiiiiWiiiiiiWiiiiiiiWk.",
+    ".........kWfiiiiiWffiiiiWiiiiiiiWk.",
+    "........kWWfffIIIWIfffIIWIIIIIIIWk.",
+    "...kkkkkWWIIffIIIWIIffIIWIIIIIIIWkk",
+    ".kkwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKK",
+    "kuyWWGGGGGWWWWWWWGWWWWWWGGGGGGWWWKK",
+    "kWWWGGkkkGGWWWWWWGWWWWWWGGkkkGGWWKK",
+    "kWWGkkKKKkkGWWWWWGWWWWWGkkKKKkkGWKK",
+    "kjjGkKKgKKkGjjjjjjjjjjjGkKKgKKkGjKK",
+    "kGGGKKgWgKKGGGGGGGGGGGGGKKgWgKKGGGk",
+    ".kkkKKgWgKKkkkkkkkkkkkkkKKgWgKKkkk.",
+    "....kKKgKKk.............kKKgKKk....",
+    ".....kKKKk...............kKKKk....."]},
+  // Красная легковушка-седан (вид сбоку, нос влево): кузов Q/r/R — свет сверху,
+  // кабина со стойками, стёкла с бликом, линия двери, фара y спереди.
+  car_red:{map:[".............kkkkkkkkkkk............",
+    "...........kkQQQQQQQQQQQk...........",
+    "..........krriiiiiriiiirrk..........",
+    "........kkrrfffiiirffffiirk.........",
+    "..kkkkkkrrIIIffIIIrIIIffIIrkkkkkkk..",
+    ".kQQQQQQQQQQQQQQQRQQQQQQQQQQQQQQQQk.",
+    "kuyrrrRRRRrQrrrrrRrrQrrrrrRRRRrrrpRk",
+    "krrrrRkkkkRrrrrrrRrrrrrrrRkkkkRrrrrk",
+    "kjrrRkKKKKkRrrrrrRrrrrrrRkKKKKkRrrjk",
+    "kRRRRkKggKkRRRRRRRRRRRRRRkKggKkRRRRk",
+    ".kkkkKKWWKKkkkkkkkkkkkkkkKKWWKKkkkk.",
+    ".....kKggKk..............kKggKk.....",
+    ".....kKKKKk..............kKKKKk....."]},
+  // Розовая легковушка: та же форма, корпус H/P — розовый (на асфальте не
+  // сливается, в отличие от чёрной). Нос влево.
+  car_pink:{map:[".............kkkkkkkkkkk............",
+    "...........kkHHHHHHHHHHHk...........",
+    "..........kHHiiiiiHiiiiHHk..........",
+    "........kkHHfffiiiHffffiiHk.........",
+    "..kkkkkkHHIIIffIIIHIIIffIIHkkkkkkk..",
+    ".kHHHHHHHHHHHHHHHPHHHHHHHHHHHHHHHHk.",
+    "kuyHHHPPPPHHHHHHHPHHHHHHHHPPPPHHHrRk",
+    "kHHHHPkkkkPHHHHHHPHHHHHHHPkkkkPHHHHk",
+    "kjHHPkKKKKkPHHHHHPHHHHHHPkKKKKkPHHjk",
+    "kPPPPkKggKkPPPPPPPPPPPPPPkKggKkPPPPk",
+    ".kkkkKKWWKKkkkkkkkkkkkkkkKKWWKKkkkk.",
+    ".....kKggKk..............kKggKk.....",
+    ".....kKKKKk..............kKKKKk....."]},
+  // Автобус (ПАЗ) — жёлтый, лента окон, дверь у кабины, наклонное лобовое,
+  // оранжевая полоса по борту. Едет навстречу по верхней полосе: нос влево.
+  bus:{map:["....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk..",
+    "..kkuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuk.",
+    ".kuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuk",
+    ".kYiiiYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk",
+    ".kYiiiYiijiYiiiiiiYffiiiiYiiiiiiYffiiiiYiiiiiiYffiiiiYYk",
+    "kYIIIIYiijiYiiiiiiYffiiiiYiiiiiiYffiiiiYiiiiiiYffiiiiYYk",
+    "kYfIIIYIIjIYIIIIIIYfffIIIYIIIIIIYfffIIIYIIIIIIYfffIIIYYk",
+    "kYfIIIYIIjIYIIIIIIYIffIIIYIIIIIIYIffIIIYIIIIIIYIffIIIYYk",
+    "kYffIIYIIjIYIIIIIIYIIffIIYIIIIIIYIIffIIYIIIIIIYIIffIIYYk",
+    "kYYYYYYIIjIYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk",
+    "kYYYYYYIIjIYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk",
+    "kppppppIIjIppppppppppppppppppppppppppppppppppppppppppppk",
+    "kYYYYYYIIjqqqqYYYYYYYYYYYYYYYYYYYYYYYYYYYYYqqqqYYYYYYYYk",
+    "uyYYYYYIqqkkkkqqYYYYYYYYYYYYYYYYYYYYYYYYYqqkkkkqqYYYYYrk",
+    "kYYYYYYIqkKKKKkqYYYYYYYYYYYYYYYYYYYYYYYYYqkKKKKkqYYYYYYk",
+    "jqqqqqqqkKKggKKkqqqqqqqqqqqqqqqqqqqqqqqqqkKKggKKkqqqqqjk",
+    "kqqqqqqqkKgWWgKkqqqqqqqqqqqqqqqqqqqqqqqqqkKgWWgKkqqqqqqk",
+    ".kkkkkkkkKgWWgKkkkkkkkkkkkkkkkkkkkkkkkkkkkKgWWgKkkkkkkk.",
+    "........kKKggKKk.........................kKKggKKk.......",
+    ".........kKKKKk...........................kKKKKk........"]},
+  // КамАЗ — оранжевая кабина слева (нос влево), серый тент с дугами, три оси.
+  kamaz:{map:[".......kkkkkkkkkk...kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk..",
+    "......kuuuuuuuuuuk.kGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGk.",
+    ".....kuuuuuuuuuuukkGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGk",
+    ".....kAiiiqiiiiAAkkjjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjk",
+    "....kAfiiiqiiiiAAkkjjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjk",
+    "...kkAffIIqIIIIAAkkjjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjk",
+    "..kAAAAAAAqAAAAAAkkjjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjk",
+    ".kAAAAAAAAqAAAAAAkkjjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjk",
+    ".kAAAAAAAAquAAAAAkkjjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjk",
+    "kuyAAAAAAAqAAAAAAkkjjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjk",
+    ".kAAAAAAAAqAAAAAAkkjjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjgjjjjjjjk",
+    ".kAAAAAAAAqAAAAAAkkggggggggggggggggggggggggggggggggggggggggk",
+    "kjjqqqqqqqqqqqqqqkIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIk",
+    ".kqqqqkkkkkqqqqqqgggggggggggggggggggggggggggggggggggggggggk.",
+    ".kqqqkKKKKKkqqqqqgggggggggggggggggggggKKKKggggKKKKggggggggk.",
+    "..kkkkKgggKkkkkkkkkkkkkkkkkkkkkkkkkkkKKggKKkkKKggKKkkkkkkk..",
+    "....kKKgWgKKk.......................kKgWWgKkkKgWWgKk........",
+    "....kKKgWgKKk.......................kKgWWgKkkKgWWgKk........",
+    ".....kKKgKKk........................kKKKKKKkkKKKKKKk........",
+    "......kKKKk..........................kKKKKk..kKKKKk........."]},
   // Поезд — длинный состав по ходу вправо: за головным ПАРОВОЗОМ (красно-жёлтый с фарой y и
   // лобовым окном кабины WW, едет ПЕРВЫМ справа) следуют 9 серых вагонов с окнами. Высота 18 —
   // выше человека (person 16). Ширина 240 — паровоз + 9 вагонов (длиннее кадра: виден паровоз
@@ -1370,18 +1422,16 @@ const SPR = {
     "...............................kkWWWk.......",
     "................................kfkfk.......",
     ".................................k.k........"]},
-  // Прицеп под лодку: деревянные борта (h) с тёмной рамой (k), платформа (O) и
-  // два крупных колеса-шины (Z со ступицей O). Едет за машиной и везёт kayak_side.
-  trailer:{map:[
-    rep(".",2)+rep("k",26)+rep(".",2),
-    rep(".",1)+"k"+rep("h",26)+"k"+rep(".",1),
-    rep(".",1)+"k"+rep("h",26)+"k"+rep(".",1),
-    rep(".",1)+"k"+rep("O",26)+"k"+rep(".",1),
-    rep(".",2)+rep("k",26)+rep(".",2),
-    rep(".",4)+"k"+rep("Z",4)+"k"+rep(".",10)+"k"+rep("Z",4)+"k"+rep(".",4),
-    rep(".",4)+"kZOOZk"+rep(".",10)+"kZOOZk"+rep(".",4),
-    rep(".",4)+"k"+rep("Z",4)+"k"+rep(".",10)+"k"+rep("Z",4)+"k"+rep(".",4)
-  ]},
+  // Прицеп под лодку: дощатый борт (m/h/o), рама g, одна ось с крылом, дышло
+  // вправо к фаркопу машины. Едет за машиной и везёт kayak_side.
+  trailer:{map:[".kkkkkkkkkkkkkkkkkkkkkkkk....",
+    "kmmmmmmmmmmmmmmmmmmmmmmmmk...",
+    "khhhhhhohhhhhohhhhhohhhhhk...",
+    "kooooooBooooKBoooooBoooookk..",
+    "kggggggggjjKgKjjjggggggggggkk",
+    ".kkkkkkkkkKgWgKkkkkkkkkkkkggj",
+    "..........kKgKk...........kkk",
+    "...........kKk..............."]},
   // Утреннее солнце: тёплый диск с лёгким контуром.
   sun:{map:[
     "...kk...",
@@ -1504,6 +1554,8 @@ SPR.sitter_b = { map: swapPalette(SPR.sitter.map, { r:"N", Z:"j" }), noOutline:t
 // Байдарка на прицепе — жёлтая, как игровая: корпус в тёплый жёлтый (был тёмный O),
 // тёмный кокпит (K) оставляем для контраста и читаемости корпуса.
 SPR.kayak_side   = { map: swapPalette(SPR.kayak_side.map, { O:"Y" }) };
+// Попутная красная (нижняя полоса, едет вправо) — нос вправо.
+SPR.car_red_r    = { map: SPR.car_red.map.map(r => [...r].reverse().join("")) };
 // Палатка с освещённым изнутри входом: вся тёмная лента входа становится
 // тёплой, силуэт туриста внутри — отдельный спрайт сверху.
 SPR.tent_lit = { map: swapPalette(SPR.tent.map, { K:"A" }), noOutline:true };
@@ -1974,6 +2026,126 @@ const CUT_LEN = 300;
 function lerp(a, b, k){ return a + (b - a) * Math.max(0, Math.min(1, k)); }
 
 // Каждый актёр: спрайт, ключевые кадры [доляВремени, x, y, масштаб, альфа]
+// Машина на дороге мульта: проезжает центр кадра (x 210) в долю времени tc
+// со скоростью v (арт-px на всю длину мульта), dir −1 — влево (встречная),
+// +1 — вправо. Въезжает из-за края и уезжает за край САМОГО широкого экрана
+// (21:9 — видно арт-x от −1111 до 1531): раньше машины ждали выезда на
+// x≈1000 и замирали на x≈−500 — на широком мониторе торчали и стояли по бокам.
+// Наша машина с прицепом и байдаркой: низ колёс 431, лодка на верхе борта
+// 407; въезд слева 0→0.4, подольше в середине 0.4→0.68, уезжает 0.68→1.
+// bump — подпрыгивают на кочках (грунтовка), прицеп со своим сдвигом фазы.
+function rig(bump){
+  const K = (x, y) => [[0,x-330,y,1,1],[0.4,x,y,1,1],[0.68,x,y,1,1],[1,x+310,y,1,1]];
+  const b = ph => bump ? { bump:ph } : {};
+  return [ Object.assign({ spr:"car", keys:K(210, 431) }, b(0)),
+           Object.assign({ spr:"trailer", keys:K(106, 431) }, b(5)),
+           Object.assign({ spr:"kayak_side", keys:K(106, 407) }, b(5)) ];
+}
+// Обочина, которая прокручивается влево на D арт-px за мульт: ряд спрайтов от
+// −1350 до 1750+D, чтобы и на самом широком экране по краям не было пусто ни в
+// начале, ни в конце. sprs — набор, из которого берётся каждый; y — низ ряда,
+// dy — разброс по глубине; skip — доля пропусков (прогалины).
+function roadside(sprs, y, opt){
+  const o = Object.assign({ step:60, dy:10, scl:1, D:560, skip:0, seed:1 }, opt);
+  const out = [];
+  for (let x = -1350, i = 0; x <= 1750 + o.D; x += o.step, i++){
+    const h = hsh(i*131 + o.seed*977), h2 = hsh(i*57 + o.seed*313);
+    if (h2 < o.skip) continue;
+    const xx = Math.round(x + (h - 0.5)*o.step*0.6), yy = Math.round(y + h2*o.dy);
+    const spr = sprs[Math.floor(h*sprs.length*7) % sprs.length];
+    const sc = o.scl*(0.9 + h2*0.2);
+    out.push({ spr, roadside:true, keys:[[0,xx,yy,sc,1],[1,xx-o.D,yy,sc,1]] });
+  }
+  return out.sort((p, q) => p.keys[0][2] - q.keys[0][2]);
+}
+// Облака плывут налево и медленнее нас — за мульт на ~120 px.
+const CLOUDS = () => [
+  { spr:"cloud", keys:[[0,300,140,1,1],[1,180,140,1,1]] },
+  { spr:"cloud", keys:[[0,700,100,0.8,1],[1,620,100,0.8,1]] },
+  { spr:"cloud", keys:[[0,520,185,0.7,1],[1,440,185,0.7,1]] },
+  { spr:"cloud", keys:[[0,-300,120,0.9,1],[1,-420,120,0.9,1]] },
+  { spr:"cloud", keys:[[0,1100,160,0.8,1],[1,980,160,0.8,1]] } ];
+function driveName(river){ return ["drive1", "drive2", "drive3"][river] || "drive2"; }
+// Волга → Медведица: сельская асфальтовая дорога в две полосы, вдали деревня
+// с церковью и лес, вдоль дороги столбы с проводами. Встречных немного —
+// автобус ПАЗ, розовая, джип.
+function driveCountry(){
+  return { sky:"day", ground:"#5b8d3c", far:"#3f6f3e", road:{ kind:"country", D:560 },
+    caption:"Волга → Медведица: сельская дорога",
+    actors: CLOUDS().concat(
+      roadside(["house", "house", "sbirch", "church", "house", "sbush"], 344, { step:95, dy:14, scl:0.8, D:260, seed:2, skip:0.25 }),
+      roadside(["sbirch", "sbush", "sbush", "tree"], 380, { step:120, dy:6, D:560, seed:3, skip:0.35 }),
+      [ traffic("bus",      405, 1, 0.30, 3200, -1),
+        traffic("car_pink", 405, 1, 0.62, 3600, -1),
+        traffic("jeep",     405, 1, 0.86, 4200, -1) ],
+      rig(false),
+      roadside(["sbush", "tree", "sbirch", "sbush"], 500, { step:110, dy:90, scl:1.1, D:700, seed:4, skip:0.3 }))
+  };
+}
+// Медведица → Тверца: трасса на Торжок, 4 полосы, отбойники, плотный поток.
+function driveHighway(){
+  return { sky:"day", ground:"#3f6b33", road:{ kind:"highway", D:560 },
+    caption:"Медведица → Тверца: трасса на Торжок",
+    actors: CLOUDS().concat(
+      roadside(["sfir", "sbirch", "sfir", "tree"], 340, { step:48, dy:14, D:560, seed:5, skip:0.15 }),
+      [// ВСТРЕЧНЫЕ — ПОРЯДОК ПО ГЛУБИНЕ ПОЛОС (сверху вниз, от дальнего к ближнему):
+      // полоса 1 (верхняя) рисуется ПЕРВОЙ и перекрывается всеми нижними; полоса 4
+      // (нижняя) рисуется ПОСЛЕДНЕЙ и всегда видна поверх всех. Нумерация сверху:
+      //   полоса 1 (y 379) — дальняя, рисуется раньше всех машин
+      //   полоса 2 (y 405) — перекрывает полосу 1
+      //   полоса 3 (y 431) — наша машина, перекрывает 1 и 2
+      //   полоса 4 (y 457) — попутная, ближняя, перекрывает 1-3, всегда видна
+      // Встречные идут по полосам 1 и 2 (по 3 машины), НЕ растворяются на дороге: полностью
+      // проезжают кадр и УЕЗЖАЮТ за край (al=1 всю дорогу, появляются из-за края и уходят).
+      // Полоса 1 (дальняя): легковой jeep проезжает быстро; автобус и камАЗ — тяжёлые,
+      // поэтому едут МЕДЛЕННО (в кадре в ~2 раза дольше легкового) и разнесены по времени,
+      // чтобы не догоняли друг друга. Все машины в масштабе 1 — пиксель как у людей;
+      // размер задан числом клеток карты, а не растяжкой.
+      traffic("jeep",     379, 1, 0.1016, 7778, -1),
+      traffic("bus",      379, 1, 0.418, 4079, -1),
+      traffic("kamaz",    379, 1, 0.838, 4079, -1),
+      // Полоса 2 (средняя, перекрывает полосу 1).
+      traffic("car_red",  405, 1, 0.346, 3500, -1),
+      traffic("car_pink", 405, 1, 0.626, 3500, -1),
+      traffic("jeep",     405, 1, 0.7975, 4000, -1),
+      // Полоса 3 (наша машина с прицепом, перекрывает полосы 1 и 2):
+      // низ колёс 431, лодка на верхе борта 407. Водитель виден в переднем окне. Дышло
+      // прицепа почти упирается в задний бампер. Тайминг: въезд слева 0→0.4, ПОДОЛЬШЕ стоит в середине
+      // 0.4→0.68, уезжает 0.68→1. Стык (×SCALE): низ лодки = верх борта (431 − 24 = 407).
+      ...rig(false),
+      // Полоса 4 (попутная, САМАЯ БЛИЖНЯЯ — рисуется последней, всегда видна поверх 1-3):
+      // едет ВПРАВО быстрее нашей по 3-й, приходит слева из-за края, обгоняет нашу и
+      // УЕЗЖАЕТ за правый край кадра (не fade). Тоже как наша по высоте (scl 1.3).
+      traffic("car_red_r", 457, 1, 0.548, 2571, 1)],
+      roadside(["sfir", "tree", "sbirch", "sbush"], 520, { step:90, dy:80, scl:1.15, D:720, seed:6, skip:0.25 }))
+  };
+}
+// Тверца → Осуга: лесная грунтовка — колея, трава посередине, лужи; ельник
+// стеной с обеих сторон, машина подпрыгивает на кочках, за прицепом пыль.
+// Навстречу — белый джип, потом трактор «Беларус».
+function driveDirt(){
+  return { sky:"day", ground:"#2f5a2e", far:"#1f3d22", road:{ kind:"dirt", D:560 }, dust:true,
+    caption:"Тверца → Осуга: лесная грунтовка",
+    actors: CLOUDS().slice(0, 3).concat(
+      roadside(["sfir", "sfir", "sbirch", "sfir"], 336, { step:24, dy:16, D:420, seed:7 }),
+      roadside(["sfir", "sbirch", "sfir", "sbush"], 372, { step:30, dy:20, D:560, seed:8, skip:0.1 }),
+      [ traffic("tractor", 420, 1, 0.50, 1500, -1),
+        traffic("jeep",    420, 1, 0.12, 3000, -1) ],
+      rig(true),
+      roadside(["sfir", "sfir", "sbirch", "sbush"], 520, { step:40, dy:110, scl:1.2, D:760, seed:9, skip:0.1 }))
+  };
+}
+function traffic(spr, y, scl, tc, v, dir){
+  const X0 = dir < 0 ? 1750 : -1350, X1 = dir < 0 ? -1350 : 1750;
+  const pos = t => 210 + dir*(t - tc)*v;
+  const tA = tc - Math.abs(X0 - 210)/v, tB = tc + Math.abs(X1 - 210)/v;
+  const keys = [];
+  if (tA > 0) keys.push([0, X0, y, scl, 1], [tA, X0, y, scl, 1]);
+  else keys.push([0, pos(0), y, scl, 1]);
+  if (tB < 1) keys.push([tB, X1, y, scl, 1], [1, X1, y, scl, 1]);
+  else keys.push([1, pos(1), y, scl, 1]);
+  return { spr, keys, traffic:true };
+}
 const CUTS = {
   // Ночь по Gemini-референсу: дальний лес елей, палатки, костёр с тремя кадрами
   // пламени и искрами, гитарист у огня, турист уходит из костра к крайней
@@ -2112,54 +2284,12 @@ const CUTS = {
       // появляется на месте и идёт с ним до лодки (низ 510, x 335, финал 324,462).
       { spr:"person_paddle", keys:[[0.86,312,460,0.9,0],[0.94,316,461,0.9,1],[1,324,462,0.9,1]] }
     ] },
-  drive: { sky:"day", ground:"#3f6b33", road:true, caption:"Байдарка на прицепе — и на другую реку",
-    actors:[
-      // Облака в небе: белые, плывут НАЛЕВО (противоположно нашей машине, которая едет
-      // вправо) и значительно МЕДЛЕННЕЕ нас — за катсцену смещаются всего на ~80-120px.
-      // Рисуются первыми — глубже всех.
-      { spr:"cloud", keys:[[0,300,140,1,1],[1,180,140,1,1]] },
-      { spr:"cloud", keys:[[0,700,100,0.8,1],[1,620,100,0.8,1]] },
-      { spr:"cloud", keys:[[0,520,185,0.7,1],[1,440,185,0.7,1]] },
-      // Лес по обочине: деревья проносятся мимо и задают движение. Они стоят ТОЛЬКО НА
-      // ТРАВЕ (низ ≥ 320, земля начинается ниже неба) и НИКОГДА на асфальте: два дерева
-      // на верхней траве (низ 354/361, выше дороги) и два НИЖЕ дороги на нижней траве
-      // (низ 545/570) — там было пусто.
-      { spr:"ctree",  keys:[[0,470,354,1,1],[1,-90,354,1,1]] },
-      { spr:"ctree",  keys:[[0,700,361,1.2,1],[1,140,361,1.2,1]] },
-      { spr:"ctree",  keys:[[0,380,545,1,1],[1,-220,545,1,1]] },
-      { spr:"ctree",  keys:[[0,830,570,1.3,1],[1,240,570,1.3,1]] },
-      // ВСТРЕЧНЫЕ — ПОРЯДОК ПО ГЛУБИНЕ ПОЛОС (сверху вниз, от дальнего к ближнему):
-      // полоса 1 (верхняя) рисуется ПЕРВОЙ и перекрывается всеми нижними; полоса 4
-      // (нижняя) рисуется ПОСЛЕДНЕЙ и всегда видна поверх всех. Нумерация сверху:
-      //   полоса 1 (y 379) — дальняя, рисуется раньше всех машин
-      //   полоса 2 (y 405) — перекрывает полосу 1
-      //   полоса 3 (y 431) — наша машина, перекрывает 1 и 2
-      //   полоса 4 (y 457) — попутная, ближняя, перекрывает 1-3, всегда видна
-      // Встречные идут по полосам 1 и 2 (по 3 машины), НЕ растворяются на дороге: полностью
-      // проезжают кадр и УЕЗЖАЮТ за край (al=1 всю дорогу, появляются из-за края и уходят).
-      // Полоса 1 (дальняя): легковой jeep проезжает быстро; автобус и камАЗ — тяжёлые,
-      // поэтому едут МЕДЛЕННО (в кадре в ~2 раза дольше легкового) и разнесены по времени,
-      // чтобы не догоняли друг друга. По высоте: легковой как наша (scl 1.3), грузовики
-      // крупнее, но в 1,5 раза ниже прежнего (scl 2.6 → 1.73).
-      { spr:"jeep",      keys:[[0.00,1000,379,1.3,1],[0.18,-400,379,1.3,1],[0.18,-520,379,1.3,1]] },
-      { spr:"bus",       keys:[[0.20,1100,379,1.73,1],[0.58,-450,379,1.73,1],[0.58,-560,379,1.73,1]] },
-      { spr:"kamaz",     keys:[[0.62,1100,379,1.73,1],[1.00,-450,379,1.73,1],[1.00,-560,379,1.73,1]] },
-      // Полоса 2 (средняя, перекрывает полосу 1): тоже как наша (scl 1.3).
-      { spr:"car_red",   keys:[[0.12,1000,405,1.3,1],[0.52,-400,405,1.3,1],[0.58,-520,405,1.3,1]] },
-      { spr:"car_pink",  keys:[[0.40,1000,405,1.3,1],[0.80,-400,405,1.3,1],[0.86,-520,405,1.3,1]] },
-      { spr:"jeep",      keys:[[0.60,1000,405,1.3,1],[0.95,-400,405,1.3,1],[1.00,-520,405,1.3,1]] },
-      // Полоса 3 (наша машина с прицепом, перекрывает полосы 1 и 2):
-      // низ колёс 431, лодка на верхе борта 407. Машина scl=1.3, доминирует. Водителя не
-      // рисуем — слишком мелко. Тайминг: въезд слева 0→0.4, ПОДОЛЬШЕ стоит в середине
-      // 0.4→0.68, уезжает 0.68→1. Стык (×SCALE): низ лодки = верх борта (431 − 24 = 407).
-      { spr:"car",      keys:[[0,-120,431,1.3,1],[0.4,210,431,1.3,1],[0.68,210,431,1.3,1],[1,520,431,1.3,1]] },
-      { spr:"trailer",  keys:[[0,-229,431,1,1],[0.4,101,431,1,1],[0.68,101,431,1,1],[1,411,431,1,1]] },
-      { spr:"kayak_side", keys:[[0,-229,407,1,1],[0.4,101,407,1,1],[0.68,101,407,1,1],[1,411,407,1,1]] },
-      // Полоса 4 (попутная, САМАЯ БЛИЖНЯЯ — рисуется последней, всегда видна поверх 1-3):
-      // едет ВПРАВО быстрее нашей по 3-й, приходит слева из-за края, обгоняет нашу и
-      // УЕЗЖАЕТ за правый край кадра (не fade). Тоже как наша по высоте (scl 1.3).
-      { spr:"car_red",   keys:[[0.35,-300,457,1.3,1],[0.70,600,457,1.3,1],[0.78,700,457,1.3,1]] }
-    ] },
+  // Переезды — у каждой смены реки свой: Волга → Медведица по сельской
+  // дороге через деревни, Медведица → Тверца по трассе на Торжок, Тверца →
+  // Осуга по лесной грунтовке. Выбор — driveName(река, с которой уезжаем).
+  drive1: driveCountry(),
+  drive2: driveHighway(),
+  drive3: driveDirt(),
   finale: { sky:"evening", ground:"#3a3f45", caption:"Вокзал в Твери. Домой, в Москву",
     actors:[
       // Вокзал — ближе и больше: scl=2 (26×13 арт → 52×26 арт, ~156×78 экран), стоит на перроне
@@ -2683,8 +2813,10 @@ function drwCut(){
   if (sc.far){                                 // тёмная стена дальнего леса
     const base = sc.gy || 320;
     cx.fillStyle = sc.far; cx.beginPath(); cx.moveTo(0, gy);
-    for (let x = 0; x <= 420; x += 7){
-      const h = 34 + ((x*37) % 13) + ((x % 21) < 7 ? 12 : 0);  // зубцы елей
+    // во всю ширину экрана (на широком мониторе видно далеко за 0…420)
+    const xL = Math.floor((210 - cw/2/s)/7)*7 - 7, xR = 210 + cw/2/s + 7;
+    for (let x = xL; x <= xR; x += 7){
+      const h = 34 + (((x*37) % 13) + 13) % 13 + (((x % 21) + 21) % 21 < 7 ? 12 : 0);  // зубцы елей
       cx.lineTo(xf(x), yf(base - h)); cx.lineTo(xf(x + 3.5), yf(base - h + 6));
     }
     cx.lineTo(cw, gy); cx.closePath(); cx.fill();
@@ -2706,30 +2838,10 @@ function drwCut(){
     for (let i = 0; i < 160; i++){ const x = ((i*97) % 1700) - 600, y = sandEdge(sc, x) + 6 + ((i*53) % Math.max(4, (sc.water || 720) - sc.sand.y - 10));
       if (y < (sc.water || 720) - 2) cx.fillRect(xf(x), yf(y), 2*s, 2*s); }
   }
-  // Дорога для drive: широкая, 4 полосы (2 в каждую сторону), по 26 арт-px, опущена
-  // вниз (rTop 366) так, что сверху остаётся широкая зелёная полоса травы (320-366):
-  //   A 366-392 и B 392-418 — встречные (едут влево)
-  //   C 418-444 и D 444-470 — попутные (едут вправо, вместе с нашей машиной)
-  // Центральная ось на 418 (сплошная белая) отделяет встречное направление,
-  // пунктир на 392 и 444 разделяет полосы одного направления — по ним машины
-  // обгоняют друг друга. Наша машина+прицеп едут по C (низ колёс 431), лодка 407.
-  if (sc.road){
-    const rTop = 366, rBot = 470;
-    cx.fillStyle = "#2c3138"; cx.fillRect(0, yf(rTop), cw, (rBot-rTop)*s);          // асфальт
-    cx.fillStyle = "#1f242a"; cx.fillRect(0, yf(rTop-3), cw, 3*s);                  // верхний бортик
-    cx.fillRect(0, yf(rBot), cw, 3*s);                                               // нижний бортик
-    cx.fillStyle = "#a9adb6"; cx.fillRect(0, yf(rTop-1), cw, 1.5*s);                 // кромка
-    cx.fillRect(0, yf(rBot-1.5), cw, 1.5*s);
-    // пунктир между полосами одного направления (разрешён обгон) — белый
-    cx.fillStyle = "#cdccc0";
-    for (const ly of [392, 444]){
-      for (let x = 3*s, k = 0; x < cw; x += 10*s, k++) cx.fillRect(x, yf(ly), 4.5*s, 2*s);
-    }
-    // центральная сплошная ось между встречными и попутными — белая, нейтральная
-    cx.fillStyle = "#cdccc0";
-    cx.fillRect(0, yf(417), cw, 1.5*s);
-    cx.fillRect(0, yf(418.5), cw, 1.5*s);
-  }
+  // Вид дороги (sc.road.kind): highway — трасса; country — две полосы
+  // сельского асфальта; dirt — лесная грунтовка. Разметка, отбойники, столбы,
+  // колея и лужи едут влево вместе с обочиной (D арт-px за мульт).
+  if (sc.road) drwRoad(sc, s, xf, yf, cw);
   // Река внизу сцены (если задана sc.water — арт-y начала воды): выше — берег/луг,
   // ниже — вода. Цвет воды зависит от неба (ночью тёмная, утром/днём голубая).
   // Холст 420×720, поэтому ~65% сверху (y 468 арт) — это зелень, остальное — река.
@@ -2872,7 +2984,12 @@ function drwCut(){
       cx.ellipse(xf(st.x), yf(st.y)+2*s, Math.max(2, w*0.46), Math.max(1, 3*s), 0, 0, Math.PI*2);
       cx.fill();
     }
+    if (sc.dust && a.spr === "trailer") drwDust(sc, st, s, xf, yf);
     let ty = 0, tx = 0;                          // говорит: покачивается и привстаёт
+    if (a.bump != null){                         // кочки грунтовки: подскок на клетку-две
+      const h = hsh(Math.floor((g.cut.t + a.bump)/7));
+      ty = (h > 0.72 ? -2 : h > 0.5 ? -1 : 0)*1.5*s;
+    }
     if (a.talk && a.talk.some(p => g.cut.t >= p[0] && g.cut.t < p[1])){
       ty = -Math.abs(Math.sin(g.cut.t*0.33))*2.4*s; tx = Math.sin(g.cut.t*0.17)*0.9*s;
     }
@@ -2934,6 +3051,74 @@ function cutCam(sc, t, cw, ch, s){
 function sandEdge(sc, x){
   const y0 = sc.sand.y;
   return y0 + 6*Math.sin(x*0.031 + 1.3) + 4*Math.sin(x*0.083 + 0.4) + 2.5*Math.sin(x*0.19 + 2.2);
+}
+
+// Дорога мульта переезда. Трасса: 4 полосы по 26 арт-px (366–470), встречные
+// A 366–392 и B 392–418 (едут влево), попутные C 418–444 (наша, низ колёс 431)
+// и D 444–470; двойная сплошная на 418, пунктир на 392 и 444, отбойники.
+function drwRoad(sc, s, xf, yf, cw){
+  const road = sc.road, len = (g.cut && g.cut.len) || CUT_LEN;
+  const sh = (g.cut ? g.cut.t : 0)/len*(road.D || 560);          // сдвиг прокрутки
+  const L = -1400, R = 1850;                                         // шире самого широкого экрана
+  const rep = (step, fn) => { const x0 = L - ((sh % step) + step) % step;
+    for (let x = x0; x < R; x += step) fn(x, Math.round((x + sh - L)/step)); };
+  const band = (y0, y1, col) => { cx.fillStyle = col; cx.fillRect(0, yf(y0), cw, (y1 - y0)*s); };
+  if (road.kind === "highway"){
+    const rTop = 366, rBot = 470;
+    band(rTop, rBot, "#2c3138");                                     // асфальт
+    band(rTop-3, rTop, "#1f242a"); band(rBot, rBot+3, "#1f242a");    // бортики
+    band(rTop-1, rTop+0.5, "#a9adb6"); band(rBot-1.5, rBot, "#a9adb6");
+    cx.fillStyle = "#cdccc0";                                        // пунктир полос одного направления
+    for (const ly of [392, 444]) rep(10, x => cx.fillRect(xf(x), yf(ly), 4.5*s, 2*s));
+    band(417, 418.5, "#cdccc0"); band(419, 420.5, "#cdccc0");       // двойная сплошная
+    for (const [ry, py] of [[rTop - 13, rTop - 4], [rBot + 5, rBot + 14]]){   // отбойники
+      cx.fillStyle = "#6b7278"; rep(24, x => cx.fillRect(xf(x), yf(ry), 2*s, (py - ry)*s));
+      band(ry + 1, ry + 4, "#b8bec4"); band(ry + 4, ry + 5, "#7d858c");
+    }
+  } else if (road.kind === "country"){
+    const rTop = 394, rBot = 444;
+    band(rTop - 5, rTop, "#9c8f70"); band(rBot, rBot + 5, "#9c8f70");   // гравийные обочины
+    band(rTop, rBot, "#40444b");
+    cx.fillStyle = "#363a41";                                        // заплатки
+    rep(70, (x, i) => { const h = hsh(i*31 + 5); if (h < 0.5) cx.fillRect(xf(x), yf(rTop + 4 + h*30), (10 + h*14)*s, 5*s); });
+    band(rTop + 1, rTop + 2, "#cfcdbf"); band(rBot - 2, rBot - 1, "#cfcdbf");
+    cx.fillStyle = "#e7e3d0"; rep(16, x => cx.fillRect(xf(x), yf(418), 7*s, 1.5*s));   // прерывистая ось
+    const tops = [];                                                 // столбы с проводами
+    rep(110, x => { cx.fillStyle = "#5b3d22"; cx.fillRect(xf(x), yf(rTop - 58), 2*s, 58*s);
+      cx.fillRect(xf(x - 4), yf(rTop - 54), 10*s, 1.5*s); tops.push(x); });
+    cx.strokeStyle = "rgba(30,30,30,0.55)"; cx.lineWidth = Math.max(1, 0.6*s);
+    for (let k = 0; k + 1 < tops.length; k++) for (const o of [-3, 5]){
+      const x0 = tops[k] + o, x1 = tops[k+1] + o, y = rTop - 53;
+      cx.beginPath(); cx.moveTo(xf(x0), yf(y)); cx.quadraticCurveTo(xf((x0 + x1)/2), yf(y + 7), xf(x1), yf(y)); cx.stroke();
+    }
+  } else if (road.kind === "dirt"){
+    const rTop = 406, rBot = 448;
+    band(rTop, rBot, "#8b6b43");
+    band(416, 421, "#6d5232"); band(428, 433, "#6d5232");            // колея
+    band(422, 426, "#5f7d38");                                       // трава между колеями
+    rep(9, (x, i) => { const h = hsh(i*17 + 3);
+      cx.fillStyle = sc.ground;                                      // рваные края, трава на дорогу
+      cx.fillRect(xf(x), yf(rTop - 1), 5*s, (2 + h*5)*s);
+      cx.fillRect(xf(x + 4), yf(rBot - 1 - h*5), 5*s, (2 + h*5)*s);
+      if (h > 0.6){ cx.fillStyle = "#8b6b43"; cx.fillRect(xf(x + 2), yf(422 + (h - 0.6)*8), 3*s, 2*s); }   // колея рвёт траву
+    });
+    rep(150, (x, i) => { const h = hsh(i*29 + 11); if (h < 0.55) return;   // лужи в колее
+      const y = h > 0.8 ? 418.5 : 430.5;
+      cx.fillStyle = "#56708a"; cx.beginPath(); cx.ellipse(xf(x), yf(y), (8 + h*8)*s, 2.4*s, 0, 0, Math.PI*2); cx.fill();
+      cx.fillStyle = "#9fb8cf"; cx.fillRect(xf(x - 3), yf(y - 1.2), 5*s, 1*s); });
+    cx.fillStyle = "#a88a5c"; rep(23, (x, i) => { if (hsh(i*7) < 0.5) cx.fillRect(xf(x), yf(rTop + 3 + hsh(i*13)*40), 2*s, 1.5*s); });
+  }
+}
+// Пыль за прицепом на грунтовке: клубы от заднего края прицепа отлетают
+// назад и вверх, растут и тают. Детерминировано по времени мульта.
+function drwDust(sc, st, s, xf, yf){
+  const t = g.cut.t, back = st.x - 45;
+  for (let i = 0; i < 9; i++){
+    const age = (t + i*8) % 72, k = age/72;
+    const x = back - age*1.1 - (i % 3)*4, y = 432 - age*0.28 - (i % 2)*3, r = (3 + age*0.13)*s;
+    cx.fillStyle = "rgba(190,160,110," + (0.42*(1 - k)).toFixed(3) + ")";
+    cx.beginPath(); cx.arc(xf(x), yf(y), r, 0, Math.PI*2); cx.fill();
+  }
 }
 
 // Облачки реплик и счётчики поверх мульта (не отражаются — текст читается).
@@ -3523,7 +3708,7 @@ function nextDay(){
   g.day++;
   const nowRiver = LEVELS[g.day].river;
   // Ночёвка внутри реки, переезд — когда река меняется.
-  if (nowRiver !== wasRiver) playCut("drive", showCamp);
+  if (nowRiver !== wasRiver) playCut(driveName(wasRiver), showCamp);
   else playCut(nightName(g.day), showCamp);
 }
 document.getElementById("saveNameBtn").addEventListener("click",()=>{
@@ -6353,7 +6538,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
@@ -6362,7 +6547,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined"){
-  // Режим просмотра катсцен без прохождения игры: ?cut=night|morning|drive|finale (или all — по кругу).
+  // Режим просмотра катсцен без прохождения игры: ?cut=night|morning|drive1|drive2|drive3|finale (или all — по кругу).
   const cutPreview = new URLSearchParams(location.search).get("cut");
   if (cutPreview && (cutPreview === "all" || CUTS[cutPreview])){
     const seq = cutPreview === "all" ? Object.keys(CUTS) : [cutPreview];
