@@ -5199,7 +5199,7 @@ function boatStep(o){
   o.ph = (o.ph || 0) + 1;
   const hw = widthAt(o.wy)/2, lim = Math.max(0, 1 - (o.visHalf + 4)/hw);
   let pref = o.lane;
-  for (const b of g.bridges_) if (Math.abs(o.wy - b.wy) < 320) pref = 0;   // в средний пролёт
+  for (const b of g.bridges_) if (o.wy - b.wy > -o.visHalfY && o.wy - b.wy < 220) pref = 0;   // в средний пролёт
   // Полоса выбирается целиком: перебираем положения поперёк реки и берём
   // ближайшее к текущему, где на 460 px вперёд нет ни одного препятствия.
   // Раньше обходили по одному — объезд одного камня уводил в соседний.
@@ -5226,9 +5226,11 @@ function boatStep(o){
       if (q.t > lo - need && q.t < hi + need) hits += soft ? 0.3 : 1;
     }
     // Опоры моста — те же препятствия: вне среднего пролёта не пройти.
+    // Учитываются за 220 px до моста: раньше катер сначала обходит камни,
+    // иначе «и мимо камня, и в пролёт» одной полосой бывает невозможно.
     for (const b of g.bridges_){
       const dy = o.wy - b.wy;
-      if (dy < -o.visHalfY || dy > 460) continue;
+      if (dy < -o.visHalfY || dy > 220) continue;
       const bhw = widthAt(b.wy)/2, mid = PIER_T - (PIER_HALF_PX + o.visHalf + 6)/bhw;
       const fr = Math.max(0, dy / BOAT_SPEED), m = fr*BOAT_TURN;
       const tAt = Math.abs(c - o.t) <= m ? c : o.t + Math.sign(c - o.t)*m;
@@ -5252,8 +5254,14 @@ function boatStep(o){
     if (Math.abs(nt) > qlim) nt = q.t - side*0.045;       // у берега — в другую сторону
     q.t = Math.max(-qlim, Math.min(qlim, nt));
   }
-  o.t += Math.max(-BOAT_TURN, Math.min(BOAT_TURN, (tgt - o.t)*0.5));
-  o.t = Math.max(-lim, Math.min(lim, o.t));
+  // Вбок на камень, стоящий рядом, не сдвигаемся: тормоз держит только
+  // движение вперёд, а соскользнуть на камень боком было можно.
+  const nt = Math.max(-lim, Math.min(lim, o.t + Math.max(-BOAT_TURN, Math.min(BOAT_TURN, (tgt - o.t)*0.5))));
+  const sideHit = g.obs.some(q => q !== o && (q.type === "rock" || q.type === "snag") &&
+    Math.abs(o.wy - q.wy) < o.visHalfY + (q.visHalfY || 20) + BOAT_SPEED*2 &&
+    Math.abs((nt - q.t)*hw) < o.visHalf + (q.visHalf || 20) + 2 &&
+    Math.abs((nt - q.t)*hw) < Math.abs((o.t - q.t)*hw));
+  if (!sideHit) o.t = nt;
   if (o.ph % 5 === 0) g.waves.push({ wy: o.wy + o.visHalfY - 6, t: o.t, d: o.visHalf*0.5, age: 0, hit: [false, false] });
   if (!o.heard && screenYOf(o.wy) + o.visHalfY >= 0){ o.heard = true; sfx("motor"); }
 }
