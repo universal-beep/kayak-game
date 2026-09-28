@@ -948,6 +948,56 @@ const SPR = {
     ".....kKgk.....",
     ".....kKKk.....",
     "......kk......"], variants:[{}, {r:"z", z:"r"}, {r:"v", z:"A"}]},
+  // Мостки: дощатый настил со светом сверху, сваи в воду. С левого берега
+  // уходят вправо в реку; для правого берега — отражение.
+  walkway:{map:[".kkkkkkkkkkkkkkkkkkkkkk.",
+    "kmmmmhmmmmhmmmmhmmmmhmmk",
+    "khhhhohhhhohhhhohhhhohhk",
+    "kooooooooooooooooooooook",
+    ".kkkBbkkkkkkBbkkkkkkBbk.",
+    "...kBbk....kBbk....kBbk.",
+    "...kBbk....kBbk....kBbk.",
+    "...kBbk....kBbk....kBbk.",
+    "...kBbk....kBbk....kBbk.",
+    "...kBbk....kBbk....kBbk.",
+    "....kk......kk......kk.."]},
+  // Плоскодонка у мостков: борта из досок, внутри темно, банка, весло.
+  rowboat:{map:["....kk.............",
+    "...kSSkkkkk........",
+    ".kkkkkSSSSBkkkkkkk.",
+    "knOOOOOOOSSSSOOOOnk",
+    "khhhhhhhhhhhhSShhhk",
+    ".kBBBBBBBBBBBBBBBk.",
+    ".koooooooooooooook.",
+    "..kkkkkkkkkkkkkkk.."]},
+  // Баня-сруб у воды: брёвна с торцами на углах, двускатная крыша, дверца,
+  // окошко с тёплым светом, кирпичная труба (дымок рисует игра).
+  banya:{map:["...................kkkkk......",
+    "..............kk..kgggggk.....",
+    "............kkjGkk.kQRRk......",
+    "...........kjGGgggkkQRRk......",
+    ".........kkjGGjggggkQRRk......",
+    "........kjGGjjjgggggQRRk......",
+    ".......kjGGjjjjgggggQRRk......",
+    ".....kkGGjjjjjjggggggggkk.....",
+    "....kjGGjjjjjjjggggggggggk....",
+    "..kkGGjjjjjjjjjgggggggggggkk..",
+    ".kjGGjjjjjjjjjjgggggggggggggk.",
+    "kggggggggggggggggggggggggggggk",
+    ".kkdoooooooooooooooooooooodkk.",
+    "..kshhhhhhhhhhhhhhhhhhhhhhsk..",
+    "..kdoooooooooooooooooooooodk..",
+    "..kshhhBBBBBhhhhhhhhhhhhhhsk..",
+    "..kdoooBAAABooooBOOOOooooodk..",
+    "..kshhhByyyBhhhhBOOOOhhhhhsk..",
+    "..kdoooBBBBBooooBOOOOooooodk..",
+    "..kshhhhhhhhhhhhBOOOOhhhhhsk..",
+    "..kdooooooooooooBOOyOooooodk..",
+    "..kshhhhhhhhhhhhBOOOOhhhhhsk..",
+    "..kdooooooooooooBOOOOooooodk..",
+    "..kshhhhhhhhhhhhBOOOOhhhhhsk..",
+    "..kdooooooooooooBOOOOooooodk..",
+    "...kkkkkkkkkkkkkkkkkkkkkkkk..."]},
   // Семья лосей (Тверца, вместо медведя): лось с рогами-лопатами, лосиха,
   // лосёнок. Горб в холке, тяжёлая голова с горбатым носом и бородкой,
   // светлые ноги. Кадры «_b» — голова опущена к воде (пьют).
@@ -2165,7 +2215,7 @@ for (const [n, [coat, fam]] of Object.entries(RAIN_WEAR)) if (SPR[n])
 SPR.kayak_left_rain  = { map: shearMap(SPR.kayak_center_rain.map, -1) };
 SPR.kayak_right_rain = { map: shearMap(SPR.kayak_center_rain.map,  1) };
 for (const n of ["fisher", "fisher_rain", "fisher_stand", "fisher_stand_rain", "fisher_kid", "fisher_car", "fisher_bike", "heron", "heron_fly0", "heron_fly1", "cow", "cow_b", "cow_water", "shepherd",
-                 "bull", "calf", "shepherd_old", "shepherd_girl",
+                 "bull", "calf", "shepherd_old", "shepherd_girl", "walkway", "rowboat", "banya",
                  "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf"])
   SPR[n + "_l"] = { map: SPR[n].map.map(r => [...r].reverse().join("")), variants: SPR[n].variants };
 SPR.fisher_l_rain = SPR.fisher_rain_l; delete SPR.fisher_rain_l;
@@ -2615,7 +2665,7 @@ function centerAt(w){
 // падает на cut, ось уходит на cut/2 от сцены, дальний берег не двигается.
 // Жители Волги появляются дальше за верхней кромкой (BEV_AHEAD), так что
 // сужение в кадре не видно.
-const BEV_ROOM = { beach: 74, guitar: 66, camp: 120, fire: 56, fisher: 60, bear: 100, tree: 60, bush: 40, heron: 20, cows: 150, moose: 150, village: 170, cyclists: 130 };
+const BEV_ROOM = { beach: 74, guitar: 66, camp: 120, fire: 56, fisher: 60, bear: 100, tree: 60, bush: 40, heron: 20, cows: 150, moose: 150, village: 170, cyclists: 130, pier: 40, banya: 110 };
 const ROOM_FULL = 120, ROOM_TAPER = 150;
 function roomNeed(e){
   if (e.roomDef === undefined){
@@ -4868,8 +4918,8 @@ function drwOb(o){
       drwPaddle(x, y, o.wy);
     }
   }
-  if (o.cow){
-    // Вода у ног коровы: светлая рябь по низу, покачивается.
+  if (o.cow || o.tied){
+    // Вода у ног коровы и у борта лодки: светлая рябь по низу, покачивается.
     const sw = Math.sin(g.frame*0.05 + o.wy)*2;
     cx.fillStyle = "rgba(255,255,255,0.35)";
     cx.fillRect(x - sz.w*0.45 + sw, y + sz.h/2 - 2, sz.w*0.9, 2);
@@ -5030,6 +5080,46 @@ function drwBev(e){
       if (Math.abs(w - e.wy) > CYC_SPAN) continue;
       const fr = Math.floor(g.frame/6 + i) % 2;
       drawSprite("cyclist" + fr, edgAt(w) + e.side*(cycRoadOff(w - e.wy) + cyclistLane(i, cnt)), screenYOf(w) - 24, i % 3);
+    }
+    return;
+  }
+
+  // Мостки: 12 px на суше, остальное — над водой, сваи с рябью. Купающиеся
+  // (вид 1) плещутся у края мостков; у вида 2 в конце мостков стоит человек. Лодка — отдельное препятствие (pierBoat).
+  if (e.type === "pier"){
+    const edg = ax + e.side*hw;
+    if (!bankVisible(e.side, edg)) return;
+    const L = e.side > 0 ? "_l" : "";
+    const ww = spriteSize("walkway").w, cxw = edg - e.side*(ww/2 - 12);
+    cx.fillStyle = "rgba(255,255,255,0.3)";
+    for (const k of [-0.3, 0.05, 0.4]) cx.fillRect(Math.round(cxw + k*ww) - 5, by + 14, 10, 2);
+    drawSprite("walkway" + L, cxw, by);
+    const tip = edg - e.side*(ww - 16);
+    const kind = pierKind(e);
+    if (kind === 1){
+      for (let i = 0; i < 2; i++){
+        const sx = tip - e.side*(10 + i*26), sy = by + 26 + i*16 + Math.sin(g.frame*0.08 + i*2 + ph)*2;
+        cx.fillStyle = "rgba(255,255,255,0.3)"; cx.fillRect(sx - 9, sy + 8, 18, 2);
+        drawSprite(Math.floor((g.frame + i*20)/30) % 2 ? "swimmer1" : "swimmer0", sx, sy);
+      }
+    } else if (kind === 2){
+      drawSprite("person", tip, by - 22 + (Math.floor((g.frame + ph*40)/24) % 2), 2);   // стоит на краю мостков
+    }
+    return;
+  }
+  // Баня у воды: дымок из трубы клубами поднимается и тает.
+  if (e.type === "banya"){
+    const edg = ax + e.side*hw;
+    if (!bankVisible(e.side, edg)) return;
+    const sz = spriteSize("banya");
+    const bx = bankAnchor(edg, e.side, edg + e.side*(sz.w/2 + 8), sz.w/2 + 3);
+    drawSprite(e.side < 0 ? "banya" : "banya_l", bx, by);
+    const chx = bx + (e.side < 0 ? 1 : -1)*(21*3 + 1.5 - sz.w/2), chy = by - sz.h/2 + 4;
+    for (let i = 0; i < 4; i++){
+      const t = (g.frame*0.6 + i*25 + ph*30) % 100;
+      cx.fillStyle = "rgba(210,210,205," + (0.55*(1 - t/100)).toFixed(2) + ")";
+      const r = 3 + t*0.08;
+      cx.fillRect(Math.round(chx - r + Math.sin(t*0.08 + i)*4), Math.round(chy - t*0.7), Math.round(r*2), Math.round(r*2));
     }
     return;
   }
@@ -6395,10 +6485,10 @@ function spawnCamp(wy){
 // Пулы береговых сцен по рекам. Каждая река — свой характер:
 // Волга людная и пляжная, лесные реки — дикие. Индекс — номер реки.
 const BEV_POOLS = [
-  ["beach","beach","guitar","guitar","camp","fire","ducks","fisher","bush","tree"],
-  ["bear","camp","fire","heron","fisher","cyclists","bush","tree","tree"],
-  ["moose","camp","fire","ducks","fisher","bush","tree","tree"],
-  ["bear","camp","fire","ducks","fisher","cows","cows","bush","tree","tree"]
+  ["beach","beach","guitar","guitar","camp","fire","ducks","fisher","pier","bush","tree"],
+  ["bear","camp","fire","heron","fisher","cyclists","banya","bush","tree","tree"],
+  ["moose","camp","fire","ducks","fisher","pier","bush","tree","tree"],
+  ["bear","camp","fire","ducks","fisher","cows","cows","banya","bush","tree","tree"]
 ];
 
 // Волга — большая вода: жителей на её узких берегах вчетверо реже, и
@@ -6421,7 +6511,7 @@ function spBev(){
   if (ty === "cows") ev.seed = Math.floor(Math.random()*1000);
   if (ty === "fisher"){ ev.kind = fisherKind(ev, level().river); ev.lucky = fisherLucky(ev); }
   if (ty === "cyclists") ev.count = cyclistCount(ev);
-  if (placeBev(ev, 1) && ty === "cows") cowsWade(ev);
+  if (placeBev(ev, 1)){ if (ty === "cows") cowsWade(ev); if (ty === "pier") pierBoat(ev); }
   g.ned=g.dist+(22+Math.random()*38)*(volga ? 4 : 1);
 }
 // Одна-две коровы заходят в воду у берега пастуха: стоят близко к кромке
@@ -6448,6 +6538,20 @@ function herdOf(e){
   const water = cows.slice(0, nw);
   const animals = all.filter(a => !water.includes(a));
   return { mode, animals, water, shepherd: ["shepherd", "shepherd_old", "shepherd_girl"][Math.floor(h(4)*3)] };
+}
+// Мостки бывают трёх видов (от места): 0 — с привязанной лодкой; 1 — с
+// купающимися у края, без лодки; 2 — с лодкой и человеком в конце мостков. Лодка стоит на воде у своего берега под мостками —
+// препятствие: удар — минус сердце, лодка остаётся; виски и топор не трогают.
+function pierKind(e){ return Math.floor(hsh(Math.round(e.wy/9)*37 + 11)*3); }
+function pierBoat(e){
+  if (pierKind(e) === 1) return;
+  const wy = e.wy - 26;
+  if (forkAt(wy)) return;
+  const hw = widthAt(wy)/2, sz = spriteSize("rowboat");
+  const t = e.side*Math.max(0.3, 1 - (sz.w/2 + 8)/hw);
+  if (!spaceFree(t, wy, sz.w/2)) return;
+  g.obs.push({ type:"rock", tied:true, sprite: e.side < 0 ? "rowboat" : "rowboat_l",
+               t, wy, vt:0, size:40, visHalf:sz.w/2, visHalfY:sz.h/2, halfPx:sz.w/2*0.8, swingT:-1 });
 }
 function cowsWade(e){
   const herd = herdOf(e), n = herd.water.length;
@@ -6635,13 +6739,13 @@ function chkCl(){
       }
       continue;
     }
-    if(o.cow && Math.hypot(dx,dy)<kr+(o.halfPx||16)){
+    if((o.cow || o.tied) && Math.hypot(dx,dy)<kr+(o.halfPx||16)){
       // Корова: под виски или неуязвимостью байдарку просто отжимает к
       // середине; иначе удар и «МУ-У!» — корова стоит где стояла.
       if (g.inv > 0 || g.whiskyT > 0){ g.t -= Math.sign(o.t || 1)*0.02; g.vt = 0; continue; }
-      popText("МУ-У!", "#f2f2f2");
+      if (o.cow) popText("МУ-У!", "#f2f2f2");
       damage();
-      sfx("moo");
+      if (o.cow) sfx("moo");
       return;
     }
     if(Math.hypot(dx,dy)<kr+(o.halfPx||16)){
@@ -6708,7 +6812,7 @@ function damage(){
   if (rapidBlend(g.pwy) > 0.5) g.cleanRun = false;
   g.t = 0; g.vt = 0;
   g.sp = Math.max(1.8, g.sp*0.55);
-  g.obs = g.obs.filter(o => o.cow || Math.abs(o.wy - g.pwy) > 150);   // коровы остаются стоять
+  g.obs = g.obs.filter(o => o.cow || o.tied || Math.abs(o.wy - g.pwy) > 150);   // коровы и привязанные лодки остаются
   if (g.hp > 0){ sfx("hit"); popText("-1 СЕРДЦЕ","#ff5252"); return; }
   // Спасажилет — второй шанс: раз в день не даёт опрокинуться и потерять попытку.
   if (hasGear("vest") && !g.vestUsed){
@@ -6815,7 +6919,7 @@ function apBn(b){
       // НА КУРСЕ: боковое отклонение штрафуется сильнее расстояния.
       let n = null, best = Infinity;
       for (const o of g.obs){
-        if (o.cow) continue;                     // корову топор не трогает
+        if (o.cow || o.tied) continue;           // корову и привязанную лодку топор не трогает
         const d = o.wy - g.pwy;
         if (d < 60 || d > AXE_RANGE) continue;
         const lateral = Math.abs(o.t - g.t) * widthAt(o.wy)/2;
@@ -6854,7 +6958,7 @@ function dayFromParam(v){
 // Хочется смотреть береговые картинки (пляж, финиш, утки, палаточный лагерь),
 // не доезжая до них греблей. Три дебаг-параметра в URL:
 //   ?day=N            — день (как обычно);
-//   ?scene=NAME       — телепорт на готовую сцену: beach|finish|camp|ducks|heron|cows|moose|village|cyclists|fisher (&kind=…);
+//   ?scene=NAME       — телепорт на готовую сцену: beach|finish|camp|ducks|heron|cows|moose|village|cyclists|fisher (&kind=…)|pier|banya;
 //   ?at=METERS        — телепорт на произвольный метр русла M.
 // Все три ставят [g.scroll, g.pwy, g.dist] на точку и сразу спавнят нужную
 // сцену, чтобы кадр был готов в момент входа в уровень.
@@ -6871,6 +6975,8 @@ const DEBUG_SCENES = {
   village: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   cyclists: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   fisher: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  pier: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  banya: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   // Финиш: река уже сузилась (finishGain), лента впереди, палатки по стороне
   // причаливания. Камера чуть ниже ленты, чтобы сухой берег был виден.
   finish: { wy: null },
@@ -6909,7 +7015,7 @@ function sceneAt(s){
     g.tapeWy = tape; g.landSide = 1;
     spawnCamp(tape);
     teleportTo(Math.max(0, tape - 150));
-  } else if (s === "beach" || s === "ducks" || s === "heron" || s === "cows" || s === "moose" || s === "village" || s === "cyclists" || s === "fisher"){
+  } else if (s === "beach" || s === "ducks" || s === "heron" || s === "cows" || s === "moose" || s === "village" || s === "cyclists" || s === "fisher" || s === "pier" || s === "banya"){
     const wy = DEBUG_SCENES[s].wy;
     // На широкий берег (widerBevSide) и в дебаге: картинка должна показывать,
     // как сцена сидит на берегу вживую — тем же правилом, что и в спавне.
@@ -6917,6 +7023,7 @@ function sceneAt(s){
     g.bev.push({ type:s, side, wy, off:34, phase:1.7, mode:"swim", atCamp:false,
                  variant: DEBUG_SCENES.beach.variant, seed: Math.floor(Math.random()*1000) });
     if (s === "cows") cowsWade(g.bev[g.bev.length - 1]);
+    if (s === "pier") pierBoat(g.bev[g.bev.length - 1]);
     if (s === "fisher"){                         // ?scene=fisher&kind=fisher_car
       const k = typeof location !== "undefined" ? new URLSearchParams(location.search).get("kind") : null;
       g.bev[g.bev.length - 1].kind = SPR[k] ? k : fisherKind(g.bev[g.bev.length - 1], L.river);
@@ -7784,7 +7891,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
