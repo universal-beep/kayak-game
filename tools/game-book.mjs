@@ -38,24 +38,41 @@ const RULES = {
   sbirch: "Декор берега, как ёлка.",
   sbush: "Декор у кромки: не чаще 26 px.",
   bush: "Куст — житель берега.",
-  tower: "Смотровая вышка на берегу.",
-  fisher: "Рыбак: удочка ходит, леска в воду, иногда клюёт — выпрыгивает рыба.",
+  fisher: "Рыбак на ведре лицом к воде: удочка ходит, иногда клюёт. Каждый пятый везучий — когда подплываешь, вытаскивает рыбу.",
+  fisher_stand: "Рыбак стоит в кепке и жилете. На всех реках; в дождь — в дождевике.",
+  fisher_kid: "Папа с сыном, у сына своя удочка. Кроме дождливой Тверцы.",
+  fisher_car: "Рыбак на стуле у «Нивы», поставленной носом к воде. Только Волга.",
+  fisher_bike: "Рыбак на ведре у велосипеда. Только Волга.",
+  heron: "Цапля на одной ноге в воде у кромки (Медведица, вместо уток). Подплывёшь к её берегу — улетает.",
+  heron_fly0: "Кадр полёта цапли (крыло вверх).", heron_fly1: "Кадр полёта цапли (крыло вниз).",
+  cyclist0: "Велосипедист (Медведица): едут по полевой дороге сверху вниз — один, двое, трое или группа из семи; негромко звенят, появившись.",
+  cyclist1: "Кадр педалей велосипедиста.",
+  moose: "Лось с рогами-лопатами (Тверца, вместо медведя): семья пьёт у воды, подплывёшь — поднимают головы.",
+  moose_b: "Лось пьёт.", moosecow: "Лосиха.", moosecow_b: "Лосиха пьёт.", moosecalf: "Лосёнок.",
+  cow: "Корова (Осуга): чёрно-белая, рыже-пёстрая или бурая. Пасётся у воды, мычит, когда подплываешь.",
+  cow_b: "Корова подняла голову.",
+  cow_water: "Корова по колено в воде у берега — препятствие: удар — «МУ-У!» и минус сердце, корова остаётся. Виски и топор её не трогают; от весла мычит и отходит.",
+  bull: "Бык: тёмный, рога в стороны, кольцо в носу — в некоторых стадах.",
+  calf: "Телёнок, в масть коров.",
+  shepherd: "Пастух в ватнике с посохом.", shepherd_old: "Дед-пастух в шляпе, с бородой.", shepherd_girl: "Пастушка в платке.",
+  person_rain: "Турист в дождевике — в дождливые дни на Тверце. Так же одеты девушки, сидящие, рыбаки, соперники и мы.",
+  kayak_center_rain: "Мы в дождевике с капюшоном — в дождь.",
   fish: "Рыба, выпрыгивающая у рыбака.",
   duck: "Стайка на воде у берега. Подплывёшь вплотную к их берегу — взлетают.",
   duckfly0: "Кадр взлёта (крылья подняты).",
   duckfly1: "Кадр взлёта (крылья раскинуты).",
   person: "Турист. Пара уходит в палатку, после чего палатку потряхивает.",
   girl: "Девушка — вторая в паре, идущей в палатку. Через раз блондинка.",
-  sitter: "Сидит у костра — всегда под огнём, вдоль берега.",
+  sitter: "Сидит у костра — за огнём, огонь перед ним.",
   fire: "Костёр: пламя пляшет, летят искры.",
   tent: "Палатка в лагере.",
   tent2: "Купольная палатка.",
   pack: "Рюкзак у лагеря на финише.",
   boat: "Катер: идёт навстречу быстрее течения, за кормой клин волн, которые качают и толкают байдарку.",
-  bear: "Медведь бродит по берегу (только лесные реки), переступает лапами — всегда целиком на суше и в кадре.",
+  bear: "Медведь бродит по берегу — на Медведице и Осуге, переступает лапами, всегда целиком на суше и в кадре.",
   night_guitar: "Гитарист ночного мульта: в профиль на чурбаке лицом к костру, бьёт по струнам.",
   church: "Церковь у места прибытия.",
-  house: "Дом у места прибытия.",
+  house: "Дом: у места прибытия и в деревнях Тверцы — крыши пяти цветов.",
   sunbather: "Загорающий на полотенце: лежит вдоль реки, целиком на песке.",
   sunbather_f: "Загорающая: волосы веером, купальник с лифом. Через раз вместо парня.",
   towel: "Пустое полотенце на классическом пляже.",
@@ -72,16 +89,54 @@ const RULES = {
 function uniqueOf(L, R) {
   const u = [];
   if (L.river === 0) u.push(["Пляж", ["sunbather", "sunbather_f", "towel", "umbrella", "swimmer0", "swimmer1"]],
-                            ["Компания с гитарой", ["guitarist", "note"]]);
-  if (L.river !== 0) u.push(["Лесной берег", ["bear"]]);
+                            ["Компания с гитарой", ["guitarist", "note"]],
+                            ["Рыбаки у машины и велосипеда", ["fisher_car", "fisher_bike"]]);
+  if (L.river === 1) u.push(["Цапля", ["heron", "heron_fly0"]], ["Велосипедисты", ["cyclist0", "cyclist1"]], ["Медведь", ["bear"]]);
+  if (L.river === 2) u.push(["Лоси", ["moose", "moosecow", "moosecalf"]], ["Деревни", ["house"]]);
+  if (L.river === 3) u.push(["Стадо с пастухом", ["cow", "bull", "calf", "cow_water", "shepherd", "shepherd_old", "shepherd_girl"]], ["Медведь", ["bear"]]);
+  if (L.rain) u.push(["Дождевики", ["person_rain", "kayak_center_rain"]]);
   if (L.barges) u.push(["Баржи", ["barge"]]);
   if (L.snags) u.push(["Коряги", ["snag"]]);
   if (L.bridges) u.push(["Мосты", ["bridge", "truss", "deck", "pier"]]);
   if (L.boats) u.push(["Катера", ["boat"]]);
   if (L.aggro > 0) u.push(["Агрессивные соперники", ["rower", "rower_flip"]]);
-  if (L.arrive === "church" || L.arrive === "town") u.push(["Место прибытия", ["church", "house"]]);
-  if (L.arrive === "village") u.push(["Место прибытия", ["house"]]);
   return u;
+}
+
+const FISH_RU = { fisher: "сидит на ведре", fisher_stand: "стоит", fisher_kid: "папа с сыном", fisher_car: "у «Нивы»", fisher_bike: "у велосипеда" };
+const STONE_RU = { boulder: "валуны", slab: "плиты", fang: "клыки", mossy: "мшистые", pebbles: "россыпь" };
+const PROP_RU = { tent: "палатки", tent2: "купола", pack: "рюкзак", kayak_side: "байдарки", fire: "костёр", guitar: "гитара у огня",
+  fisher: "рыбак", church: "церковь", house: "дома", person: "люди", tree: "дерево", sbush: "кусты", sfir: "ёлки", sbirch: "берёзы", boulder_side: "валуны" };
+const NIGHT_RU = { night: "первая ночь (песня у костра)", night2: "вторая ночь «о-о, батарейка», медведь", night3: "третья ночь «о-о, канарейка»",
+  night4: "четвёртая ночь — мафия, Андрюха ищет гитару", night5: "пятая ночь" };
+const DRIVE_RU = { drive1: "переезд по сельской дороге", drive2: "переезд по трассе на Торжок", drive3: "переезд по лесной грунтовке" };
+function finishText(fin) {
+  const kinds = [...new Set(fin.near.map(r => r[0]))].map(k => PROP_RU[k] || k);
+  return fin.name + ": " + kinds.join(", ");
+}
+function dayInfo(K, d) {
+  const L = K.LEVELS[d], R = K.RIVERS[L.river];
+  const stones = Object.entries(R.stones || {}).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k]) => STONE_RU[k]).join(" и ");
+  const water = [];
+  if (L.barges) water.push("баржи");
+  if (L.forks) water.push("развилки");
+  if (L.snags) water.push("коряги");
+  if (L.bridges) water.push("мосты");
+  if (L.boats) water.push("катера");
+  if (R.rapids) water.push("пороги");
+  if (L.river === 3) water.push("коровы в воде у берега");
+  water.push("камни — чаще " + stones);
+  const shore = [];
+  if (L.river === 0) shore.push("пляжи и купающиеся", "компании с гитарой", "утки");
+  if (L.river === 1) shore.push("цапля вместо уток", "велосипедисты по полевой дороге", "медведь");
+  if (L.river === 2) shore.push("деревни: " + K.villagePlan(d).length + " за день", "семья лосей", "утки");
+  if (L.river === 3) shore.push("глухой лес участками", "пастух со стадом", "медведь", "утки");
+  shore.push("рыбаки: " + K.FISHER_KINDS[L.river].map(k => FISH_RU[k]).join(", "));
+  const weather = L.rain ? "дождь (гребок слабее на " + Math.round(25 * L.rain) + "%), все в дождевиках" : "сухо";
+  const next = d === K.LEVELS.length - 1 ? "финал на вокзале"
+    : K.LEVELS[d + 1].river !== L.river ? DRIVE_RU[K.driveName(L.river)] : NIGHT_RU[K.nightName(d + 1)];
+  const morning = d === 0 ? "—" : "утро в лагере " + (NIGHT_RU[K.nightBefore(d)] || K.nightBefore(d)).split(" (")[0].split(" «")[0].split(" —")[0] + (L.rain ? ", под дождём" : "");
+  return { water, shore, weather, finish: finishText(K.FINISHES[d]), next, morning };
 }
 const ARRIVE = { camp: "палаточный лагерь", church: "у церкви", village: "деревня", town: "город" };
 const GOAL_HINT = { bonuses: "собирать бонусы", passed: "обгонять соперников", shallowsmax: "не задевать мели",
@@ -100,8 +155,6 @@ function features(L, R) {
   if (L.rain) f.push("Дождь: гребок слабее на " + Math.round(25 * L.rain) + "%.");
   f.push(L.aggro > 0 ? "Агрессивных соперников — около " + Math.round(L.aggro * 100) + "%: видны по чёрно-красной окраске. Пробел рядом — врезать первым (+40), в момент их удара — парировать (+75)."
                      : "Соперники мирные.");
-  if (L.river === 0) f.push("На берегах пляжи и компании с гитарой.");
-  else f.push("Лесной берег: бывает медведь.");
   return f;
 }
 
@@ -119,7 +172,7 @@ export function buildBook() {
     const R = rivers[L.river];
     const u = uniqueOf(L, R);
     u.forEach(([, names]) => names.forEach(n => uniq.add(n)));
-    return { L, R, u, f: features(L, R), pool: [...new Set(pools[L.river] || [])] };
+    return { L, R, u, f: features(L, R), pool: [...new Set(pools[L.river] || [])], info: dayInfo(K, levels.indexOf(L)) };
   });
   const SKIP = new Set(["kayak_left", "kayak_right", "shallows", "guitarist_b", "bear_b", "night_guitar_b"]);
   const commonGroups = data.groups.filter(g => g !== "Катсцены и прочее" && g !== "Мосты")
@@ -146,6 +199,7 @@ export function buildBook() {
   <h1>Книга похода</h1>
   <p class="lead">Что ты просил поправить и что сделано; чем живёт каждый из девяти дней; общие спрайты и правила, по которым они работают. Собирается из самой игры командой <code>node tools/game-book.mjs</code>.</p>
   <nav class="toc">
+    <a href="#unique">Что где</a>
     <a href="#map">Карта</a>
     <a href="#requests">Просьбы <b>${nDone}/${requests.length}</b></a>
     ${days.map(d => `<a href="#day${d.L.day}">День ${d.L.day}</a>`).join("")}
@@ -153,6 +207,15 @@ export function buildBook() {
     <a href="#rules">Правила</a>
   </nav>
 </header>
+
+<section id="unique">
+  <h2>Что своего в каждом дне</h2>
+  <p class="lead">Уникальность уровней одной таблицей: что на воде, что на берегу, погода, стоянка на финише и что после дня. Собирается из данных игры.</p>
+  <div class="utab"><table class="uniq">
+    <thead><tr><th>День</th><th>На воде</th><th>На берегу</th><th>Погода</th><th>Финиш</th><th>После дня</th></tr></thead>
+    <tbody>${days.map(({ L, R, info }) => `<tr><td><a href="#day${L.day}"><b>${L.day}</b> ${esc(R.name)}</a></td><td>${esc(info.water.join(", "))}</td><td>${esc(info.shore.join("; "))}</td><td>${esc(info.weather)}</td><td>${esc(info.finish)}</td><td>${esc(info.next)}</td></tr>`).join("")}</tbody>
+  </table></div>
+</section>
 
 <section id="map">
   <h2>Карта похода</h2>
@@ -178,7 +241,7 @@ export function buildBook() {
 
 <section id="days">
   <h2>Дни похода</h2>
-  ${days.map(({ L, R, u, f, pool }) => `
+  ${days.map(({ L, R, u, f, pool, info }) => `
   <article class="day" id="day${L.day}" style="--river:${R.water};--grass:${R.grass}">
     <header>
       <span class="num">${L.day}</span>
@@ -191,6 +254,14 @@ export function buildBook() {
       <div><dt>Река</dt><dd>ширина ×${R.width} · изгибы ×${R.bend} · камни ×${R.rocks} · течение ×${R.speed}</dd></div>
     </dl>
     <ul class="feat">${f.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <dl class="facts uq">
+      <div><dt>На воде</dt><dd>${esc(info.water.join(", "))}</dd></div>
+      <div><dt>На берегу</dt><dd>${esc(info.shore.join("; "))}</dd></div>
+      <div><dt>Погода</dt><dd>${esc(info.weather)}</dd></div>
+      <div><dt>Утро перед днём</dt><dd>${esc(info.morning)}</dd></div>
+      <div><dt>Финиш</dt><dd>${esc(info.finish)}</dd></div>
+      <div><dt>После дня</dt><dd>${esc(info.next)}</dd></div>
+    </dl>
     <p class="pool"><b>Жители берега:</b> ${pool.map(esc).join(", ")}</p>
     ${u.length ? u.map(([title, names]) => `<h4>${esc(title)}</h4><div class="sprites">${names.map(n => fig(n, ["barge", "boat", "snag", "bridge", "truss", "deck", "pier", "rower", "rower_flip", "swimmer0", "swimmer1"].includes(n) ? "water" : ["sunbather", "sunbather_f", "towel", "umbrella"].includes(n) ? "sand" : "grass")).join("")}</div>`).join("") : `<p class="none">Своих спрайтов нет — только общие.</p>`}
   </article>`).join("")}
@@ -318,6 +389,12 @@ code{font-family:var(--mono);font-size:.86em}
 .facts dt{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .facts dd{margin:2px 0 0;font-variant-numeric:tabular-nums}
 .feat{margin:14px 0 0;padding-left:20px;max-width:72ch}
+.facts.uq{margin-top:14px}
+.utab{overflow-x:auto}
+.uniq{border-collapse:collapse;font-size:14px;min-width:760px}
+.uniq th,.uniq td{text-align:left;vertical-align:top;padding:8px 12px 8px 0;border-bottom:1px solid var(--line)}
+.uniq th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.uniq td:first-child{white-space:nowrap}.uniq a{color:var(--ink);text-decoration:none}.uniq b{color:var(--accent)}
 .pool{margin:10px 0 0;color:var(--muted)}
 .none{color:var(--muted);font-style:italic;margin:14px 0 0}
 .sprites{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(210px,100%),1fr));gap:12px}
