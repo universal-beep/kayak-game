@@ -3290,16 +3290,26 @@ function morningFrom(nightKey, rain){
   const copy = a => JSON.parse(JSON.stringify(a));
   const props = n.actors.filter(a => MORNING_PROPS.test(a.spr)).map(copy);
   const shore = n.actors.filter(a => a.spr === "kayak_side").map(copy);
-  // Путь героя, весло и лодка — от уреза воды этой ночи (утро было под 468).
-  const dy = (n.water || 468) - 468;
-  const shift = a => { const b = copy(a); b.keys = b.keys.map(k => k[2] > 400 ? [k[0], k[1], k[2] + dy, k[3], k[4]] : k); return b; };
+  // Путь героя обходит лодки на берегу: от костра — выше них (за ними), потом
+  // вниз справа от самой правой лодки; там же весло и спуск своей лодки на
+  // воду — от уреза этой ночи. Раньше путь был общий и шёл прямо по лодкам.
+  const W = n.water || 468;
+  const xr = Math.max(260, ...shore.map(a => a.keys[0][1] + SPR.kayak_side.map[0].length*3*a.keys[0][3]/2));
+  const X = Math.round(xr + 24);
   const pick = spr => base.actors.filter(a => a.spr === spr);
-  const boat = pick("kayak_side").filter(a => a.keys[0][2] > base.water).map(shift);
+  const hero = copy(pick("person").find(a => a.cycle));
+  hero.keys = [[0,108,374,0.9,1],[0.3,170,396,0.9,1],[0.55,X - 10,418,0.9,1],[0.78,X - 2,W - 16,0.9,1],
+               [0.86,X,W - 10,0.9,1],[0.94,X + 4,W - 8,0.9,0],[1,X + 8,W - 7,0.9,0]];
+  const oar = copy(pick("oar")[0]); oar.keys = oar.keys.map(k => [k[0], X, W - 4, k[3], k[4]]);
+  const paddle = copy(pick("person_paddle")[0]);
+  paddle.keys = [[0.86,X,W - 8,0.9,0],[0.94,X + 4,W - 7,0.9,1],[1,X + 12,W - 6,0.9,1]];
+  const boat = pick("kayak_side").filter(a => a.keys[0][2] > base.water).map(a => {
+    const b = copy(a); b.keys = b.keys.map(k => [k[0], X + 23, W + 42, k[3], k[4]]); return b; });
   // Глубина: что стоит ниже по кадру (ближе к нам), чем идёт герой, — после
   // него, чтобы закрывало ему ноги (бревно у костра), а не он шёл поверх.
   const front = props.filter(a => a.keys[0][2] >= 400), back = props.filter(a => a.keys[0][2] < 400);
   sc.actors = (rain ? [] : pick("sunrise").map(copy)).concat(back, shore, boat,
-    pick("oar").map(shift), pick("person").filter(a => a.cycle).map(shift), pick("person_paddle").map(shift), front);
+    [oar, hero, paddle], front);
   return sc;
 }
 for (const k of ["night", "night2", "night3", "night4", "night5"]){

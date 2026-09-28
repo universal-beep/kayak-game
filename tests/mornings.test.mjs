@@ -42,13 +42,14 @@ test("утром нет людей ночи, гитары и луны; есть 
   }
 });
 
-test("утром герой идёт к лодке не по ёлкам и не по палаткам", () => {
+test("утром герой идёт к лодке не по ёлкам, не по палаткам и не по лодкам на берегу", () => {
   const { K } = loadGame();
   const bad = new Set();
   const names = new Set(); for (let d = 1; d < K.LEVELS.length; d++) names.add(K.morningName(d));
   for (const n of names) {
     const m = K.CUTS[n], hero = m.actors.find(a => a.spr === "person" && a.cycle);
-    const props = m.actors.filter(a => PROPS.test(a.spr));
+    // Лодки на берегу — тоже: герой обходит их, а не шагает по ним.
+    const props = m.actors.filter(a => PROPS.test(a.spr) || (a.spr === "kayak_side" && a.keys[0][2] <= m.water));
     for (let f = 0; f <= 0.9; f += 0.01) {
       const s = K.cutState(hero, f * (m.len || 300)); if (s.al < 0.5) continue;
       for (const p of props) {
