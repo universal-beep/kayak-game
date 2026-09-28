@@ -2421,10 +2421,20 @@ function sfx(kind){
   if (!actx) return;
   if (kind.startsWith("voice_")){ playSample(kind); return; }   // голос — только свой файл
   if (kind === "moo"){ if (!playSample(kind)) mooTone(); return; }
+  if (kind === "slap"){                  // шлепок весла: короткий шлёп по воде и лодке
+    const t0 = actx.currentTime, len = Math.floor(actx.sampleRate*0.09);
+    const b = actx.createBuffer(1, len, actx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.exp(-i/(len*0.18));
+    const src = actx.createBufferSource(), bp = actx.createBiquadFilter(), amp = actx.createGain();
+    src.buffer = b; bp.type = "bandpass"; bp.frequency.value = 1800; bp.Q.value = 0.9; amp.gain.value = 0.35;
+    src.connect(bp); bp.connect(amp); amp.connect(actx.destination); src.start(t0);
+    tone(170, t0, 0.07, "sine", 0.12);
+    return;
+  }
   if (kind === "ring"){                  // «дзынь-дзынь» велосипедного звонка
     if (playSample(kind)) return;
     const t0 = actx.currentTime;
-    for (const d of [0, 0.17]){ tone(2400, t0 + d, 0.14, "triangle", 0.07); tone(3150, t0 + d, 0.10, "sine", 0.03); }
+    for (const d of [0, 0.17]){ tone(2400, t0 + d, 0.12, "triangle", 0.035); tone(3150, t0 + d, 0.09, "sine", 0.015); }   // негромко
     return;
   }
   if (kind === "crunch" || kind === "gulp"){
@@ -4209,12 +4219,35 @@ function paddleStrike(){
     g.bns.push({ t:o.t, wy:o.wy, type:kind, visHalf:spriteSize(BN_SPRITE[kind]).w/2 });
     return;
   }
+  // Шлёпнул своего (мирного байдарочника) или корову: шлепок или «му»,
+  // нашу байдарку чуть отбрасывает от него, его — плавно в другую сторону
+  // (корову — к её берегу). Ни переворота, ни очков.
+  for (const o of g.obs){
+    const friend = o.type === "kayaker" && !o.aggro && !(o.flipT > 0);
+    if (!friend && !o.cow) continue;
+    const ahw = widthAt(o.wy)/2, reach = Math.min(STRIKE_REACH, ahw*0.8) + (o.cow ? 20 : 0);
+    if (!(Math.abs(o.wy - g.pwy) < 75 && Math.abs(o.t - g.t)*ahw < reach + 10)) continue;
+    const dir = Math.sign(o.t - g.t) || 1;
+    g.vt -= dir*0.012;
+    o.shove = o.cow ? (Math.sign(o.t) || dir) : dir; o.shoveT = 24;
+    spPt(screenXOf(o.t, o.wy), screenYOf(o.wy), "#cfe8f5", 12); g.shake = 4;
+    if (o.cow){ sfx("moo"); popText("МУ-У!", "#f2f2f2"); }
+    else { sfx("slap"); popText("ШЛЁП!", "#cfe8f5"); }
+    return;
+  }
   // Удар в пустоту или слишком рано: без отклика игрок не понимает, что
   // нажатие сработало. Даём плеск, звук и подсказку про тайминг.
   spPt(screenXOf(g.t,g.pwy), g.py + 8, "#cfe8f5", 10);
   sfx("swing");
 }
 
+// Толчок от удара веслом: пока shoveT > 0, объект плавно отходит вбок
+// (shove — направление), не дальше кромки у берега.
+function stepShove(o){
+  if (!(o.shoveT > 0)) return;
+  o.t = Math.max(-0.88, Math.min(0.88, o.t + o.shove*0.0022));
+  o.shoveT--;
+}
 function flowMul(t){ return 1.18 - 0.34*t*t; }
 
 function stepLateral(input){
@@ -4923,7 +4956,8 @@ function drwBev(e){
     for (let w = e.wy - CYC_SPAN; w <= e.wy + CYC_SPAN; w += 6){
       const sy = Math.round(screenYOf(w));
       if (sy < -8 || sy > H + 8) continue;
-      const x = Math.round(edgAt(w) + e.side*CYC_OFF), n = Math.floor(w/6);
+      const x = Math.round(edgAt(w) + e.side*cycRoadOff(w - e.wy)), n = Math.floor(w/6);
+      if (x < -RW - 10 || x > W + RW + 10) continue;              // конец дороги ушёл за экран
       const r1 = hsh(n*17 + 3), r2 = hsh(n*29 + 11), r3 = hsh(n*41 + 7);
       cx.fillStyle = "#a08354"; cx.fillRect(x - RW, sy, RW*2, 7);           // полотно
       cx.fillStyle = "#7c6342";                                              // колеи
@@ -4939,11 +4973,12 @@ function drwBev(e){
         cx.fillStyle = "#a9c1d6"; cx.fillRect(x + lx - 2, sy + 2, 4, 1);
       }
     }
-    for (let i = 0; i < 3; i++){
+    const cnt = e.count || cyclistCount(e);
+    for (let i = 0; i < cnt; i++){
       const w = cyclistWy(e, i);
       if (Math.abs(w - e.wy) > CYC_SPAN) continue;
       const fr = Math.floor(g.frame/6 + i) % 2;
-      drawSprite("cyclist" + fr, edgAt(w) + e.side*(CYC_OFF + cyclistLane(i)), screenYOf(w) - 24, i);
+      drawSprite("cyclist" + fr, edgAt(w) + e.side*(cycRoadOff(w - e.wy) + cyclistLane(i, cnt)), screenYOf(w) - 24, i % 3);
     }
     return;
   }
@@ -5254,11 +5289,15 @@ function updBev(e){
     if (e.catchT === undefined){ if (Math.abs(g.pwy - e.wy) < 260) e.catchT = 0; }
     else if (++e.catchT === 30) sfx("splash");
   }
-  // Велосипедисты: время старта — с первого кадра; звонок один раз, когда
-  // кто-то из троих поравнялся с байдаркой.
+  // Велосипедисты: время старта — с первого кадра; негромкий звонок один
+  // раз — когда первый из них показался в кадре.
   if (e.type === "cyclists"){
     if (e.f0 === undefined) e.f0 = g.frame;
-    if (!e.rang && [0, 1, 2].some(i => Math.abs(cyclistWy(e, i) - g.pwy) < 120)){ e.rang = true; sfx("ring"); }
+    const n = e.count || cyclistCount(e);
+    for (let i = 0; i < n && !e.rang; i++){
+      const y = screenYOf(cyclistWy(e, i));
+      if (y > 0 && y < H){ e.rang = true; sfx("ring"); }
+    }
   }
   // Лоси поднимают головы, пока байдарка рядом.
   if (e.type === "moose") e.alert = Math.abs(g.pwy - e.wy) < 160;
@@ -6323,6 +6362,7 @@ function spBev(){
             shape:Math.floor(Math.random()*3)};
   if (ty === "cows") ev.seed = Math.floor(Math.random()*1000);
   if (ty === "fisher"){ ev.kind = fisherKind(ev, level().river); ev.lucky = fisherLucky(ev); }
+  if (ty === "cyclists") ev.count = cyclistCount(ev);
   if (placeBev(ev, 1) && ty === "cows") cowsWade(ev);
   g.ned=g.dist+(22+Math.random()*38)*(volga ? 4 : 1);
 }
@@ -6401,9 +6441,32 @@ function drwCatch(e, rodX, rodY, ax, hw, by){
 // со скоростью CYC_V px мира за кадр; стартуют выше жителя по реке.
 // Колея — две тропки по ±CYC_GAP от середины CYC_OFF: по ближней к воде
 // едет первый, по дальней — двое других друг за другом.
-const CYC_OFF = 64, CYC_GAP = 21, CYC_SPAN = 380, CYC_V = 1.6;
-function cyclistLane(i){ return i === 0 ? -CYC_GAP : CYC_GAP; }
-function cyclistWy(e, i){ return e.wy + [230, 280, 214][i] - (g.frame - (e.f0 || 0))*CYC_V; }
+// Дорога длинная (±CYC_SPAN): у реки (±CYC_CORE) идёт вдоль берега, а
+// концами плавно уходит вглубь суши за край экрана — не обрывается.
+const CYC_OFF = 64, CYC_GAP = 21, CYC_SPAN = 900, CYC_CORE = 420, CYC_V = 1.6;
+function cycRoadOff(dw){
+  const a = Math.abs(dw);
+  if (a <= CYC_CORE) return CYC_OFF;
+  const u = Math.min(1, (a - CYC_CORE)/(CYC_SPAN - CYC_CORE));
+  return CYC_OFF + 240*u*u;
+}
+// Сколько едет: один, двое, трое или группа из семи — от места, без
+// Math.random.
+function cyclistCount(e){
+  const h = hsh(Math.round(e.wy/13)*57 + 9);
+  return h < 0.25 ? 1 : h < 0.55 ? 2 : h < 0.85 ? 3 : 7;
+}
+// Колея: один — по ближней к воде; двое — по одному на колее; трое — один
+// и двое; группа — парами по обеим колеям.
+function cyclistLane(i, n){
+  if (n === 7) return i % 2 ? CYC_GAP : -CYC_GAP;
+  return i === 0 ? -CYC_GAP : CYC_GAP;
+}
+function cyclistWy(e, i){
+  const n = e.count || cyclistCount(e);
+  const off = n === 7 ? Math.floor(i/2)*50 + (i % 2)*20 : n === 3 ? [30, 80, 14][i] : n === 2 ? [0, 26][i] : 0;
+  return e.wy + 600 + off - (g.frame - (e.f0 || 0))*CYC_V;
+}
 // Рыбаки по рекам: с машиной и велосипедом — на Волге (дороги к воде); на
 // дождливой Тверце — только те, у кого есть дождевик. Вид — от места
 // (hsh по wy), без Math.random: случайность игры не сдвигается.
@@ -7293,6 +7356,7 @@ function upd(){
     // Баржа идёт своим ходом, медленнее течения — мы её нагоняем.
     if(o.type=="barge") bargeStep(o, g.sp*sm*DRIFT_SPEED.barge);
     if(o.type=="boat") boatStep(o);
+    stepShove(o);
     if(o.type=="log"||o.type=="branch"||o.type=="kayaker") bridgeGuard(o);
     if(o.type=="branch"){
       // Ветка плывёт как бревно (обходит камни, у берега тормозит по углу
@@ -7633,7 +7697,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fisherLucky, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
