@@ -6428,21 +6428,29 @@ function spBev(){
 // (t от 0,55 до 0,7 к своему берегу) — мешают проплыть вдоль берега, но
 // середина реки свободна. Тип «rock»: соперники обходят, удар — урон; но
 // флаг cow — не разлетается от виски и топора и не пропадает после удара.
-// Стадо по seed: mode same — все одной масти (две коровы и телёнок в
-// масть), pair — две одной масти и третья другой (или бык), mixed — все
-// разные (иногда вместо одной — бык). Пастух — один из трёх.
+// Стадо по seed: 2, 3 или 4 головы вместе с теми, что в воде. Масти: same —
+// все одной масти (коровы и телёнок в масть), pair — две одной масти и
+// третья другой (или бык), mixed — все разные (иногда бык). В воду заходят
+// одна-две коровы (не бык и не телёнок), на берегу остаётся хотя бы одна.
+// Пастух — один из трёх.
 function herdOf(e){
   const s = e.seed || 0, h = k => hsh(s*131 + k*977);
   const mode = ["same", "pair", "mixed"][s % 3];
+  const N = [2, 3, 4][Math.floor(h(5)*3)];
   const v = Math.floor(h(1)*3), w = (v + 1 + Math.floor(h(2)*2)) % 3, u = 3 - v - w;
-  let animals;
-  if (mode === "same") animals = [{spr:"cow", v}, {spr:"cow", v}, {spr:"calf", v}];
-  else if (mode === "pair") animals = [{spr:"cow", v}, {spr:"cow", v}, h(3) < 0.4 ? {spr:"bull", v:0} : {spr:"cow", v:w}];
-  else animals = [{spr:"cow", v}, {spr:"cow", v:w}, h(3) < 0.5 ? {spr:"bull", v:0} : {spr:"cow", v:u}];
-  return { mode, animals, shepherd: ["shepherd", "shepherd_old", "shepherd_girl"][Math.floor(h(4)*3)] };
+  let all;
+  if (mode === "same") all = [{spr:"cow", v}, {spr:"cow", v}, {spr:"calf", v}, {spr:"cow", v}];
+  else if (mode === "pair") all = [{spr:"cow", v}, {spr:"cow", v}, h(3) < 0.4 ? {spr:"bull", v:0} : {spr:"cow", v:w}, {spr:"cow", v}];
+  else all = [{spr:"cow", v}, {spr:"cow", v:w}, h(3) < 0.5 ? {spr:"bull", v:0} : {spr:"cow", v:u}, {spr:"cow", v:u}];
+  all = all.slice(0, N);
+  const cows = all.filter(a => a.spr === "cow");
+  const nw = Math.max(1, Math.min(N === 2 ? 1 : 1 + (h(6) < 0.5 ? 1 : 0), cows.length - (all.length - cows.length ? 0 : 1)));
+  const water = cows.slice(0, nw);
+  const animals = all.filter(a => !water.includes(a));
+  return { mode, animals, water, shepherd: ["shepherd", "shepherd_old", "shepherd_girl"][Math.floor(h(4)*3)] };
 }
 function cowsWade(e){
-  const n = Math.random() < 0.5 ? 1 : 2;
+  const herd = herdOf(e), n = herd.water.length;
   const sz = spriteSize("cow_water");
   for (let i = 0; i < n; i++){
     const wy = e.wy + (i ? -70 : 40) + Math.random()*30;
@@ -6450,7 +6458,7 @@ function cowsWade(e){
     const t = e.side*(0.55 + Math.random()*0.15);
     if (!spaceFree(t, wy, sz.w/2)) continue;
     g.obs.push({ type:"rock", cow:true, sprite: e.side < 0 ? "cow_water" : "cow_water_l",
-                 variant: herdOf(e).animals.filter(a => a.spr !== "bull")[i].v,
+                 variant: herd.water[i].v,
                  t, wy, vt:0, size:40, visHalf:sz.w/2, visHalfY:sz.h/2, halfPx:sz.w/2*0.75, swingT:-1 });
   }
 }

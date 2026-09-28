@@ -85,24 +85,41 @@ test("корова мычит: при ударе и один раз, когда 
 });
 
 // Стада разные: целиком одной масти, «двое одной, третья другой» и все
-// разные; где-то бык, где-то телёнок; пастухи трёх видов.
-test("стада: одной масти, пара одной масти, все разные; бык, телёнок, разные пастухи", () => {
+// разные; где-то бык, где-то телёнок; пастухи трёх видов. Голов в стаде —
+// 2, 3 или 4 вместе с теми, что в воде; в воде хотя бы одна, на берегу тоже.
+test("стада: 2–4 головы, масти одной/пара/разные, бык, телёнок, разные пастухи", () => {
   const { K } = loadGame();
-  const modes = new Set(), kinds = new Set(), herders = new Set();
-  for (let seed = 0; seed < 60; seed++) {
+  const modes = new Set(), kinds = new Set(), herders = new Set(), totals = new Set();
+  for (let seed = 0; seed < 90; seed++) {
     const h = K.herdOf({ seed });
     herders.add(h.shepherd);
-    const cows = h.animals.filter(a => a.spr !== "bull");
-    const vs = cows.map(a => a.v);
-    for (const a of h.animals) kinds.add(a.spr === "cow" ? "cow" + a.v : a.spr);
-    const uniq = new Set(vs).size;
-    modes.add(uniq === 1 ? "same" : uniq === vs.length ? "mixed" : "pair");
-    assert.ok(h.animals.length >= 2 && h.animals.length <= 3, "в стаде 2–3: " + h.animals.length);
+    const all = h.animals.concat(h.water);
+    totals.add(all.length);
+    assert.ok(h.animals.length >= 1, "на берегу хотя бы одна");
+    assert.ok(h.water.length >= 1 && h.water.every(a => a.spr === "cow"), "в воде — коровы, хотя бы одна");
+    const cows = all.filter(a => a.spr !== "bull");
+    const vs = cows.map(a => a.v), uniq = new Set(vs).size;
+    for (const a of all) kinds.add(a.spr === "cow" ? "cow" + a.v : a.spr);
+    if (vs.length >= 2) modes.add(uniq === 1 ? "same" : uniq === vs.length ? "mixed" : "pair");
     if (h.mode === "same") assert.equal(uniq, 1, "одной масти: " + vs);
   }
+  assert.deepEqual([...totals].sort(), [2, 3, 4], "голов в стаде");
   assert.deepEqual([...modes].sort(), ["mixed", "pair", "same"]);
   for (const k of ["cow0", "cow1", "cow2", "bull", "calf"]) assert.ok(kinds.has(k), "нет " + k);
   assert.equal(herders.size, 3, "три вида пастухов");
   for (const n of ["bull", "calf", "shepherd_old", "shepherd_girl"]) assert.ok(K.SPR[n], "нет спрайта " + n);
   assert.equal(K.SPR.cow.variants.length, 3, "три масти коровы");
+});
+
+test("в воду заходят коровы своего стада — сколько решило стадо", () => {
+  const { K } = loadGame();
+  K.G.day = 6; const R = K.RIVERS[K.LEVELS[6].river];
+  setupWorld(K, { wy: 1000, rWidth: R.width }); K.G.rBend = 0;
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    K.G.obs = [];
+    const e = { type: "cows", side: -1, wy: 1300, phase: 0, seed };
+    K.cowsWade(e);
+    const h = K.herdOf(e);
+    assert.ok(K.G.obs.filter(o => o.cow).length <= h.water.length, "не больше, чем решило стадо");
+  }
 });
