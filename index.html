@@ -6049,12 +6049,19 @@ function separate(o){
     if (o2 === o) continue;
     // Соседи — по настоящей длине объектов (баржа 147 px), а не в ±75 px.
     if (Math.abs(o2.wy - o.wy) > (o.visHalfY || 20) + (o2.visHalfY || 20)) continue;
-    const need = ((o2.visHalf || o2.halfPx || 20) + (o.visHalf || 32)) * 0.85;
+    // От катера — на полный размер: он длинный и быстрый, «впритирку» с ним
+    // выглядит как столкновение.
+    const need = ((o2.visHalf || o2.halfPx || 20) + (o.visHalf || 32)) * (o2.type === "boat" ? 1 : 0.85);
     const dx = (o.t - o2.t) * hw;
     if (Math.abs(dx) >= need) continue;
     // Двигаем того, кто подвижен. Если оба подвижны — расходятся оба.
     const mobile2 = (o2.type === "log" || o2.type === "kayaker");
-    const dir = dx >= 0 ? 1 : -1;
+    let dir = dx >= 0 ? 1 : -1;
+    // У камня или коряги с этой стороны до кромки места не хватает —
+    // выходим с другой (плавно,
+    // по 1,5 px за вызов): раньше толчок упирался в lim, и объект так и
+    // стоял на камне, пока течение не протащит его насквозь.
+    if ((o2.type === "rock" || o2.type === "snag") && Math.abs(o2.t + dir*need/hw) > lim) dir = -dir;
     const push = Math.min(STEP, (need - Math.abs(dx)) / hw);
     if (mobile2){
       o.t  += push/2*dir;  o.vt  = 0;
@@ -7076,7 +7083,12 @@ function boatStep(o){
       const qlim = Math.max(0, 1 - ((q.visHalf || 20) + 4)/hw);
       const outward = Math.sign(q.t - c) === Math.sign(q.t);
       const pinned = outward && qlim - Math.abs(q.t) < need - Math.abs(q.t - c);
-      const soft = (q.type === "log" || q.type === "branch" || q.type === "kayaker") && !pinned;
+      // Зажатое: в сторону, куда его отодвинула бы волна, вплотную стоит
+      // кто-то ещё (соперник, камень) — отодвинуть некуда, объезжаем.
+      const push = Math.sign(q.t - c) || 1;
+      const boxed = ahead.some(r => r !== q && Math.abs(r.wy - q.wy) < (r.visHalfY || 20) + (q.visHalfY || 20) &&
+        Math.sign(r.t - q.t) === push && Math.abs(r.t - q.t)*hw < (q.visHalf || 20) + (r.visHalf || r.halfPx || 20) + 12);
+      const soft = (q.type === "log" || q.type === "branch" || q.type === "kayaker") && !pinned && !boxed;
       if (q.t > lo - need && q.t < hi + need) hits += soft ? 0.6 : 1;
     }
     // Опоры моста — те же препятствия: вне среднего пролёта не пройти.
@@ -7413,21 +7425,37 @@ function upd(){
       }
       if(!(o.flipT>0)){
         const hw=widthAt(o.wy)/2;
-        let danger=0;
+        let danger=0, threat=null;
         for(const o2 of g.obs){
           if(o2===o)continue;
           const dy=o2.wy-o.wy;
           // Впереди — уклоняется заранее; рядом — расталкивается, иначе
           // соперник наезжал на камни и спрайты сливались в кашу.
-          if(dy>0&&dy<110){const dx=(o.t-o2.t)*hw;if(Math.abs(dx)<(o2.visHalf||24)+24)danger+=dx>=0?1:-1;}
+          if(dy>0&&dy<150){
+            const dx=(o.t-o2.t)*hw, need=(o2.visHalf||24)+(o.visHalf||28)*0.7;
+            if(Math.abs(dx)<need){
+              danger+=dx>=0?1:-1;
+              // Ближайший камень, коряга или катер на курсе — главная угроза: раньше
+              // опасности слева и справа гасили друг друга, и соперник ехал
+              // прямо в камень.
+              if((o2.type==="rock"||o2.type==="snag"||o2.type==="boat")&&(!threat||dy<threat.dy)) threat={o2,dy,dx,need};
+            }
+          }
           else if(Math.abs(dy)<55){
             const dx=(o.t-o2.t)*hw, need=(o2.halfPx||20)+24;
             if(Math.abs(dx)<need)danger+=(dx>=0?1:-1)*2;
           }
         }
+        if(threat){
+          // Обходит камень в ту сторону, где хватает места до кромки.
+          const lim=Math.min(0.85, 1-(o.visHalf||28)/hw);
+          let dir=threat.dx>=0?1:-1;
+          if(Math.abs(threat.o2.t+dir*(threat.need+6)/hw)>lim) dir=-dir;
+          danger=dir*3;
+        }
         o.vt+=danger*0.0012+Math.sin(o.wy*0.004)*0.0004;
         o.vt*=0.9;
-        o.vt=Math.max(-0.02,Math.min(0.02,o.vt));
+        o.vt=Math.max(-0.028,Math.min(0.028,o.vt));
         o.t+=o.vt;
         if(o.t>0.85){o.t=0.85;o.vt=0;}
         if(o.t<-0.85){o.t=-0.85;o.vt=0;}
