@@ -40,3 +40,33 @@ test("мостки трёх видов: с лодкой, с купающимис
   for (let wy = 1000; wy < 40000; wy += 97) kinds.add(K.pierKind({ wy }));
   assert.deepEqual([...kinds].sort(), [0, 1, 2]);
 });
+
+// По картинке: купающиеся у мостков не наслаиваются, человек стоит ногами
+// на настиле, а не над водой за его краем.
+test("мостки: купающиеся не наслаиваются, человек стоит на настиле", () => {
+  const { K, ctx } = loadGame();
+  for (const side of [-1, 1]) for (const kind of [1, 2]) {
+    let wy = 1000; while (K.pierKind({ wy }) !== kind) wy += 9;
+    setupWorld(K, { wy: wy - K.PY + 360 }); K.G.rBend = 0; K.G.frame = 10;
+    const calls = [];
+    const orig = ctx.drawImage;
+    ctx.drawImage = (img, x, y, w, h) => calls.push({ img, x, y, w: w || img.width, h: h || img.height });
+    K.drwBev({ type: "pier", side, wy, phase: 0 });
+    ctx.drawImage = orig;
+    const deck = calls.find(c => c.img === K.SPR["walkway" + (side > 0 ? "_l" : "")].img);
+    assert.ok(deck, "настил нарисован");
+    if (kind === 1) {
+      const sw = calls.filter(c => c.img === K.SPR.swimmer0.img || c.img === K.SPR.swimmer1.img);
+      assert.equal(sw.length, 2, "двое купающихся");
+      const [a, b] = sw;
+      const ov = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0;
+      assert.ok(!ov, "купающиеся наслаиваются, берег " + side);
+    } else {
+      const p = calls.find(c => c.img === (K.SPR.person.imgs ? K.SPR.person.imgs[2] : K.SPR.person.img) || c.img === K.SPR.person.img);
+      assert.ok(p, "человек нарисован");
+      const cxp = p.x + p.w/2, feet = p.y + p.h;
+      assert.ok(cxp > deck.x + 6 && cxp < deck.x + deck.w - 6, "человек над настилом, берег " + side);
+      assert.ok(feet >= deck.y + 3 && feet <= deck.y + 15, "ноги на досках: ноги " + Math.round(feet - deck.y) + " от верха настила");
+    }
+  }
+});

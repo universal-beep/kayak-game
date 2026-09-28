@@ -2448,6 +2448,8 @@ function startMusic(){
   setInterval(birdsTick, 90);
 }
 
+// Громкость фоновой мелодии (просьба Максима 28.09.2026: на 20% тише).
+const MUSIC_VOL = 0.8;
 function musicTick(){
   if (!actx || !musicOn) return;
   if (g.s === "paused") return;          // на паузе музыка молчит
@@ -2458,8 +2460,8 @@ function musicTick(){
   const bas = camp ? BASS_CAMP : BASS;
   while (mNext < actx.currentTime + 0.35){
     tone(NOTES[mel[mStep % mel.length]], mNext, beat*(camp?1.5:0.85),
-         camp ? "triangle" : "square", camp ? 0.055 : 0.045);
-    tone(NOTES[bas[mStep % bas.length]], mNext, beat*(camp?2.4:1.6), "triangle", 0.05);
+         camp ? "triangle" : "square", (camp ? 0.055 : 0.045)*MUSIC_VOL);
+    tone(NOTES[bas[mStep % bas.length]], mNext, beat*(camp?2.4:1.6), "triangle", 0.05*MUSIC_VOL);
     mNext += beat; mStep++;
   }
 }
@@ -5177,16 +5179,19 @@ function drwBev(e){
     cx.fillStyle = "rgba(255,255,255,0.3)";
     for (const k of [-0.3, 0.05, 0.4]) cx.fillRect(Math.round(cxw + k*ww) - 5, by + 14, 10, 2);
     drawSprite("walkway" + L, cxw, by);
-    const tip = edg - e.side*(ww - 16);
+    const end = cxw - e.side*ww/2, deckTop = by - spriteSize("walkway").h/2;
     const kind = pierKind(e);
     if (kind === 1){
+      // Двое за краем мостков: один ближе, другой дальше и ниже — не
+      // наслаиваются (раньше стояли в 26 px и перекрывались).
       for (let i = 0; i < 2; i++){
-        const sx = tip - e.side*(10 + i*26), sy = by + 26 + i*16 + Math.sin(g.frame*0.08 + i*2 + ph)*2;
+        const sx = end - e.side*(16 + i*44), sy = by + 22 + i*30 + Math.sin(g.frame*0.08 + i*2 + ph)*2;
         cx.fillStyle = "rgba(255,255,255,0.3)"; cx.fillRect(sx - 9, sy + 8, 18, 2);
         drawSprite(Math.floor((g.frame + i*20)/30) % 2 ? "swimmer1" : "swimmer0", sx, sy);
       }
     } else if (kind === 2){
-      drawSprite("person", tip, by - 22 + (Math.floor((g.frame + ph*40)/24) % 2), 2);   // стоит на краю мостков
+      // Стоит на досках у края, ногами на настиле (раньше — за краем, над водой).
+      drawSprite("person", end + e.side*16, deckTop - 15 + (Math.floor((g.frame + ph*40)/24) % 2), 2);
     }
     return;
   }
@@ -8015,7 +8020,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
