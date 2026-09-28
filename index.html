@@ -2471,6 +2471,28 @@ function sfx(kind){
   if (!actx) return;
   if (kind.startsWith("voice_")){ playSample(kind); return; }   // голос — только свой файл
   if (kind === "moo"){ if (!playSample(kind)) mooTone(); return; }
+  if (kind === "wind"){                  // порыв: шум нарастает и спадает
+    const t0 = actx.currentTime, D = 3.3, len = Math.floor(actx.sampleRate*D);
+    const b = actx.createBuffer(1, len, actx.sampleRate), d = b.getChannelData(0);
+    let lp = 0;
+    for (let i = 0; i < len; i++){ lp += 0.05*((Math.random()*2 - 1) - lp); d[i] = lp*2.2; }
+    const src = actx.createBufferSource(), f = actx.createBiquadFilter(), amp = actx.createGain();
+    src.buffer = b; f.type = "bandpass"; f.Q.value = 0.7;
+    f.frequency.setValueAtTime(300, t0); f.frequency.linearRampToValueAtTime(900, t0 + D/2); f.frequency.linearRampToValueAtTime(350, t0 + D);
+    amp.gain.setValueAtTime(0.0001, t0); amp.gain.exponentialRampToValueAtTime(0.25, t0 + D/2); amp.gain.exponentialRampToValueAtTime(0.0001, t0 + D);
+    src.connect(f); f.connect(amp); amp.connect(actx.destination); src.start(t0);
+    return;
+  }
+  if (kind === "chop"){                  // «хрясь»: топор входит в дерево
+    const t0 = actx.currentTime, len = Math.floor(actx.sampleRate*0.12);
+    const b = actx.createBuffer(1, len, actx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.exp(-i/(len*0.12));
+    const src = actx.createBufferSource(), bp = actx.createBiquadFilter(), amp = actx.createGain();
+    src.buffer = b; bp.type = "bandpass"; bp.frequency.value = 700; bp.Q.value = 1.2; amp.gain.value = 0.45;
+    src.connect(bp); bp.connect(amp); amp.connect(actx.destination); src.start(t0);
+    tone(110, t0, 0.12, "triangle", 0.14);
+    return;
+  }
   if (kind === "slap"){                  // шлепок весла: короткий шлёп по воде и лодке
     const t0 = actx.currentTime, len = Math.floor(actx.sampleRate*0.09);
     const b = actx.createBuffer(1, len, actx.sampleRate), d = b.getChannelData(0);
@@ -4037,11 +4059,11 @@ const LEVELS = [
   { day:5, river:2, place:"ДЕРЕВНЯ",            len:1000, goal:"bridges",     need:4,
     goalText:"Пройти 4 моста в пролёт",      aggro:0.45, rain:0.55, bridges:true, arrive:"village", dens:0.017 },
   { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:1,
-    goalText:"Дойти, сохранив сердце",       aggro:0.45, rain:0.85, bridges:true, boats:true, arrive:"town", dens:0.016 },
+    goalText:"Дойти, сохранив сердце",       aggro:0.45, rain:0.85, wind:1, bridges:true, boats:true, arrive:"town", dens:0.016 },
   { day:7, river:3, place:"ПОРОГ ПЕРВЫЙ",       len:1200, goal:"cleanrapids", need:3,
     goalText:"Пройти 3 порога чисто",        aggro:0.55, arrive:"camp",   dens:0.016 },
   { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:20,
-    goalText:"Набрать комбо 20",             aggro:0.55, arrive:"camp",   dens:0.018 },
+    goalText:"Набрать комбо 20",             aggro:0.55, fog:0.85, arrive:"camp",   dens:0.018 },
   { day:9, river:3, place:"УСТЬЕ ОСУГИ",        len:1200, goal:"parries",     need:4,
     goalText:"Парировать 4 удара веслом",    aggro:0.60, arrive:"camp",   dens:0.019 }
 ];
@@ -4290,8 +4312,69 @@ function tauntVoice(){
   return VOICES[k];
 }
 
+// Бросок топора: цель — ближайшее на курсе впереди (бревно, ветка, коряга,
+// лодка соперника, камень, катер). Боковое отклонение штрафуется сильнее
+// расстояния. Корову и привязанную лодку не выбирает. Нет цели — летит
+// вперёд и тонет.
+function throwAxe(){
+  let tgt = null, best = Infinity;
+  for (const o of g.obs){
+    if (o.cow || o.tied || o.flipT > 0) continue;
+    if (!["log", "branch", "snag", "kayaker", "rock", "boat", "barge"].includes(o.type)) continue;
+    const d = o.wy - g.pwy, lat = Math.abs(o.t - g.t)*widthAt(o.wy)/2;
+    if (d < -20 || d > AXE_RANGE || lat > 110) continue;
+    const score = d + lat*2;
+    if (score < best){ best = score; tgt = o; }
+  }
+  g.axes--;
+  const dur = Math.round(14 + (tgt ? Math.max(0, tgt.wy - g.pwy) : 300)/25);
+  g.axeFly = { t0: g.t, wy0: g.pwy, tgt, k: 0, dur };
+  g.strikeT = 12; sfx("swing");
+}
+// Полёт топора: долетел — колет дерево, топит лодку соперника, от камня и
+// катера отскакивает со звоном; мимо — плеск.
+function axeStep(){
+  const a = g.axeFly;
+  if (!a) return;
+  if (++a.k < a.dur) return;
+  g.axeFly = null;
+  const o = a.tgt;
+  if (o && g.obs.includes(o)){
+    const ox = screenXOf(o.t, o.wy), oy = screenYOf(o.wy);
+    if (o.type === "log" || o.type === "branch" || o.type === "snag"){
+      g.obs = g.obs.filter(q => q !== o);
+      spPt(ox, oy, "#a87848", 34); spPt(ox, oy, "#d9b98a", 14);
+      g.shake = 7; sfx("chop"); addBonus(15); popText("ХРЯСЬ! +" + award(15), "#d9b98a");
+    } else if (o.type === "kayaker"){
+      o.flipT = FLIP_FRAMES; o.swingT = -1; o.aggro = false;
+      spPt(ox, oy, "#cfe8f5", 24);
+      g.shake = 7; sfx("chop"); addBonus(30); popText("ТОНЕТ! +" + award(30), "#ffd54f");
+    } else {
+      spPt(ox, oy, "#c9cfd3", 14); sfx("parry"); popText("ДЗЫНЬ — ОТСКОЧИЛ", "#c9cfd3");
+    }
+  } else {
+    const w = a.wy0 + 300;
+    spPt(screenXOf(a.t0, w), screenYOf(w), "#cfe8f5", 12); sfx("splash");
+  }
+}
+// Где летит топор: от лодки к цели (цель может сдвинуться) дугой вверх.
+function axePos(){
+  const a = g.axeFly, u = a.k/a.dur;
+  const tt = a.tgt ? a.tgt.t : a.t0, tw = a.tgt ? a.tgt.wy : a.wy0 + 300;
+  const x0 = screenXOf(a.t0, a.wy0), y0 = screenYOf(a.wy0), x1 = screenXOf(tt, tw), y1 = screenYOf(tw);
+  return { x: x0 + (x1 - x0)*u, y: y0 + (y1 - y0)*u - Math.sin(u*Math.PI)*40, rot: a.k*0.55 };
+}
+function drwAxeFly(){
+  if (!g.axeFly) return;
+  const p = axePos();
+  cx.save(); cx.translate(Math.round(p.x), Math.round(p.y)); cx.rotate(p.rot);
+  drawSprite("axe", 0, 0);
+  cx.restore();
+}
 function paddleStrike(){
   if (g.s !== "playing") return;
+  // Есть топор — двойной тап его кидает (тратится), нет — взмах веслом.
+  if ((g.axes || 0) > 0 && !g.axeFly){ throwAxe(); return; }
   g.strikeT = 12;
   // Твоё весло бьёт в сторону ближайшего соперника, иначе — вправо.
   const near = g.obs.filter(q => q.type === "kayaker" && Math.abs(q.wy - g.pwy) < 120)
@@ -5653,6 +5736,11 @@ function drwHUD(){
     gi++;
   }
 
+  for (let i = 0; i < (g.axes || 0); i++){       // топоры в запасе
+    const ax0 = W - 34 - (gi + i)*20;
+    cx.fillStyle = "rgba(0,0,0,0.5)"; cx.fillRect(ax0, 76, 14, 14);
+    if (SPR.axe.img) cx.drawImage(SPR.axe.img, ax0 + 1, 77, 12, 12);
+  }
   let ey = 96;
   if (g.breadT  > 0){ drwEffBar("ГРЕБОК+", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
   if (g.whiskyT > 0){ drwEffBar("НЕУЯЗВИМ", g.whiskyT/WHISKY_FRAMES,"#e8a838", ey); ey += 16; }
@@ -5905,7 +5993,7 @@ const BONUS_HELP = [
   ["БАТОН",   "Гребок мощнее в полтора раза, течение сносит вдвое слабее. 8 секунд"],
   ["ВИСКИ",   "Неуязвимость 6 секунд: препятствия разлетаются в щепки. Очки идут вдвойне"],
   ["АПТЕЧКА", "Возвращает сердце. Если все целы — даёт щит на один удар"],
-  ["ТОПОР",   "Срабатывает сам: убирает препятствие прямо по курсу"]
+  ["ТОПОР",   "В запас, до двух. Двойной тап — кинуть вперёд: колет брёвна и коряги, топит лодки соперников"]
 ];
 
 function showHelp(){
@@ -6085,6 +6173,54 @@ function drwTape(){
   cx.textAlign = "left";
 }
 
+// Туман (8-й день): густой у верхней кромки, к лодке тает — препятствия
+// проявляются поздно. Поверх — медленные клочья. fogAlpha(y) — плотность
+// на высоте экрана y.
+function fogAlpha(y){
+  const f = (LEVELS[g.day] || {}).fog || 0;
+  if (!f) return 0;
+  const clear = H*0.55;
+  return y >= clear ? 0 : f*Math.pow(1 - y/clear, 0.8);
+}
+function drwFog(){
+  if (!(LEVELS[g.day] || {}).fog) return;
+  cx.save();
+  for (let y = 0; y < H*0.55; y += 6){
+    cx.fillStyle = "rgba(214,222,228," + fogAlpha(y).toFixed(3) + ")";
+    cx.fillRect(0, y, W, 6);
+  }
+  for (let i = 0; i < 6; i++){                    // клочья плывут вбок
+    const x = ((i*173 + g.frame*0.25*(i % 2 ? 1 : -1)) % (W + 200)) - 100, y = 40 + i*52;
+    cx.fillStyle = "rgba(230,236,240," + (0.35*fogAlpha(y)).toFixed(3) + ")";
+    cx.fillRect(Math.round(x), y, 150, 14);
+  }
+  cx.restore();
+}
+// Встречный ветер (6-й день): порывами каждые 8 секунд по 3,3 секунды —
+// лодку тормозит до 40%; у берега под деревьями вдвое тише. windMul —
+// множитель шага (1 — штиль).
+function windGust(f){ const p = f % 480; return p < 200 ? Math.sin(Math.PI*p/200) : 0; }
+function windMul(f, t){
+  if (!(LEVELS[g.day] || {}).wind) return 1;
+  const shelter = Math.abs(t) > 0.6 ? 0.45 : 1;
+  return 1 - 0.4*windGust(f)*shelter;
+}
+function drwWind(){
+  if (!(LEVELS[g.day] || {}).wind) return;
+  const k = windGust(g.frame);
+  if (k <= 0.02) return;
+  cx.save();
+  cx.fillStyle = "rgba(235,245,255," + (0.6*k).toFixed(2) + ")";
+  for (let i = 0; i < Math.round(55*k); i++){      // рябь бежит навстречу — вверх по экрану
+    const x = (i*97 + Math.floor(g.frame/40)*31) % W, y = H - ((i*137 + g.frame*9) % (H + 40));
+    cx.fillRect(x, y, 14 + (i % 3)*9, 2); cx.fillRect(x + 4, y + 4, 8 + (i % 2)*6, 1);
+  }
+  cx.globalAlpha = Math.min(1, k*1.5);
+  cx.fillStyle = "#e3f2fd"; cx.font = "10px " + F; cx.textAlign = "center";
+  cx.fillText("ВСТРЕЧНЫЙ ВЕТЕР  ↓", W/2, 134);
+  cx.textAlign = "left";
+  cx.restore();
+}
 function drwRain(){
   const r = level().rain || 0;
   if (!r) return;
@@ -6777,7 +6913,7 @@ function chkCl(){
   }
 }
 /* ===== 6. Прочность и бонусы ===== */
-const INV_FRAMES = 90, BREAD_FRAMES = 480, WHISKY_FRAMES = 360, AXE_RANGE = 360;
+const INV_FRAMES = 90, BREAD_FRAMES = 480, WHISKY_FRAMES = 360, AXE_RANGE = 420, AXE_MAX = 2;
 
 // Виски обещало двойные очки — а множителя в коде не было вовсе.
 // Теперь все начисления идут через эти две функции.
@@ -6914,26 +7050,12 @@ function apBn(b){
       popText("СОЛНЦЕ +" + award(80) + " · КОМБО","#ffd54f");
       explain("sun","СОЛНЦЕ: не хлеб и не виски, просто жаркий выходной на реке. Очки идут в счёт");
       break;
-    case "axe": {                       // расчистка пути
-      // Цель выбирается не по близости, а по тому, насколько она стоит
-      // НА КУРСЕ: боковое отклонение штрафуется сильнее расстояния.
-      let n = null, best = Infinity;
-      for (const o of g.obs){
-        if (o.cow || o.tied) continue;           // корову и привязанную лодку топор не трогает
-        const d = o.wy - g.pwy;
-        if (d < 60 || d > AXE_RANGE) continue;
-        const lateral = Math.abs(o.t - g.t) * widthAt(o.wy)/2;
-        if (lateral > 90) continue;
-        const score = d + lateral*3;
-        if (score < best){ best = score; n = o; }
-      }
-      if (n){
-        spPt(screenXOf(n.t,n.wy), screenYOf(n.wy), "#a87848", 22);
-        g.obs = g.obs.filter(o => o !== n);
-        g.shake = 6;
-      }
-      addBonus(25); popText("РАСЧИСТИЛ ПУТЬ","#c2ced6");
-      explain("axe","ТОПОР: срабатывает сам и убирает препятствие, которое стоит прямо по курсу");
+    case "axe": {                       // в запас: кидается двойным тапом
+      // Раньше топор срабатывал сам и молча убирал препятствие где-то
+      // впереди — игрок не видел, что и как он срубил.
+      g.axes = Math.min(AXE_MAX, (g.axes || 0) + 1);
+      addBonus(10); popText("ТОПОР В ЗАПАСЕ", "#c2ced6");
+      explain("axe","ТОПОР: лежит в запасе. Двойной тап — кинуть в то, что впереди: бревно и корягу расколет, лодку соперника потопит, от камня отскочит");
       break;
     }
   }
@@ -7106,7 +7228,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
   g.cleanRun=false;g.wasRapid=false;
   ensureSegments(H*2);
   const r = river();
@@ -7431,10 +7553,12 @@ function upd(){
   // Один шаг на всё: и прокрутка мира, и пройденные метры. Раньше дистанция
   // считалась мимо множителей, и стрежень с порогами на неё не влияли.
   const step = g.sp * sm * speedMulAt(g.scroll) * flowMul(g.t)
-             * (g.whiskyT > 0 ? 1.2 : 1);
+             * (g.whiskyT > 0 ? 1.2 : 1) * windMul(g.frame, g.t);
+  if (level().wind && g.frame % 480 === 1) sfx("wind");
   g.dist += step * 0.04;
   rowStep(step);
   tickStamina();
+  axeStep();
   g.scroll += step;
   ensureSegments(g.scroll + H*2);
   while (g.segs.length > 40) g.segs.shift();
@@ -7842,7 +7966,7 @@ function rndr(){
   for(const b of g.bridges_) drwBridge(b);
   drwTape();
   cx.restore();
-  drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();
+  drwAxeFly();drwFog();drwWind();drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();
   if (g.whiskyT > 0){
     cx.strokeStyle = "rgba(232,168,56," + (0.30 + Math.sin(g.frame*0.15)*0.08) + ")";
     cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
@@ -7891,7 +8015,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
