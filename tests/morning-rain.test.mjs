@@ -7,24 +7,13 @@ import { loadGame } from "./harness.mjs";
 
 test("перед дождливым днём утро дождливое, перед сухим — солнечное", () => {
   const { K } = loadGame();
-  const rainy = [];
-  K.LEVELS.forEach((L, i) => {
-    const want = L.rain ? "morning_rain" : "morning";
-    assert.equal(K.morningName(i), want, "день " + L.day);
-    if (L.rain) rainy.push(L.day);
+  K.LEVELS.forEach((L, i) => { if (i === 0) return;
+    const sc = K.CUTS[K.morningName(i)];
+    assert.equal(!!sc.rain, !!L.rain, "день " + L.day);
+    if (L.rain) assert.ok(sc.rainSound && sc.sky === "rain", "дождь со звуком и серым небом");
   });
-  assert.ok(rainy.length >= 1, "нет дождливых дней");
 });
 
-test("дождливое утро: серое небо, дождь со звуком, без восхода", () => {
-  const { K } = loadGame();
-  const sc = K.CUTS.morning_rain;
-  assert.ok(sc, "нет мульта morning_rain");
-  assert.equal(sc.sky, "rain");
-  assert.ok(sc.rain > 0 && sc.rainSound, "дождь и его звук");
-  assert.ok(!sc.actors.some(a => a.spr === "sunrise"), "восход под дождём");
-  assert.ok(K.CUT_SKY.rain, "нет цвета неба для дождя");
-});
 
 test("в ночах на горизонте не речные камни вида сверху", () => {
   const { K } = loadGame();

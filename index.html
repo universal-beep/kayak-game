@@ -2401,7 +2401,7 @@ function startMusic(){
 function musicTick(){
   if (!actx || !musicOn) return;
   if (g.s === "paused") return;          // на паузе музыка молчит
-  if (g.cut && g.cut.name === "morning") return;  // на рассвете — только птицы, без мелодии
+  if (g.cut && CUTS[g.cut.name] && CUTS[g.cut.name].birds) return;  // на рассвете — только птицы, без мелодии
   const camp = musicMode === "camp";
   const beat = camp ? 0.26 : 0.19;
   const mel = camp ? TUNE_CAMP : TUNE;
@@ -2529,7 +2529,7 @@ function birdTone(f1, f2, dur, at, vol){
   o.start(at); o.stop(at + dur + 0.02);
 }
 function birdsTick(){
-  if (!actx || !musicOn || !g.cut || g.cut.name !== "morning") return;
+  if (!actx || !musicOn || !g.cut || !CUTS[g.cut.name] || !CUTS[g.cut.name].birds) return;
   while (bNext < actx.currentTime + 0.45){
     const s = bSeed++, t = bNext;
     const k = s % 6;
@@ -2749,7 +2749,14 @@ const CLOUDS = () => [
   { spr:"cloud", keys:[[0,-300,120,0.9,1],[1,-420,120,0.9,1]] },
   { spr:"cloud", keys:[[0,1100,160,0.8,1],[1,980,160,0.8,1]] } ];
 // Утро перед днём: если в этот день дождь (Тверца, дни 5–6) — дождливое.
-function morningName(day){ return LEVELS[day] && LEVELS[day].rain ? "morning_rain" : "morning"; }
+// Какая ночь была перед этим днём: ночёвка — её ночь; после переезда ночи
+// не было — ночь той реки, куда приехали (ближайшая следующая).
+function nightBefore(day){
+  if (NIGHT_DAYS.includes(day)) return nightName(day);
+  const next = NIGHT_DAYS.find(d => d > day);
+  return next != null ? nightName(next) : "night";
+}
+function morningName(day){ return (LEVELS[day] && LEVELS[day].rain ? "mr_" : "m_") + nightBefore(day); }
 function driveName(river){ return ["drive1", "drive2", "drive3"][river] || "drive2"; }
 // Волга → Медведица: сельская асфальтовая дорога в две полосы, вдали деревня
 // с церковью и лес, вдоль дороги столбы с проводами. Встречных немного —
@@ -2908,7 +2915,7 @@ const CUTS = {
       { spr:"tent_lit", keys:[[0,360,300,0.9,0],[.52,360,300,0.9,0],[.5812,360,300,0.9,1],[.7647,360,300,0.9,1]] },
       { spr:"sil", keys:[[0,360,296,0.32,0],[.5812,360,296,0.32,0],[.6424,360,296,0.32,1],[.7647,360,296,0.32,1]] }
     ] },
-  morning: { sky:"morning", ground:"#2c4a2f", gy:216, water:468, caption:"Утро. Идём дальше",
+  morning: { sky:"morning", ground:"#2c4a2f", gy:216, water:468, caption:"Утро. Идём дальше", birds:true,
     // Костёр сгорел за ночь: тлеют угли — лёгкий дым, свечение почти угасло.
     fx:{ glow:{ x:135, y:370, r0:14, r1:26 },
          smoke:{ x:135, y:360, r0:4, r1:14, h:70, spreadX:4, n:4, per:18 } },
@@ -3266,6 +3273,40 @@ Object.assign(CUTS, {
   })
 });
 
+// Утро — тот же лагерь, что ночью перед ним: палатки на тех же местах и тех
+// же цветов, тот же лес, валуны, песок, зеркальность, вода. Людей ночи,
+// гитары и луны нет. Встаёт солнце (или идёт дождь), герой идёт от костра к
+// своей лодке на воде. Краски ночи светлеют к утренним.
+const MORNING_PROPS = /^(tent|tent2|sfir|sbirch|sbush|fir|boulder_side|seat_log)$/;
+function morningFrom(nightKey, rain){
+  const n = CUTS[nightKey], base = CUTS.morning;
+  const sc = { sky: rain ? "rain" : "morning", gy: n.gy, water: n.water, mirror: n.mirror, len: base.len,
+    ground: mixHex(n.ground, "#4f7a45", 0.45), birds: !rain,
+    caption: rain ? "Утро. Дождь — всё равно идём дальше" : "Утро. Идём дальше",
+    fx: rain ? { smoke: base.fx.smoke } : base.fx };
+  if (n.sand) sc.sand = { y: n.sand.y, color: mixHex(n.sand.color, "#d2b674", 0.45) };
+  if (n.far) sc.far = mixHex(n.far, "#5d7f58", 0.5);
+  if (rain){ sc.rain = 0.8; sc.rainSound = true; }
+  const copy = a => JSON.parse(JSON.stringify(a));
+  const props = n.actors.filter(a => MORNING_PROPS.test(a.spr)).map(copy);
+  const shore = n.actors.filter(a => a.spr === "kayak_side").map(copy);
+  // Путь героя, весло и лодка — от уреза воды этой ночи (утро было под 468).
+  const dy = (n.water || 468) - 468;
+  const shift = a => { const b = copy(a); b.keys = b.keys.map(k => k[2] > 400 ? [k[0], k[1], k[2] + dy, k[3], k[4]] : k); return b; };
+  const pick = spr => base.actors.filter(a => a.spr === spr);
+  const boat = pick("kayak_side").filter(a => a.keys[0][2] > base.water).map(shift);
+  // Глубина: что стоит ниже по кадру (ближе к нам), чем идёт герой, — после
+  // него, чтобы закрывало ему ноги (бревно у костра), а не он шёл поверх.
+  const front = props.filter(a => a.keys[0][2] >= 400), back = props.filter(a => a.keys[0][2] < 400);
+  sc.actors = (rain ? [] : pick("sunrise").map(copy)).concat(back, shore, boat,
+    pick("oar").map(shift), pick("person").filter(a => a.cycle).map(shift), pick("person_paddle").map(shift), front);
+  return sc;
+}
+for (const k of ["night", "night2", "night3", "night4", "night5"]){
+  CUTS["m_" + k] = morningFrom(k, false);
+  CUTS["mr_" + k] = morningFrom(k, true);
+}
+
 const CUT_SKY = {
   night:   ["#0b1524","#16283f"],
   morning: ["#f6c78a","#8fc2e0"],
@@ -3378,7 +3419,7 @@ function playCut(name, then){
   startMusic();                          // actx для ночного mp3 (не режет автовоспроизведение)
   if (csc.sky === "night" && csc.song !== false) nightAudioStart();
   if (csc.sounds && actx){ const t0 = actx.currentTime; for (const sd of csc.sounds) cutPlay(sd.key, t0 + sd.at, g.cut.id); }
-  if (name === "morning") startBirds();
+  if (csc.birds) startBirds();
   if (csc.rainSound) rainNoise(g.cut.len/60);
   setMusic(csc.sky === "night" ? "camp" : "river");
 }
@@ -7725,7 +7766,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
