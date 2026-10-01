@@ -1488,6 +1488,90 @@ const SPR = {
     "......kk......"], variants:[{}, {r:"z", z:"r"}, {r:"v", z:"A"}]},
   // Мостки: дощатый настил со светом сверху, сваи в воду. С левого берега
   // уходят вправо в реку; для правого берега — отражение.
+  // ---- Лесной декор берегов и боковых зон (01.10.2026) ----
+  // Муравейник: конус хвои, свет сверху, хвоинки и пара муравьёв.
+  anthill:{map:[".......kk.......",
+    "......kmmk......",
+    ".....kmmmBk.....",
+    "....khhhhhhk....",
+    "...khhBhhhhhk...",
+    "...khhhhhBhhk...",
+    "..khhhhhkhhhkk..",
+    ".kooBoooooooook.",
+    ".koooooooooBook.",
+    "kooookoBoooooook",
+    "kooBoooooooooBok",
+    ".kkkkkkkkkkkkkk."]},
+  // Веточки на траве: ветка с развилкой и сучками.
+  twigs:{map:["..........k....k..",
+    ".........khk.kkok.",
+    "...k....khk.kookk.",
+    "..kokkkkhkkkoohhhk",
+    ".kkoohhhhhhhoooook",
+    "khhhoooooooookkkk.",
+    "kooookkkkkkkk....."]},
+  // Полянка с цветами: низкие кочки травы и цветы четырёх цветов; без обводки — покров земли, а не предмет.
+  flowers:{map:["........FFFFFFFF..............",
+    ".......FFFFFFFFFFFFFFFF.......",
+    ".vFFvFFvFFHFFvFFvFFvFFvFFv..v.",
+    ".FFFFFFuFFFFFFFFEFFuFFFFFFFFF.",
+    "vvvwvvvvvvvvvwvvvvvvvvHvvwvvvv",
+    "vvvvvvvvvvvuvvvvvvwvvvvvvvvEvv",
+    ".VVVVHVVVVVVVVVVVVVVVVVVVVVVVV",
+    "..VVVVVV.VVVVVV.VVVVVVVVVVVVV."],noOutline:true},
+  // Можжевельник: узкий тёмный сине-зелёный конус.
+  juniper:{map:["....kk....",
+    "...kvvk...",
+    "...kvFk...",
+    "..kvvvvk..",
+    "..kNNNNk..",
+    "..kNFNNk..",
+    ".kNNNNNNk.",
+    ".kNNNNNNk.",
+    "kNNNNFNNNk",
+    "kNNNNNNNNk",
+    "kVVVVVVVVk",
+    "kVVVFVVVVk",
+    "kVVVVVVVVk",
+    ".kVVVVVVk.",
+    "..kkBBkk..",
+    "...kBBk..."]},
+  // Шиповник: округлый куст с красными ягодами.
+  rosehip:{map:["....kkkkkkk....",
+    "...kFFFFFFFk...",
+    ".kkFFFFFFFFFkk.",
+    "kFFFFFFFFrRFFFk",
+    "kvvvrRvvvvvvvvk",
+    "kvvvvvvvvvvvvvk",
+    "kvvvvvvvvvvrRvk",
+    "kvvvvvrRvvvvvvk",
+    "kVVrRVVVVVVVVVk",
+    ".kkVVVVVVVrRkk.",
+    "...kVVVVVVVk..."]},
+  // Папоротник: пять изогнутых вай с листочками, к концу светлее.
+  fern:{map:[".....k...kFk....k....",
+    "....kFk.kFFFk..kFk...",
+    "...kFFFk.kvk..kFFFk..",
+    "....kkvkkvvvk.kvkk...",
+    "....kvvvkkvk.kvvvk...",
+    ".kkk.kkvkvvvkkvkk.kkk",
+    "kFFFkkvvvkkkkvvvkkFFF",
+    ".kvvvkkkVkVkkVkkkvvvk",
+    "..kkvvvkkVVkVkkvvvkk.",
+    "....kkVkVkkkkVkVkk...",
+    "......k.kVVVVk.k.....",
+    ".........kkkk........"]},
+  // Камушек во мху: неровный серый камень, мох шапкой.
+  mossrock:{map:[".....kkkkk....",
+    "....kWWFWWk...",
+    "...kFFFWFFWk..",
+    "..kGGvGGGGvGk.",
+    ".kGvGGGGGGGGGk",
+    ".kjjjjjjjjjjjk",
+    "kjjjjjjjjjjjjk",
+    "kggggggggggggk",
+    ".kvkkkvkkkkvk.",
+    "..k...k....k.."]},
   walkway:{map:[".kkkkkkkkkkkkkkkkkkkkkk.",
     "kmmmmhmmmmhmmmmhmmmmhmmk",
     "khhhhohhhhohhhhohhhhohhk",
@@ -5574,12 +5658,16 @@ function hsh(n){
 
 // Боковые зоны десктопа: шаг рядов вглубь и доля пустых мест, набор декора по рекам
 // (Волга — пляжи и берёзки, Медведица — ёлки и валуны, Тверца — деревня, Осуга — глухая тайга).
-const DEEP_DX = 58, DEEP_SKIP = [0.55, 0.35, 0.6, 0.25];
+// Пропуски реже на лесных реках давали сетку «всё в кучу»: теперь чуть просторнее.
+const DEEP_DX = 58, DEEP_SKIP = [0.55, 0.45, 0.6, 0.38];
+// Камней в лесу было по 3–4 из 10 мест — «слишком много»: теперь на лесных
+// реках один камушек во мху, остальное — муравейник, веточки, полянка с
+// цветами, можжевельник, шиповник, папоротник.
 const DEEP_SETS = [
-  ["sbirch","sbush","sbush","tree","sbirch","umbrella","tent2","banya","boulder","sbush"],
-  ["sfir","sfir","sfir","sbirch","sfir","sbush","boulder","mossy","sfir","pebbles"],
-  ["sbirch","tree","house","sbush","sbirch","tree","house","sbush","banya","sbirch"],
-  ["sfir","sfir","sfir","sfir","sbush","boulder","sfir","mossy","slab","sfir"]
+  ["sbirch","sbush","rosehip","tree","sbirch","umbrella","tent2","banya","flowers","sbush","twigs"],
+  ["sfir","sfir","sfir","sbirch","sfir","juniper","sfir","fern","anthill","sbirch","mossrock","flowers","twigs"],
+  ["sbirch","tree","house","sbush","sbirch","rosehip","house","flowers","banya","juniper","twigs"],
+  ["sfir","sfir","sfir","sfir","sfir","juniper","sfir","fern","sbirch","anthill","mossrock","twigs"]
 ];
 // Дома, баня, церковь, зонтики и палатки в боковых зонах стояли сплошь по
 // траве. Теперь — только напротив своего жителя берега (деревня, пляж,
