@@ -51,6 +51,15 @@ canvas { display:block;margin:0 auto; }
 .board { font-family:"Press Start 2P",monospace;font-size:8px;color:#bbb;width:100%;max-width:300px;margin:6px 0 4px; }
 .brow { display:flex;justify-content:space-between;padding:3px 4px;line-height:1.6; }
 #recordsScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px;overflow-y:auto; }
+#editScreen,#customEnd { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.97);pointer-events:all;padding:12px;overflow-y:auto; }
+.edrow { display:flex;align-items:center;justify-content:center;gap:6px;margin:4px 0;font-family:"Press Start 2P",monospace;font-size:8px;color:#ddd; }
+.edrow span { min-width:84px;text-align:center; }
+.edrow .btn.small { margin-top:0;padding:7px 9px; }
+#edCanvas { image-rendering:pixelated;touch-action:none;border:2px solid #4fc3f7;margin:6px 0;cursor:crosshair; }
+.edpal { display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:340px;margin:4px 0; }
+.edpal button { width:44px;height:44px;padding:0;background:#12202e;border:2px solid #2c3b47;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#ff5252; }
+.edpal button.bn { border-color:#6b5a1f; }
+.edpal button.on { border-color:#ffd54f;background:#2a3a1a; }
 .recnav { display:flex;align-items:center;gap:10px;margin-bottom:6px; }
 .recnav .place { margin:0;min-width:200px; }
 .finrun { font-family:"Press Start 2P",monospace;font-size:8px;line-height:2;color:#ddd;text-align:center;margin:6px 0; }
@@ -102,6 +111,7 @@ canvas { display:block;margin:0 auto; }
   <div id="startScreen">
     <div class="menu">
       <button class="btn" id="startBtn">&gt; В ПОХОД &lt;</button>
+      <button class="btn small" id="startEditBtn">СВОЙ УРОВЕНЬ</button>
       <button class="btn small ghost" id="startBoardBtn">РЕКОРДЫ</button>
     </div>
     <div class="ctrl">
@@ -181,6 +191,42 @@ canvas { display:block;margin:0 auto; }
     <div class="maprow">
       <button class="btn small" id="retryBtn">ЗАНОВО</button>
       <button class="btn small ghost" id="toMapBtn">К МАРШРУТУ</button>
+    </div>
+  </div>
+  <div id="editScreen" class="hidden">
+    <h1 class="maph">СВОЙ УРОВЕНЬ</h1>
+    <div class="edrow">
+      <button class="btn small ghost" id="edRiverPrev">&lt;</button><span id="edRiver"></span><button class="btn small ghost" id="edRiverNext">&gt;</button>
+      <button class="btn small ghost" id="edLenPrev">&lt;</button><span id="edLen"></span><button class="btn small ghost" id="edLenNext">&gt;</button>
+    </div>
+    <canvas id="edCanvas" width="308" height="352"></canvas>
+    <div class="edrow">
+      <button class="btn small ghost" id="edUp">ДАЛЬШЕ ▲</button>
+      <button class="btn small ghost" id="edDown">▼ НАЗАД</button>
+    </div>
+    <div class="edpal" id="edPal"></div>
+    <div class="finrun" id="edTool"></div>
+    <div class="finrun" id="edInfo"></div>
+    <div class="maprow">
+      <button class="btn small" id="edPlay">ИГРАТЬ</button>
+      <button class="btn small" id="edRandom">СЛУЧАЙНО</button>
+      <button class="btn small ghost" id="edDiff">СРЕДНЕ</button>
+    </div>
+    <div class="maprow">
+      <button class="btn small ghost" id="edClear">ОЧИСТИТЬ</button>
+      <button class="btn small ghost" id="edBack">В МЕНЮ</button>
+    </div>
+  </div>
+  <div id="customEnd" class="hidden">
+    <h1 class="finh" id="ceTitle"></h1>
+    <div class="place">СВОЙ УРОВЕНЬ</div>
+    <div class="score dist">Дистанция: <span id="ceDist">0</span> м</div>
+    <div class="score bonus">Очки: <span id="ceScore">0</span></div>
+    <div class="finrun" id="ceBest"></div>
+    <div class="maprow">
+      <button class="btn small" id="ceAgain">ЕЩЁ РАЗ</button>
+      <button class="btn small ghost" id="ceEdit">В РЕДАКТОР</button>
+      <button class="btn small ghost" id="ceMenu">В МЕНЮ</button>
     </div>
   </div>
   <div id="recordsScreen" class="hidden">
@@ -4107,7 +4153,8 @@ const LEVELS = [
     goalText:"Парировать 4 удара веслом",    aggro:0.60, arrive:"camp",   dens:0.019 }
 ];
 
-function level(){ return LEVELS[Math.min(g.day, LEVELS.length-1)]; }
+// Свой уровень (редактор) подменяет день похода: g.custom — его описание.
+function level(){ return g.custom || LEVELS[Math.min(g.day, LEVELS.length-1)]; }
 function river(){ return RIVERS[level().river]; }
 
 
@@ -4761,7 +4808,7 @@ document.getElementById("pauseMusicBtn").addEventListener("click",()=>{
   toggleMusic();
   document.getElementById("pauseMusicBtn").textContent = musicOn ? "МУЗЫКА: ВКЛ" : "МУЗЫКА: ВЫКЛ";
 });
-document.getElementById("pauseMapBtn").addEventListener("click",()=>{g.s="map";showMap();});
+document.getElementById("pauseMapBtn").addEventListener("click",()=>{ if (g.custom){ showEditor(); return; } g.s="map";showMap();});
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(confirm("Сбросить весь поход?")){resetSave();showMap();}
 });
@@ -5770,15 +5817,16 @@ function drwHUD(){
   cx.fillText("СЧЁТ: " + (g.sc + g.bsc), 12, 42);
   cx.font = "8px " + F;
   cx.fillStyle = "#9aa9b2";
-  cx.fillText("ЛУЧШЕЕ ЗА ДЕНЬ: " + (save.best[level().day] || 0), 12, 60);
+  if (!g.custom) cx.fillText("ЛУЧШЕЕ ЗА ДЕНЬ: " + (save.best[level().day] || 0), 12, 60);
   cx.fillStyle = "#cfe8f5";
-  cx.fillText("ДЕНЬ " + level().day + " · " + river().name, 12, H - 26);
+  cx.fillText(g.custom ? "СВОЙ УРОВЕНЬ · " + river().name : "ДЕНЬ " + level().day + " · " + river().name, 12, H - 26);
   cx.fillStyle = "#9aa9b2";
   cx.fillText(level().goalText, 12, H - 14);
   // полоса пути до финиша
   const pr = Math.max(0, Math.min(1, g.dist / level().len));
-  cx.fillStyle = "rgba(0,0,0,0.45)"; cx.fillRect(W-18, 70, 8, H-140);
-  cx.fillStyle = "#7fd67f"; cx.fillRect(W-18, 70+(H-140)*(1-pr), 8, (H-140)*pr);
+  // Тонкая полоса у самого края кадра: шире она закрывала правый берег.
+  cx.fillStyle = "rgba(0,0,0,0.35)"; cx.fillRect(W-6, 100, 4, H-200);
+  cx.fillStyle = "#7fd67f"; cx.fillRect(W-6, 100+(H-200)*(1-pr), 4, (H-200)*pr);
   if (g.whiskyT > 0){
     cx.font = "10px " + F; cx.fillStyle = "#e8a838"; cx.textAlign = "center";
     cx.fillText("ОЧКИ x2", W/2, 66); cx.textAlign = "left";
@@ -5800,10 +5848,10 @@ function drwHUD(){
     const k = g.stam / STAM_MAX;
     cx.fillStyle = g.stam < 20 ? "#ff5252" : (g.breadT > 0 ? "#eec27a" : "#7fd67f");
     cx.fillRect(bx, by, bw*k, 7);
-    cx.font = "6px " + F; cx.fillStyle = "#9aa9b2";
+    cx.font = "8px " + F; cx.fillStyle = "#9aa9b2";
     cx.fillText("СИЛЫ", bx, by - 4);
-    if (g.rowing > 0){ cx.fillStyle = "#7fd67f"; cx.fillText("РАЗГОН", bx + 52, by - 4); }
-    if (g.rowing < 0){ cx.fillStyle = "#4fc3f7"; cx.fillText("ТАБАНЮ", bx + 52, by - 4); }
+    if (g.rowing > 0){ cx.fillStyle = "#7fd67f"; cx.fillText("РАЗГОН", bx + 40, by - 4); }
+    if (g.rowing < 0){ cx.fillStyle = "#4fc3f7"; cx.fillText("ТАБАНЮ", bx + 40, by - 4); }
   }
   // Сердца опущены ниже: в правом верхнем углу висит кнопка паузы,
   // и раньше она их перекрывала — особенно четвёртое от сухпайка.
@@ -5887,6 +5935,7 @@ function goalMet(){
 
 function finishLevel(){
   document.getElementById("pauseBtn").classList.add("hidden");
+  if (g.custom){ finishCustom(true); return; }   // свой уровень поход не трогает
   const L = level();
   const total = Math.floor(g.dist) + g.bsc + g.sc;
   const stars = 1 + (g.livesLost === 0 ? 1 : 0) + (goalMet() ? 1 : 0);
@@ -5910,6 +5959,7 @@ function finishLevel(){
 }
 
 function failLevel(){
+  if (g.custom){ finishCustom(false); return; }
   const L = level();
   const total = Math.floor(g.dist) + g.bsc + g.sc;
   save.failPaid = save.failPaid || [];   // старое сохранение без поля — совместимо
@@ -7345,6 +7395,7 @@ function apBn(b){
   }
 }
 function startDay(idx){
+  g.custom = null;                 // обычный день похода, а не свой уровень
   g.day = Math.max(0, Math.min(idx, LEVELS.length - 1));
   hideAllScreens();
   sg();
@@ -7499,7 +7550,7 @@ function togglePause(){
 function hideAllScreens(){
   if (typeof campTimer !== "undefined" && campTimer){ clearInterval(campTimer); campTimer = null; }
   for (const id of ["startScreen","continueScreen","pauseScreen","endScreen",
-                    "mapScreen","finishScreen","failScreen","campScreen","diaryScreen","recordsScreen"]){
+                    "mapScreen","finishScreen","failScreen","campScreen","diaryScreen","recordsScreen","editScreen","customEnd"]){
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   }
@@ -7514,7 +7565,7 @@ function sg(){
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
-  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;
+  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;
   ensureSegments(H*2);
   const r = river();
   g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks; g.rFreq = r.freq || 1;
@@ -7930,12 +7981,19 @@ function upd(){
     if (Math.abs(mt - px) > 4) input = Math.sign(mt - px);
   }
   stepLateral(input);
-  const sr=(level().dens||0.016)*g.df*(g.rRocks||1);if(Math.random()<sr)spOb();
+  // День 1 — обучение: первые секунды без единого нажатия лодка просто плывёт
+  // и всё проходится само. Если игрок так и не тронул управление, подсказываем.
+  if (level().day === 1 && !g.movedOnce){
+    if (input !== 0 || rowInput() !== 0) g.movedOnce = true;
+    else if (++g.idleT === 420) g.hint = { text:"ЛОДКОЙ НУЖНО УПРАВЛЯТЬ: СТРЕЛКИ — РУЛЬ, ВВЕРХ — ГРЕБИ. НА ТЕЛЕФОНЕ — ВЕДИ ПАЛЕЦ", life: 320 };
+  }
+  const sr=(level().dens||0.016)*g.df*(g.rRocks||1);if(!g.custom && Math.random()<sr)spOb();
   bargeHorn();
   // Не вышло (порог, катер уже идёт) — пробуем снова через 10 м.
   if (level().boats && g.dist >= (g.boatNext || 60)) g.boatNext = g.dist + (spBoat() ? 150 + Math.random()*120 : 10);
   waveStep();
-  if(Math.random()<0.003)spBn();
+  if(!g.custom && Math.random()<0.003)spBn();
+  spCustom();
   if(g.dist>=g.ned)spBev();
   spVillage();
   for(let i=g.obs.length-1;i>=0;i--){
@@ -8367,6 +8425,299 @@ function lp(t){
   requestAnimationFrame(lp);
 }
 
+/* ===== 12. Свой уровень: редактор и генератор ===== */
+// Как раскладка в «танчиках»: река режется на ряды по ROW_PX, в каждом ряду
+// семь клеток поперёк русла. В клетку ставится одно препятствие или бонус;
+// когда лодка подплывает, предметы появляются ровно там, где поставлены.
+// Случайный спавн выключен — уровень такой, как нарисован. Поход и рекорды
+// «свой уровень» не трогает: он живёт в отдельном ключе localStorage.
+const CUSTOM_COLS = 7, ROW_PX = 250, CUSTOM_START = 500, CUSTOM_KEY = "kayak_custom";
+const CUSTOM_LEN = [250, 500, 800];                  // метры
+const CUSTOM_DIFF = ["ЛЕГКО", "СРЕДНЕ", "ТРУДНО"];
+const CUSTOM_TOOLS = ["rock","shallows","log","snag","kayaker","aggro","bread","whisky","medkit","axe","sun"];
+const CUSTOM_NAMES = { rock:"КАМЕНЬ", shallows:"МЕЛЬ", log:"БРЕВНО", snag:"КОРЯГА", kayaker:"БАЙДАРОЧНИК", aggro:"ЗЛОЙ ГРЕБЕЦ",
+                       bread:"БАТОН", whisky:"ВИСКИ", medkit:"АПТЕЧКА", axe:"ТОПОР", sun:"СОЛНЦЕ" };
+const CUSTOM_BONUS = { bread:1, whisky:1, medkit:1, axe:1, sun:1 };
+let cs = { v:1, river:0, lenIdx:1, diff:1, seed:1, items:[], best:0 };    // редактируемый уровень
+let edTool = "rock", edBase = 0, edStroke = null;
+
+function customRows(lenIdx){ return Math.floor((CUSTOM_LEN[lenIdx]*PX_PER_M - 950)/ROW_PX) + 1; }
+function colT(c){ return (c - (CUSTOM_COLS-1)/2) / ((CUSTOM_COLS-1)/2) * 0.8; }
+function itemWy(it){ return CUSTOM_START + it.r*ROW_PX; }
+function loadCustom(){
+  try {
+    const v = JSON.parse(localStorage.getItem(CUSTOM_KEY));
+    if (v && v.v === 1 && Array.isArray(v.items)) cs = Object.assign(cs, v);
+  } catch(e){}
+  cs.items = cs.items.filter(it => it && it.c >= 0 && it.c < CUSTOM_COLS && it.r >= 0 && it.r < customRows(cs.lenIdx) && CUSTOM_TOOLS.indexOf(it.k) >= 0);
+  return cs;
+}
+function saveCustom(){ try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(cs)); } catch(e){} }
+function cellOf(items, c, r){ return items.findIndex(it => it.c === c && it.r === r); }
+// Поставить предмет в клетку: k=null стирает, одна клетка — один предмет.
+function setCell(items, c, r, k){
+  const i = cellOf(items, c, r);
+  if (i >= 0) items.splice(i, 1);
+  if (k) items.push({ c, r, k });
+  items.sort((a, b) => a.r - b.r || a.c - b.c);
+}
+// Есть ли в уровне проход: идём ряд за рядом, из клетки можно сместиться не
+// больше чем на одну вбок. Возвращает первый перекрытый ряд или -1.
+function customBlockedRow(items, rows){
+  const block = new Set();
+  for (const it of items) if (!CUSTOM_BONUS[it.k]) block.add(it.r*10 + it.c);
+  let reach = new Set();
+  for (let c = 0; c < CUSTOM_COLS; c++) reach.add(c);
+  for (let r = 0; r < rows; r++){
+    const nx = new Set();
+    for (const c of reach)
+      for (let d = -1; d <= 1; d++){
+        const n = c + d;
+        if (n >= 0 && n < CUSTOM_COLS && !block.has(r*10 + n)) nx.add(n);
+      }
+    if (!nx.size) return r;
+    reach = nx;
+  }
+  return -1;
+}
+function mulberry32(a){
+  return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+// Случайный уровень: идёт «коридор» из двух свободных клеток, он плавно
+// смещается — проход есть всегда. Остальное засыпается препятствиями по
+// сложности; бонусы кладутся чаще в коридоре, но иногда — в опасных местах.
+function genCustom(river, lenIdx, diff, seed){
+  const rnd = mulberry32(seed), rows = customRows(lenIdx), items = [];
+  const dens = [0.45, 0.7, 0.95][diff], aggroP = [0.0, 0.12, 0.25][diff];
+  let cor = 3;
+  for (let r = 1; r < rows; r++){
+    cor = Math.max(1, Math.min(CUSTOM_COLS - 2, cor + Math.floor(rnd()*3) - 1));
+    const free = [cor, cor + (rnd() < 0.5 ? 1 : -1)];
+    const used = new Set(free);
+    const n = rnd() < dens ? 1 + (rnd() < 0.5 ? 1 : 0) + (diff === 2 && rnd() < 0.4 ? 1 : 0) : 0;
+    for (let i = 0; i < n; i++){
+      const c = Math.floor(rnd()*CUSTOM_COLS);
+      if (used.has(c)) continue;
+      used.add(c);
+      const q = rnd();
+      const k = q < 0.45 ? "rock" : q < 0.60 ? "shallows" : q < 0.75 ? "log" : q < 0.85 ? "snag" : (rnd() < aggroP*2 ? "aggro" : "kayaker");
+      items.push({ c, r, k });
+    }
+    if (rnd() < 0.17){
+      const c = rnd() < 0.7 ? free[0] : Math.floor(rnd()*CUSTOM_COLS);
+      if (!items.some(it => it.r === r && it.c === c)){
+        const b = ["bread","bread","whisky","medkit","axe","sun"][Math.floor(rnd()*6)];
+        items.push({ c, r, k:b });
+      }
+    }
+  }
+  return items.sort((a, b) => a.r - b.r || a.c - b.c);
+}
+function customLevel(c){
+  return { day:0, custom:true, river:c.river, place:"СВОЙ УРОВЕНЬ", len:CUSTOM_LEN[c.lenIdx], goal:"none", need:0,
+           goalText:"Дойти до финиша", aggro:0.5, arrive:"camp", dens:1e-9, items:c.items.slice() };
+}
+// Предмет редактора -> объект игры. Вид камня и лодки выбирается по клетке,
+// чтобы уровень выглядел одинаково при каждом прохождении.
+function placeCustom(it){
+  const wy = itemWy(it), t = colT(it.c), h = hsh(it.r*31 + it.c*7 + 5);
+  if (CUSTOM_BONUS[it.k]){
+    const vn = BN_SPRITE[it.k];
+    g.bns.push({ t, wy, type:it.k, visHalf:spriteSize(vn).w/2, visHalfY:spriteSize(vn).h/2 });
+    return;
+  }
+  const ty = it.k === "aggro" ? "kayaker" : it.k;
+  const sz = ty === "log" ? 48 : 18;
+  let sprite = null, halfPx;
+  if (ty === "rock"){
+    const ks = Object.keys(RIVERS[level().river].stones);
+    sprite = ks[Math.floor(h*ks.length)];
+    halfPx = spriteSize(sprite).w/2*0.82;
+  } else halfPx = obHalfPx(ty, sz);
+  const vn = sprite || OB_SPRITE[ty] || "boulder";
+  const aggro = it.k === "aggro";
+  g.obs.push({ t, wy, type:ty, size:sz, halfPx, sprite, vt:0,
+               visHalf:spriteSize(vn).w/2, visHalfY:spriteSize(vn).h/2,
+               variant: ty === "kayaker" ? (aggro ? AGGRO_VARIANT : Math.floor(h*3)) : undefined,
+               aggro, swingT:-1, seed:Math.floor(h*120) });
+}
+function spCustom(){
+  const L = g.custom;
+  if (!L) return;
+  const lim = spawnWy();
+  while (g.cNext < L.items.length && itemWy(L.items[g.cNext]) <= lim) placeCustom(L.items[g.cNext++]);
+}
+function startCustom(){
+  g.custom = customLevel(cs);
+  g.day = 0;
+  hideAllScreens();
+  sg();
+  g.cNext = 0;
+  showMobileHint();
+}
+function finishCustom(ok){
+  g.s = "customEnd";
+  document.getElementById("pauseBtn").classList.add("hidden");
+  const total = Math.floor(g.dist) + g.bsc + g.sc;
+  if (ok && total > (cs.best || 0)){ cs.best = total; saveCustom(); }
+  hideAllScreens();
+  document.getElementById("ceTitle").textContent = ok ? "ДОШЛИ!" : "НЕ ДОШЛИ";
+  document.getElementById("ceDist").textContent = Math.floor(g.dist);
+  document.getElementById("ceScore").textContent = total;
+  document.getElementById("ceBest").textContent = "ЛУЧШИЙ НА ЭТОМ УРОВНЕ: " + (cs.best || 0);
+  if (ok) sfx("clean");
+  document.getElementById("customEnd").classList.remove("hidden");
+}
+
+// ---- Окно редактора ----
+const ED_CELL = 44, ED_VIS = 8;
+function toolSprite(k){
+  if (k === "rock") return { spr: SPR.boulder };
+  if (k === "kayaker" || k === "aggro") return { spr: SPR.rower, v: k === "aggro" ? AGGRO_VARIANT : 0 };
+  return { spr: SPR[k === "shallows" ? "shallows" : (OB_SPRITE[k] || BN_SPRITE[k] || "boulder")] };
+}
+function drawTool(c2, k, x, y, size){
+  const ts = toolSprite(k), sp = ts.spr;
+  if (!sp) return;
+  const img = (ts.v != null && sp.imgs) ? sp.imgs[ts.v] : sp.img;
+  if (!img || !img.width) return;
+  const sc = Math.min(1, (size - 6)/Math.max(img.width, img.height));
+  c2.imageSmoothingEnabled = false;
+  c2.drawImage(img, x + (size - img.width*sc)/2, y + (size - img.height*sc)/2, img.width*sc, img.height*sc);
+}
+function drwEditor(){
+  const cv = document.getElementById("edCanvas");
+  const c2 = cv.getContext("2d");
+  const rows = customRows(cs.lenIdx), bad = customBlockedRow(cs.items, rows);
+  c2.fillStyle = RIVERS[cs.river].water; c2.fillRect(0, 0, ED_CELL*CUSTOM_COLS, ED_CELL*ED_VIS);
+  for (let vi = 0; vi < ED_VIS; vi++){
+    const r = edBase + vi, y = (ED_VIS - 1 - vi)*ED_CELL;
+    if (r >= rows){ c2.fillStyle = "#4b9c48"; c2.fillRect(0, y, ED_CELL*CUSTOM_COLS, ED_CELL); continue; }
+    if (r === bad){ c2.fillStyle = "rgba(255,82,82,0.35)"; c2.fillRect(0, y, ED_CELL*CUSTOM_COLS, ED_CELL); }
+    for (let c = 0; c < CUSTOM_COLS; c++){
+      c2.strokeStyle = "rgba(255,255,255,0.14)"; c2.lineWidth = 1;
+      c2.strokeRect(c*ED_CELL + 0.5, y + 0.5, ED_CELL - 1, ED_CELL - 1);
+      const i = cellOf(cs.items, c, r);
+      if (i >= 0) drawTool(c2, cs.items[i].k, c*ED_CELL, y, ED_CELL);
+    }
+    c2.fillStyle = "rgba(255,255,255,0.7)"; c2.font = "8px " + F;
+    c2.fillText(r === 0 ? "СТАРТ" : (r % 5 === 0 ? (r*ROW_PX/PX_PER_M) + "М" : ""), 3, y + 10);
+  }
+  if (edBase + ED_VIS >= rows){ c2.fillStyle = "#ffd54f"; c2.font = "8px " + F; c2.fillText("ФИНИШ ВЫШЕ", 4, 10); }
+}
+function edInfoText(){
+  const rows = customRows(cs.lenIdx), bad = customBlockedRow(cs.items, rows);
+  return CUSTOM_LEN[cs.lenIdx] + " М · " + cs.items.length + " ПРЕДМЕТОВ · " +
+         (bad < 0 ? "ПРОХОД ЕСТЬ" : "ПРОХОДА НЕТ: РЯД " + (bad + 1)) +
+         (cs.best ? " · РЕКОРД " + cs.best : "");
+}
+function edRefresh(){
+  document.getElementById("edRiver").textContent = RIVERS[cs.river].name;
+  document.getElementById("edLen").textContent = CUSTOM_LEN[cs.lenIdx] + " М";
+  document.getElementById("edDiff").textContent = CUSTOM_DIFF[cs.diff];
+  document.getElementById("edInfo").textContent = edInfoText();
+  drwEditor();
+}
+function edChanged(){ cs.best = 0; saveCustom(); edRefresh(); }
+function buildPalette(){
+  const box = document.getElementById("edPal");
+  box.innerHTML = "";
+  for (const k of CUSTOM_TOOLS.concat(["erase"])){
+    const b = document.createElement("button");
+    b.title = k === "erase" ? "ЛАСТИК" : CUSTOM_NAMES[k];
+    if (k === "erase") b.textContent = "X";
+    else {
+      const ic = document.createElement("canvas"); ic.width = 36; ic.height = 36;
+      drawTool(ic.getContext("2d"), k, 0, 0, 36);
+      b.appendChild(ic);
+    }
+    b.className = (k === edTool ? "on" : "") + (CUSTOM_BONUS[k] ? " bn" : "");
+    b.onclick = () => { edTool = k; buildPalette(); };
+    box.appendChild(b);
+  }
+  document.getElementById("edTool").textContent = "ВЫБРАНО: " + (edTool === "erase" ? "ЛАСТИК" : CUSTOM_NAMES[edTool] + (CUSTOM_BONUS[edTool] ? " (БОНУС)" : ""));
+}
+function showEditor(){
+  hideAllScreens();
+  g.s = "editor";
+  g.custom = null;
+  loadCustom();
+  edBase = 0;
+  buildPalette();
+  edRefresh();
+  document.getElementById("editScreen").classList.remove("hidden");
+}
+function showStart(){
+  hideAllScreens();
+  g.custom = null;
+  g.s = "start";
+  document.getElementById("startScreen").classList.remove("hidden");
+}
+function edCellAt(ev){
+  const cv = document.getElementById("edCanvas"), r = cv.getBoundingClientRect();
+  const x = (ev.clientX - r.left) * (cv.width/(r.width || cv.width)), y = (ev.clientY - r.top) * (cv.height/(r.height || cv.height));
+  const c = Math.floor(x/ED_CELL), row = edBase + (ED_VIS - 1 - Math.floor(y/ED_CELL));
+  if (c < 0 || c >= CUSTOM_COLS || row < 0 || row >= customRows(cs.lenIdx)) return null;
+  return { c, r: row };
+}
+// Мазок: первая клетка решает, рисуем или стираем (тот же предмет повторным
+// касанием стирается), остальные клетки под пальцем делают то же.
+function edPaint(cell){
+  if (!cell) return;
+  const k = edStroke === "erase" ? null : edTool;
+  const i = cellOf(cs.items, cell.c, cell.r);
+  if (i >= 0 && cs.items[i].k === k) return;
+  if (i < 0 && !k) return;
+  setCell(cs.items, cell.c, cell.r, k);
+  edChanged();
+}
+function edDown(ev){
+  const cell = edCellAt(ev);
+  if (!cell) return;
+  const i = cellOf(cs.items, cell.c, cell.r);
+  edStroke = (edTool === "erase" || (i >= 0 && cs.items[i].k === edTool)) ? "erase" : "paint";
+  edPaint(cell);
+}
+function edMove(ev){ if (edStroke) edPaint(edCellAt(ev)); }
+function edScroll(d){
+  edBase = Math.max(0, Math.min(customRows(cs.lenIdx) - 1, edBase + d));
+  drwEditor();
+}
+function edSetLen(i){
+  cs.lenIdx = (i + CUSTOM_LEN.length) % CUSTOM_LEN.length;
+  const rows = customRows(cs.lenIdx);
+  cs.items = cs.items.filter(it => it.r < rows);
+  edBase = 0; edChanged();
+}
+{
+  const cv = document.getElementById("edCanvas");
+  cv.addEventListener("pointerdown", e => { e.preventDefault(); if (cv.setPointerCapture) cv.setPointerCapture(e.pointerId); edDown(e); });
+  cv.addEventListener("pointermove", edMove);
+  cv.addEventListener("pointerup", () => { edStroke = null; });
+  cv.addEventListener("pointercancel", () => { edStroke = null; });
+  cv.addEventListener("wheel", e => { e.preventDefault(); edScroll(e.deltaY < 0 ? 2 : -2); }, { passive:false });
+  document.getElementById("edUp").addEventListener("click", () => edScroll(4));
+  document.getElementById("edDown").addEventListener("click", () => edScroll(-4));
+  document.getElementById("edRiverPrev").addEventListener("click", () => { cs.river = (cs.river + RIVERS.length - 1) % RIVERS.length; edChanged(); });
+  document.getElementById("edRiverNext").addEventListener("click", () => { cs.river = (cs.river + 1) % RIVERS.length; edChanged(); });
+  document.getElementById("edLenPrev").addEventListener("click", () => edSetLen(cs.lenIdx - 1));
+  document.getElementById("edLenNext").addEventListener("click", () => edSetLen(cs.lenIdx + 1));
+  document.getElementById("edDiff").addEventListener("click", () => { cs.diff = (cs.diff + 1) % CUSTOM_DIFF.length; edChanged(); });
+  document.getElementById("edRandom").addEventListener("click", () => {
+    cs.seed = (cs.seed * 7919 + 13) % 100000 + 1;
+    cs.items = genCustom(cs.river, cs.lenIdx, cs.diff, cs.seed);
+    edBase = 0; edChanged();
+  });
+  document.getElementById("edClear").addEventListener("click", () => { cs.items = []; edChanged(); });
+  document.getElementById("edPlay").addEventListener("click", () => { startMusic(); saveCustom(); startCustom(); });
+  document.getElementById("edBack").addEventListener("click", showStart);
+  document.getElementById("startEditBtn").addEventListener("click", () => { startMusic(); showEditor(); });
+  document.getElementById("ceAgain").addEventListener("click", startCustom);
+  document.getElementById("ceEdit").addEventListener("click", showEditor);
+  document.getElementById("ceMenu").addEventListener("click", showStart);
+}
+
 /* ===== 13. Экспорт для тестов ===== */
 globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
@@ -8377,7 +8728,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
