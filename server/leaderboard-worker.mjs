@@ -8,6 +8,8 @@
 // последнее. pid наружу не отдаётся: сервер лишь помечает строку mine, когда
 // в GET пришёл тот же pid. Всё проверяется: форма запроса, имя, потолок очков,
 // частота запросов с одного адреса.
+import { ghostRoute } from "./race.mjs";
+
 export const MAX_DAY = 9;
 export const MAX_SCORE_DAY = 60000;        // потолок очков за один день
 export const MAX_SCORE_ALL = 400000;       // потолок за весь поход (день 0)
@@ -56,6 +58,11 @@ export default {
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
     const url = new URL(req.url);
     const ip = req.headers.get("cf-connecting-ip") || "local";
+    // Гонка с призраком (server/race.mjs). Запись — под тем же ограничением частоты.
+    if (url.pathname === "/ghost") {
+      if (req.method === "POST" && await limited(env, ip)) return json({ error: "rate" }, 429);
+      return ghostRoute(req, env, url, { json, cleanName });
+    }
     if (req.method === "GET") {
       const day = parseInt(url.searchParams.get("day"), 10);
       if (!validDay(day)) return json({ error: "day" }, 400);

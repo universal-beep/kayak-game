@@ -12,7 +12,7 @@ const html = readFileSync(fileURLToPath(new URL("../index.html", import.meta.url
 const body = html.slice(html.indexOf("<body>"), html.indexOf("<script>"));
 
 const SCREENS = ["startScreen", "continueScreen", "pauseScreen", "endScreen", "mapScreen", "finishScreen", "failScreen",
-                 "campScreen", "diaryScreen", "recordsScreen", "editScreen", "customEnd"];
+                 "campScreen", "diaryScreen", "recordsScreen", "editScreen", "customEnd", "raceScreen"];
 
 test("каждый экран меню вложен в #ui", () => {
   const start = body.indexOf('<div id="ui">');

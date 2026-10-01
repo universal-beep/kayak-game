@@ -63,7 +63,8 @@ canvas { display:block;margin:0 auto; }
 .board { font-family:"Press Start 2P",monospace;font-size:8px;color:#bbb;width:100%;max-width:300px;margin:6px 0 4px; }
 .brow { display:flex;justify-content:space-between;padding:3px 4px;line-height:1.6; }
 #recordsScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px;overflow-y:auto; }
-#editScreen,#customEnd { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.97);pointer-events:all;padding:12px;overflow-y:auto; }
+#customEnd .selectable { user-select:text;-webkit-user-select:text;word-break:break-all;color:#ffd54f; }
+#editScreen,#customEnd,#raceScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.97);pointer-events:all;padding:12px;overflow-y:auto; }
 .edrow { display:flex;align-items:center;justify-content:center;gap:6px;margin:4px 0;font-family:"Press Start 2P",monospace;font-size:8px;color:#ddd; }
 .edrow span { min-width:84px;text-align:center; }
 .edrow .btn.small { margin-top:0;padding:7px 9px; }
@@ -125,6 +126,7 @@ canvas { display:block;margin:0 auto; }
   <div id="startScreen">
     <div class="menu">
       <button class="btn" id="startBtn">&gt; В ПОХОД &lt;</button>
+      <button class="btn small" id="startRaceBtn">ГОНКА</button>
       <button class="btn small" id="startEditBtn">СВОЙ УРОВЕНЬ</button>
       <button class="btn small ghost" id="startBoardBtn">РЕКОРДЫ</button>
     </div>
@@ -233,14 +235,25 @@ canvas { display:block;margin:0 auto; }
       <button class="btn small ghost" id="edBack">В МЕНЮ</button>
     </div>
   </div>
+  <div id="raceScreen" class="hidden">
+    <h1 class="maph">ВЫЗОВ!</h1>
+    <div class="finrun" id="rsText">ЗАГРУЗКА…</div>
+    <div class="maprow">
+      <button class="btn small" id="rsGo">ПЛЫТЬ</button>
+      <button class="btn small ghost" id="rsMenu">В МЕНЮ</button>
+    </div>
+  </div>
   <div id="customEnd" class="hidden">
     <h1 class="finh" id="ceTitle"></h1>
-    <div class="place">СВОЙ УРОВЕНЬ</div>
+    <div class="place" id="cePlace">СВОЙ УРОВЕНЬ</div>
     <div class="score dist">Дистанция: <span id="ceDist">0</span> м</div>
     <div class="score bonus">Очки: <span id="ceScore">0</span></div>
     <div class="finrun" id="ceBest"></div>
+    <div class="finrun hidden" id="ceRace"></div>
+    <div class="finrun hidden selectable" id="ceLink"></div>
     <div class="maprow">
       <button class="btn small" id="ceAgain">ЕЩЁ РАЗ</button>
+      <button class="btn small hidden" id="ceChallenge">ВЫЗВАТЬ ДРУГА</button>
       <button class="btn small ghost" id="ceEdit">В РЕДАКТОР</button>
       <button class="btn small ghost" id="ceMenu">В МЕНЮ</button>
     </div>
@@ -3322,8 +3335,10 @@ function finishGain(w){
 // сужают только пороги.
 const RIVER_WIDTH = 240;
 function baseWidthAt(w){
-  return RIVER_WIDTH * (g.rWidth || 1);
+  return RIVER_WIDTH * (g.rWidth || 1) * (g.custom && g.custom.wide ? RACE_WIDE : 1);
 }
+// Гонка идёт по широкой реке: есть где обогнать и разойтись.
+const RACE_WIDE = 1.45;
 
 function secondDiff(fn, w, h){
   const s = h || 40;
@@ -5235,10 +5250,10 @@ addEventListener("blur",()=>{for(const k in keys)keys[k]=false;});
 // табанить, B / правый бампер (или X на клавиатуре) — удар, Start — пауза, Select — музыка.
 const GP_DEAD = 0.28, GP_REPEAT = 18;
 const MENU_SCREENS = ["startScreen","mapScreen","campScreen","finishScreen","failScreen","diaryScreen","recordsScreen",
-                      "editScreen","customEnd","pauseScreen","continueScreen","endScreen"];
+                      "editScreen","customEnd","raceScreen","pauseScreen","continueScreen","endScreen"];
 // Кнопка «назад» на экранах, где она есть.
 const MENU_BACK = { pauseScreen:"resumeBtn", diaryScreen:"diaryBack", recordsScreen:"recBack", editScreen:"edBack",
-                    customEnd:"ceMenu", endScreen:"endMapBtn", failScreen:"toMapBtn" };
+                    customEnd:"ceMenu", raceScreen:"rsMenu", endScreen:"endMapBtn", failScreen:"toMapBtn" };
 let menuIdx = 0, menuActive = false;
 // Разбор геймпада со стандартной раскладкой (Xbox/PlayStation/пульт эмулятора в режиме gamepad).
 function gpRead(pad){
@@ -6740,7 +6755,7 @@ function drwHUD(){
   cx.fillStyle = "#9aa9b2";
   if (!g.custom) cx.fillText("ЛУЧШЕЕ ЗА ДЕНЬ: " + (save.best[level().day] || 0), 12, 60);
   cx.fillStyle = "#cfe8f5";
-  cx.fillText(g.custom ? "СВОЙ УРОВЕНЬ · " + river().name : "ДЕНЬ " + level().day + " · " + river().name, 12, H - 26);
+  cx.fillText(g.custom ? (g.custom.race ? "ГОНКА · " : "СВОЙ УРОВЕНЬ · ") + river().name : "ДЕНЬ " + level().day + " · " + river().name, 12, H - 26);
   cx.fillStyle = "#9aa9b2";
   cx.fillText(level().goalText, 12, H - 14);
   // полоса пути до финиша
@@ -8919,7 +8934,7 @@ function togglePause(){
 function hideAllScreens(){
   if (typeof campTimer !== "undefined" && campTimer){ clearInterval(campTimer); campTimer = null; }
   for (const id of ["startScreen","continueScreen","pauseScreen","endScreen",
-                    "mapScreen","finishScreen","failScreen","campScreen","diaryScreen","recordsScreen","editScreen","customEnd"]){
+                    "mapScreen","finishScreen","failScreen","campScreen","diaryScreen","recordsScreen","editScreen","customEnd","raceScreen"]){
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   }
@@ -9295,6 +9310,7 @@ function upd(){
   }
   // Пересекли ленту — дальше игра ведёт байдарку сама.
   if (g.tapeWy > 0 && g.pwy >= g.tapeWy){
+    raceFinishLine();
     g.s = "arrive"; g.arriveT = 210; g.obs.length = 0; g.bns.length = 0;
     sfx("clean");
     return;
@@ -9365,6 +9381,7 @@ function upd(){
   waveStep();
   if(!g.custom && Math.random()<0.003)spBn();
   spCustom();
+  raceStep();
   fightStep();
   mazaiStep();
   if(g.dist>=g.ned && !(g.custom && g.custom.shore))spBev();   // в своём уровне с нарисованным берегом — только он
@@ -9768,12 +9785,12 @@ function rndr(){
   for(const b of g.bns)drwBn(b);
   drwBearSwim();                                // медведь в воде — под туманом
   drwFog();                                     // туман и мгла — под своей байдаркой
-  drwWake();drwPt();drwKy();drwClash();
+  drwWake();drwPt();drwGhost();drwKy();drwClash();
   // Мост рисуется ПОСЛЕ байдарки: под мостом проплывают, а не по нему.
   for(const b of g.bridges_) drwBridge(b);
   drwTape();
   cx.restore();
-  drwAxeFly();drwWind();drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();
+  drwAxeFly();drwWind();drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();drwRaceHud();
   if (g.whiskyT > 0){
     cx.strokeStyle = "rgba(232,168,56," + (0.30 + Math.sin(g.frame*0.15)*0.08) + ")";
     cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
@@ -9891,7 +9908,7 @@ function goalProgress(L, st){
 function panelLeftHtml(){
   const L = level(), custom = !!g.custom, inPlay = g.s === "playing" || g.s === "paused" || g.s === "continue";
   const st = g;
-  let h = "<div class='sp'><h3>" + (custom ? "СВОЙ УРОВЕНЬ" : "ДЕНЬ " + L.day + " · " + escHtml(river().name)) + "</h3>";
+  let h = "<div class='sp'><h3>" + (custom ? (g.custom.race ? "ГОНКА" : "СВОЙ УРОВЕНЬ") : "ДЕНЬ " + L.day + " · " + escHtml(river().name)) + "</h3>";
   h += "<div>" + escHtml(custom ? "Дойти до финиша" : L.place) + "</div>";
   if (!custom) h += "<div class='dim'>" + escHtml(river().note) + "</div>";
   h += "</div>";
@@ -10221,9 +10238,11 @@ function finishCustom(ok){
   g.s = "customEnd";
   document.getElementById("pauseBtn").classList.add("hidden");
   const total = Math.floor(g.dist) + g.bsc + g.sc;
-  if (ok && total > (cs.best || 0)){ cs.best = total; saveCustom(); }
+  // Гонка — не уровень из редактора: его рекорд не трогаем.
+  if (ok && !g.custom.race && total > (cs.best || 0)){ cs.best = total; saveCustom(); }
   hideAllScreens();
   document.getElementById("ceTitle").textContent = ok ? "ДОШЛИ!" : "НЕ ДОШЛИ";
+  raceEndScreen(ok);
   document.getElementById("ceDist").textContent = Math.floor(g.dist);
   document.getElementById("ceScore").textContent = total;
   document.getElementById("ceBest").textContent = "ЛУЧШИЙ НА ЭТОМ УРОВНЕ: " + (cs.best || 0);
@@ -10410,13 +10429,178 @@ function edSetLen(i){
   document.getElementById("edPlay").addEventListener("click", () => { startMusic(); saveCustom(); startCustom(); });
   document.getElementById("edBack").addEventListener("click", showStart);
   document.getElementById("startEditBtn").addEventListener("click", () => { startMusic(); showEditor(); });
-  document.getElementById("ceAgain").addEventListener("click", startCustom);
+  document.getElementById("ceAgain").addEventListener("click", () => {
+    if (g.lastRace && g.custom && g.custom.race){ const lr = g.lastRace; startRace(lr.lvl, lr.ghost || g.myRun); }
+    else startCustom();
+  });
   document.getElementById("ceEdit").addEventListener("click", showEditor);
   document.getElementById("ceMenu").addEventListener("click", showStart);
 }
 
+/* ===== 12б. Гонка с призраком ===== */
+// Гонка — свой уровень на широкой реке из генератора конструктора. Уровень
+// целиком в данных (река, длина, предметы), поэтому друг по ссылке плывёт ту
+// же реку. Свой заезд пишется: положение раз в GHOST_STEP кадров (мировой y
+// и t×1000), время — кадров от старта до финишной ленты. Призрак — чужая
+// (или своя прошлая) запись: полупрозрачная лодка с именем, плывёт по
+// записи. Хранится на том же сервере, что таблица рекордов (server/race.mjs).
+const GHOST_STEP = 6;
+function raceLevel(seed){
+  const river = seed % RIVERS.length;
+  return { river, lenIdx: 1, items: genCustom(river, 1, 1, seed) };
+}
+function startRace(lvl, ghost){
+  g.custom = customLevel(lvl);
+  Object.assign(g.custom, { wide: true, shore: true, place: "ГОНКА",           // берег — только нарисованный, без случайных
+                            race: { lvl, f: 0, track: [], end: 0, ghost: ghost || null } });
+  g.lastRace = { lvl, ghost: ghost || null };
+  g.day = 0;
+  hideAllScreens();
+  sg();
+  customRiver(g.custom.items);
+  g.cNext = 0;
+  showMobileHint();
+}
+function raceOf(){ return g.custom && g.custom.race; }
+function raceStep(){
+  const R = raceOf();
+  if (!R || R.end) return;
+  if (R.f % GHOST_STEP === 0) R.track.push(Math.round(g.pwy), Math.round(g.t*1000));
+  R.f++;
+}
+function raceFinishLine(){
+  const R = raceOf();
+  if (!R || R.end) return;
+  R.end = Math.max(1, R.f);
+  R.track.push(Math.round(g.pwy), Math.round(g.t*1000));
+}
+// Положение призрака на кадре f: точка j записана на кадре j*GHOST_STEP,
+// последняя — на финише (кадр frames). Между точками — по прямой.
+function ghostAt(gh, f){
+  const tr = gh.track, n = tr.length/2;
+  const at = j => j < n - 1 ? j*GHOST_STEP : gh.frames;
+  if (f >= gh.frames || n < 2) return { wy: tr[2*n - 2], t: tr[2*n - 1]/1000, done: true };
+  let j = Math.min(n - 2, Math.floor(f/GHOST_STEP));
+  while (j < n - 2 && at(j + 1) <= f) j++;
+  const f0 = at(j), f1 = at(j + 1), k = f1 > f0 ? (f - f0)/(f1 - f0) : 0;
+  return { wy: tr[2*j] + (tr[2*j + 2] - tr[2*j])*k, t: (tr[2*j + 1] + (tr[2*j + 3] - tr[2*j + 1])*k)/1000, done: false };
+}
+// На сколько метров мы впереди призрака (минус — позади).
+function raceGap(){
+  const R = raceOf();
+  if (!R || !R.ghost) return 0;
+  return (g.pwy - ghostAt(R.ghost, R.f).wy)/PX_PER_M;
+}
+function raceTime(f){
+  const d = Math.floor(f/6), m = Math.floor(d/600), sec = (d - m*600)/10;
+  return m + ":" + sec.toFixed(1).padStart(4, "0");
+}
+function raceResult(){
+  const R = raceOf();
+  if (!R) return null;
+  const gh = R.ghost ? R.ghost.frames : null;
+  return { mine: R.end, ghost: gh, name: R.ghost ? R.ghost.name : null, win: gh == null ? null : R.end > 0 && R.end < gh };
+}
+function racePayload(name){
+  const R = raceOf();
+  return { pid: playerId(), name: name || "ПУТНИК", lvl: R.lvl, frames: R.end, track: R.track.slice() };
+}
+function raceIdFrom(search){
+  const m = /[?&]race=([a-z0-9]{6})(?:&|$)/.exec(search || "");
+  return m ? m[1] : null;
+}
+function raceLink(id, href){ return String(href).split("#")[0].split("?")[0] + "?race=" + id; }
+async function raceUpload(name, deps){
+  const url = onlineBase(deps), f = (deps && deps.fetch) || (typeof fetch === "function" ? fetch : null);
+  if (!url || !f) return null;
+  try {
+    const r = await f(url + "/ghost", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(racePayload(name)) });
+    if (!r.ok) return null;
+    return (await r.json()).id || null;
+  } catch(e){ return null; }
+}
+async function raceLoad(id, deps){
+  const url = onlineBase(deps), f = (deps && deps.fetch) || (typeof fetch === "function" ? fetch : null);
+  if (!url || !f) return null;
+  try {
+    const r = await f(url + "/ghost?id=" + id);
+    return r.ok ? await r.json() : null;
+  } catch(e){ return null; }
+}
+function drwGhost(){
+  const R = raceOf();
+  if (!R || !R.ghost || g.s !== "playing" && g.s !== "arrive" && g.s !== "paused") return;
+  const p = ghostAt(R.ghost, R.f), y = screenYOf(p.wy);
+  if (y < -60 || y > H + 60) return;
+  const x = screenXOf(p.t, p.wy);
+  cx.save(); cx.globalAlpha = 0.45;
+  drawSprite("kayak_center", x, y);
+  cx.restore();
+  cx.save(); cx.font = "7px " + F; cx.textAlign = "center";
+  cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(x - 30, y - 44, 60, 11);
+  cx.fillStyle = "#cfe8f5"; cx.fillText(R.ghost.name || "ПРИЗРАК", x, y - 35);
+  cx.restore();
+}
+function drwRaceHud(){
+  const R = raceOf();
+  if (!R || g.s !== "playing") return;
+  cx.save(); cx.font = "9px " + F; cx.textAlign = "right";
+  cx.fillStyle = "#ffd54f"; cx.fillText(raceTime(R.f), W - 12, 84);   // под сердечками
+  if (R.ghost){
+    const d = Math.round(raceGap());
+    cx.fillStyle = d >= 0 ? "#7fd67f" : "#ff8a80";
+    cx.fillText((d >= 0 ? "ВПЕРЕДИ " : "ПОЗАДИ ") + Math.abs(d) + " М", W - 12, 98);
+  }
+  cx.restore();
+}
+function raceEndScreen(ok){
+  const R = raceOf(), box = document.getElementById("ceRace"), ch = document.getElementById("ceChallenge"),
+        link = document.getElementById("ceLink"), ed = document.getElementById("ceEdit");
+  link.classList.add("hidden"); link.textContent = "";
+  if (!R){ document.getElementById("cePlace").textContent = "СВОЙ УРОВЕНЬ"; box.classList.add("hidden"); ch.classList.add("hidden"); ed.classList.remove("hidden"); return; }
+  ed.classList.add("hidden");
+  document.getElementById("cePlace").textContent = "ГОНКА";
+  const res = raceResult();
+  if (res.ghost != null)
+    document.getElementById("ceTitle").textContent = res.win ? "ОБОГНАЛ!" : ok ? "ОТСТАЛ" : "НЕ ДОШЛИ";
+  box.textContent = (ok ? "ТЫ " + raceTime(res.mine) : "ТЫ НЕ ДОПЛЫЛ") +
+                    (res.ghost != null ? " · " + (res.name || "ПРИЗРАК") + " " + raceTime(res.ghost) : "");
+  box.classList.remove("hidden");
+  ch.classList[ok ? "remove" : "add"]("hidden");
+  if (ok) g.myRun = racePayload(save.name);
+}
+function showRaceInvite(id){
+  hideAllScreens();
+  g.s = "raceInvite";
+  document.getElementById("raceScreen").classList.remove("hidden");
+  const txt = document.getElementById("rsText"), go = document.getElementById("rsGo");
+  go.classList.add("hidden"); txt.textContent = "ЗАГРУЗКА…";
+  raceLoad(id).then(gh => {
+    if (!gh){ txt.textContent = "ГОНКА НЕ НАЙДЕНА — ССЫЛКА СТАРАЯ ИЛИ НЕТ СВЯЗИ"; return; }
+    g.invite = gh;
+    txt.textContent = (gh.name || "ДРУГ") + " ПРОШЁЛ ЭТУ РЕКУ ЗА " + raceTime(gh.frames) + ". ОБГОНИ!";
+    go.classList.remove("hidden");
+  });
+}
+{
+  document.getElementById("startRaceBtn").addEventListener("click", () => { startMusic(); startRace(raceLevel(1 + Math.floor(Math.random()*99999))); });
+  document.getElementById("rsGo").addEventListener("click", () => { if (g.invite){ startMusic(); startRace(g.invite.lvl, g.invite); } });
+  document.getElementById("rsMenu").addEventListener("click", showStart);
+  document.getElementById("ceChallenge").addEventListener("click", () => {
+    const link = document.getElementById("ceLink"), btn = document.getElementById("ceChallenge");
+    link.classList.remove("hidden"); link.textContent = "ОТПРАВЛЯЮ…";
+    raceUpload(save.name).then(id => {
+      if (!id){ link.textContent = "НЕ ПОЛУЧИЛОСЬ ОТПРАВИТЬ — НЕТ СВЯЗИ"; return; }
+      const url = raceLink(id, location.href);
+      link.textContent = url;
+      btn.classList.add("hidden");
+      try { navigator.clipboard.writeText(url).then(() => campToast("ССЫЛКА СКОПИРОВАНА — ОТПРАВЬ ДРУГУ")); } catch(e){}
+    });
+  });
+}
+
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
@@ -10462,6 +10646,7 @@ if (typeof __KAYAK_TEST__ === "undefined"){
   // Цикл запускается в обоих случаях: раньше ветка ?day=N его не вызывала,
   // и отладочные сцены стояли чёрным экраном на кадре 0.
   if (dayIdx != null){ startDay(dayIdx); applyDebugScene(); }
+  else if (raceIdFrom(location.search)) showRaceInvite(raceIdFrom(location.search));
   lp();
 }
 </script>
