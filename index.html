@@ -95,6 +95,7 @@ canvas { display:block;margin:0 auto; }
 .gitem.owned { border:1px solid rgba(127,214,127,0.45); }
 #campToast { position:fixed;left:50%;top:16%;transform:translateX(-50%);background:rgba(14,20,30,0.95);color:#ffd54f;border:1px solid #ffd54f;padding:10px 16px;border-radius:8px;font-family:"Press Start 2P",monospace;font-size:9px;letter-spacing:1px;opacity:0;transition:opacity .3s;z-index:60;pointer-events:none;white-space:nowrap; }
 #campToast.show { opacity:1; }
+#campToast.mid { top:34%; }
 #continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:#000;pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 #continueScreen h1 { font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;margin-bottom:22px;letter-spacing:2px; }
 #continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
@@ -3696,8 +3697,10 @@ const CUTS = {
       { spr:"bridge_front", keys:[[0,210,400,1.5,1],[1,210,400,1.5,1]] },
       { spr:"bridge_front", keys:[[0,840,400,1.5,1],[1,840,400,1.5,1]] },
       // Машины едут по настилу (он на y≈208), колёса на нём; въезжают и уезжают за кадром.
-      { spr:"car",       keys:[[0.04,-90,210,1.2,1],[0.58,540,210,1.2,1]] },
-      { spr:"car_red_r", keys:[[0.6,540,210,1.2,1],[0.96,-100,210,1.2,1]] }
+      // Начало и конец пути — за краем даже широкого экрана: на -90/540 машины
+      // стояли в кадре до и после проезда и наезжали друг на друга.
+      { spr:"car",       keys:[[0,-700,210,1.2,1],[0.5,1120,210,1.2,1]] },
+      { spr:"car_red_r", keys:[[0.5,1120,210,1.2,1],[1,-700,210,1.2,1]] }
     ] }
 };
 
@@ -4006,7 +4009,7 @@ const _cutSrc = [], _cutEls = [];
 let _cutId = 0;
 function cutSources(){ return _cutSrc; }
 function rainNoise(dur){
-  if (!actx || !musicOn) return;
+  if (!actx || !musicOn || !actx.createBuffer) return;
   const sr = actx.sampleRate, len = sr*2, buf = actx.createBuffer(1, len, sr), d = buf.getChannelData(0);
   let lp = 0;
   for (let i = 0; i < len; i++){
@@ -4090,6 +4093,16 @@ function nightPlayAudioEl(){
   catch(e){ /* без звука в песочнице тестов — норм */ }
 }
 
+// Мосты бывают на Тверце, а там дождь: мульт под мостом — в погоду дня.
+function bridgeWeather(){
+  const r = level().rain || 0, b = CUTS.bridge;
+  b.rain = r; b.sky = r ? "rain" : "day"; b.rainSound = r > 0;
+  // Белые кучевые облачка на сером дождевом небе — чужие: в дождь их нет.
+  for (const c of b.actors) if (c.spr === "cloud"){
+    c._k = c._k || c.keys.map(k => k.slice());
+    c.keys = c._k.map(k => [k[0], k[1], k[2], k[3], r ? 0 : k[4]]);
+  }
+}
 function playCut(name, then){
   stopCutAudio();
   g.cut = { name, t: 0, len: (CUTS[name] && CUTS[name].len) || CUT_LEN, then, id: ++_cutId };
@@ -5316,7 +5329,7 @@ function pollGamepad(){
   for (const p of navigator.getGamepads() || []) if (p && p.connected){ pad = p; break; }
   if (!pad){ gpPrev = null; return; }
   const s = gpRead(pad);
-  if (!gpSeen){ gpSeen = true; if (typeof campToast === "function") campToast("ГЕЙМПАД ПОДКЛЮЧЁН"); }
+  if (!gpSeen){ gpSeen = true; if (typeof campToast === "function") campToast("ГЕЙМПАД ПОДКЛЮЧЁН", true); }
   const edge = k => s.btn[k] && !(gpPrev && gpPrev.btn[k]);
   if (g.s === "playing"){
     gpState.steer = s.steer; gpState.fwd = s.fwd; gpState.back = s.back;
@@ -5545,6 +5558,17 @@ const DEEP_SETS = [
   ["sbirch","tree","house","sbush","sbirch","tree","house","sbush","banya","sbirch"],
   ["sfir","sfir","sfir","sfir","sbush","boulder","sfir","mossy","slab","sfir"]
 ];
+// Дома, баня, церковь, зонтики и палатки в боковых зонах стояли сплошь по
+// траве. Теперь — только напротив своего жителя берега (деревня, пляж,
+// лагерь) на той же стороне; иначе на их месте природное из набора реки.
+const DEEP_NEAR = { house:["village"], church:["village"], banya:["village","banya"], umbrella:["beach"], tent2:["camp","fire"] };
+function deepPick(name, wy, side){
+  const near = DEEP_NEAR[name];
+  if (!near) return name;
+  if (g.bev.some(e => near.includes(e.type) && e.side === side && Math.abs(e.wy - wy) < 320)) return name;
+  const nat = deepDecor().filter(n => !DEEP_NEAR[n]);
+  return nat[Math.floor(hsh(Math.round(wy)*7 + side*3)*nat.length) % nat.length];
+}
 function deepDecor(){
   const r = Math.min(level().river, DEEP_SETS.length - 1);
   // День 6 — Торжок: церкви чаще (в наборе Тверцы она одна из десяти).
@@ -5693,7 +5717,7 @@ function drwBg(x0, x1){
         for (let r = 0; r*DEEP_DX < reach + 20; r++){
           const h = hsh(vwx*41 + r*13 + side*7), h2 = hsh(vwx*23 + r*29 + side*5);
           if (h < DEEP_SKIP[level().river]) continue;
-          const list = deepDecor(), name = list[Math.floor(h2*list.length) % list.length], sz = spriteSize(name);
+          const list = deepDecor(), name = deepPick(list[Math.floor(h2*list.length) % list.length], wy, side), sz = spriteSize(name);
           const x = side < 0 ? -(r*DEEP_DX) - 8 - h*14 : W + r*DEEP_DX + 8 + h*14;
           if (x + sz.w/2 > L - 12 && x - sz.w/2 < R + 12) continue;       // не на воде
           drawSprite(name, x, foot - sz.h/2);
@@ -6720,8 +6744,12 @@ function drwHUD(){
   // полоса пути до финиша
   const pr = Math.max(0, Math.min(1, g.dist / level().len));
   // Тонкая полоса у самого края кадра: шире она закрывала правый берег.
-  cx.fillStyle = "rgba(0,0,0,0.35)"; cx.fillRect(W-6, 100, 4, H-200);
-  cx.fillStyle = "#7fd67f"; cx.fillRect(W-6, 100+(H-200)*(1-pr), 4, (H-200)*pr);
+  // С боковыми панелями не рисуем: там есть свой прогресс, а тёмная
+  // полоска у края поля читалась как шов между полем и боковой зоной.
+  if (!panelsOn){
+    cx.fillStyle = "rgba(0,0,0,0.35)"; cx.fillRect(W-6, 100, 4, H-200);
+    cx.fillStyle = "#7fd67f"; cx.fillRect(W-6, 100+(H-200)*(1-pr), 4, (H-200)*pr);
+  }
   if (g.whiskyT > 0){
     cx.font = "10px " + F; cx.fillStyle = "#e8a838"; cx.textAlign = "center";
     cx.fillText("ОЧКИ x2", W/2, 66); cx.textAlign = "left";
@@ -6979,10 +7007,11 @@ function drwCampArt(){
 let campFrame = 0, campTimer = null;
 
 let campToastT;
-function campToast(text){
+function campToast(text, mid){
   const el = document.getElementById("campToast");
   if (!el) return;
   el.textContent = text;
+  if (el.classList) el.classList[mid ? "add" : "remove"]("mid");
   el.classList.add("show");
   if (typeof clearTimeout !== "undefined") clearTimeout(campToastT);
   if (typeof setTimeout !== "function") return;
@@ -7220,6 +7249,7 @@ function chkBridges(){
       // показывает, что значит мост с воды, и не повторяется до нового дня.
       if (g.bridgeCinema === false){
         g.bridgeCinema = true;
+        bridgeWeather();
         playCut("bridge", ()=>{ g.s = "playing"; });
       }
     }
@@ -7382,6 +7412,13 @@ function drwSign(){
 }
 
 // Подсказка про бонус: две строки внизу экрана, не мешают игре.
+// Подсказка — на той половине экрана, где нет лодки. Раньше она всегда лежала
+// внизу, прямо в зоне надписей над лодкой, и закрывала саму лодку (погоня
+// медведя, Мазай). Вверху — под счётом и счётчиком Мазая.
+function hintBox(n){
+  const h = 16 + n*13;
+  return { y: g.py > H*0.5 ? 112 : H - 60 - h, h };
+}
 function drwHint(){
   if (!g.hint) return;
   const a = Math.min(1, g.hint.life/40);
@@ -7392,12 +7429,12 @@ function drwHint(){
     else cur += " " + w;
   }
   if (cur.trim()) lines.push(cur.trim());
-  const h = 16 + lines.length*13;
+  const { y, h } = hintBox(lines.length);
   cx.save(); cx.globalAlpha = a;
-  cx.fillStyle = "rgba(0,0,0,0.78)"; cx.fillRect(10, H-118-h, W-20, h);
-  cx.strokeStyle = "#4fc3f7"; cx.lineWidth = 2; cx.strokeRect(10, H-118-h, W-20, h);
+  cx.fillStyle = "rgba(0,0,0,0.78)"; cx.fillRect(10, y, W-20, h);
+  cx.strokeStyle = "#4fc3f7"; cx.lineWidth = 2; cx.strokeRect(10, y, W-20, h);
   cx.font = "7px " + F; cx.fillStyle = "#fff"; cx.textAlign = "center";
-  lines.forEach((ln, i) => cx.fillText(ln, W/2, H-118-h+18+i*13));
+  lines.forEach((ln, i) => cx.fillText(ln, W/2, y+18+i*13));
   cx.restore(); cx.textAlign = "left";
 }
 
@@ -8630,8 +8667,12 @@ function explain(kind, text){
   g.hint = { text, life: 260 };
 }
 
+// Две надписи подряд рождались в одной точке и сливались («МЕДВЕДЕДВИНАЛ»):
+// новая встаёт строкой выше, если место занято.
 function popText(text, color){
-  g.pops.push({ text, color, x: screenXOf(g.t,g.pwy), y: g.py - 34, life: 55 });
+  let y = g.py - 34;
+  while (g.pops.some(p => Math.abs(p.y - y) < 12)) y -= 12;
+  g.pops.push({ text, color, x: screenXOf(g.t,g.pwy), y, life: 55 });
 }
 
 function tickEffects(){
@@ -9756,6 +9797,8 @@ function layoutSides(cssW, cssH, full){
   const bg = document.getElementById("bgCanvas"), ui = document.getElementById("ui");
   if (bg){ bg.width = innerWidth; bg.height = innerHeight; }
   if (ui && ui.style){ ui.style.left = sideW + "px"; ui.style.right = sideW + "px"; }
+  const pb = document.getElementById("pauseBtn");
+  if (pb && pb.style) pb.style.right = (sideW + 6) + "px";
   for (const [id, left] of [["panelL", true], ["panelR", false]]){
     const el = document.getElementById(id);
     if (!el || !el.style) continue;
@@ -10235,7 +10278,7 @@ function edSetLen(i){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
