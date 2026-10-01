@@ -4908,7 +4908,7 @@ function tauntVoice(){
 function throwAxe(){
   let tgt = null, best = Infinity;
   for (const o of g.obs){
-    if (o.cow || o.tied || o.flipT > 0) continue;
+    if (o.cow || o.tied || o.flipT > 0 || o.sinkT > 0) continue;
     if (!["log", "branch", "snag", "kayaker", "rock", "boat", "barge"].includes(o.type)) continue;
     const d = o.wy - g.pwy, lat = Math.abs(o.t - g.t)*widthAt(o.wy)/2;
     if (d < -20 || d > AXE_RANGE || lat > 110) continue;
@@ -5713,8 +5713,11 @@ function drwOb(o){
   let name = o.sprite || OB_SPRITE[o.type] || "boulder";
   if (o.type === "kayaker"){ const fr = fightFrame(o); if (fr) name = fr; }
   const sz = spriteSize(name);
+  const sinking = o.sinkT > 0;
+  if (sinking){ cx.save(); cx.globalAlpha = Math.max(0.05, o.sinkT/SINK_FRAMES); }
   drawShadow(x, y + sz.h/2 - 3, sz.w);
-  drawSprite(name, x, y, o.variant);
+  drawSprite(name, x, y + (sinking ? (SINK_FRAMES - o.sinkT)*0.15 : 0), o.variant);
+  if (sinking) cx.restore();
   if (o.type === "kayaker"){
     // Агрессивный соперник помечен красным вымпелом СРАЗУ, ещё до сближения:
     // спокойный гребёт с веслом в руках, злой издалека виднеется с флажком.
@@ -7405,7 +7408,7 @@ function separate(o){
 
 // Проход для байдарки: камень не ставится, если поперёк реки не останется
 // щели хотя бы PASS_GAP px (корпус 33 px + запас на руль).
-const PASS_GAP = 70;
+const PASS_GAP = 70, PASS_LOOK = 900;      // PASS_LOOK: до скольки px вниз по реке подвижные считаются «придут сюда»
 function leavesPassage(t, wy, visHalf, visHalfY){
   const vy = visHalfY || visHalf;
   // Проверяются все строки по высоте нового камня: соседи чуть выше или ниже
@@ -7416,6 +7419,14 @@ function leavesPassage(t, wy, visHalf, visHalfY){
     for (const o of g.obs){
       if (o.type === "barge" || o.type === "boat") continue;
       if (Math.abs(o.wy - y) > (o.visHalfY || 24)) continue;
+      const x = screenXOf(o.t, o.wy), h = o.visHalf || 24;
+      iv.push([x - h, x + h]);
+    }
+    // Бревна, ветки и соперники ниже по реке (дальше от верхней кромки) придут к этому месту, потому
+    // что камень стоит, а они плывут; их нынешнее положение по ширине тоже занимает щель.
+    for (const o of g.obs){
+      if (!(o.type === "log" || o.type === "branch" || (o.type === "kayaker" && !(o.flipT > 0)))) continue;
+      if (o.wy > wy || wy - o.wy > PASS_LOOK) continue;
       const x = screenXOf(o.t, o.wy), h = o.visHalf || 24;
       iv.push([x - h, x + h]);
     }
@@ -8058,7 +8069,7 @@ function drwMazaiHud(){
 // не пройти без потери сердца. Раньше проход проверялся только при появлении.
 // Теперь пока предмет в поле зрения, щель вокруг него не меньше PASS_MIN:
 // иначе он сдвигается в лучшее место, а если такого нет и его не видно — убирается.
-const PASS_MIN = 58, PASS_AHEAD = 170;
+const PASS_MIN = 58, PASS_AHEAD = 170, SINK_FRAMES = 50;
 // ahead — на сколько px вверх по реке заглядываем: неподвижное нагоняет подвижное сверху.
 function gapFor(o, t, ahead){
   const vy = o.visHalfY || 24, vx = o.visHalf || 24;
@@ -8067,7 +8078,7 @@ function gapFor(o, t, ahead){
     const c = centerAt(y), hw = widthAt(y)/2, x0 = screenXOf(t, o.wy);
     const iv = [[x0 - vx, x0 + vx]];
     for (const q of g.obs){
-      if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0) continue;   // перевёрнутая лодка тонет и не мешает
+      if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0 || q.sinkT > 0) continue;   // перевёрнутая лодка и тонущее бревно не мешают
       if (Math.abs(q.wy - y) > (q.visHalfY || 24)) continue;
       const x = screenXOf(q.t, q.wy), h = q.visHalf || 24;
       iv.push([x - h, x + h]);
@@ -8085,7 +8096,7 @@ function gapFor(o, t, ahead){
 function overlapsAny(o, t){
   const x0 = screenXOf(t, o.wy);
   for (const q of g.obs){
-    if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0) continue;
+    if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0 || q.sinkT > 0) continue;
     if (Math.abs(q.wy - o.wy) > (q.visHalfY || 24) + (o.visHalfY || 24)) continue;
     if (Math.abs(screenXOf(q.t, q.wy) - x0) < ((q.visHalf || 24) + (o.visHalf || 24))*0.85) return true;
   }
@@ -8115,11 +8126,11 @@ function keepPassage(){
       else { o.t += Math.max(-0.03, Math.min(0.03, best - o.t)); o.vt = 0; }
     } else if (sy < -40){
       g.obs.splice(g.obs.indexOf(o), 1);                // щели нет и его не видно — убираем
-    } else if (mobile && sy < g.py - 100){
-      // Щели нет, а предмет уже в кадре, но ещё далеко от лодки: тонет у всех на глазах.
-      spPt(screenXOf(o.t, o.wy), sy, "#cfe8f5", 22);
+    } else if (mobile && sy < g.py - 160){
+      // Щели нет, предмет в кадре, но далеко от лодки: бревно медленно тонет, а гребец
+      // просто переворачивается (как после любого опрокидывания) — без вспышек и звука.
       if (o.type === "kayaker"){ o.flipT = FLIP_FRAMES; o.aggro = false; o.swingT = -1; }
-      else g.obs.splice(g.obs.indexOf(o), 1);
+      else if (!o.sinkT) o.sinkT = SINK_FRAMES;
     }
   }
 }
@@ -9204,6 +9215,7 @@ function upd(){
     // Бревно плывёт по течению, но медленнее байдарок — мы его нагоняем.
     // Камни и мель неподвижны, поэтому их wy не меняется вовсе.
     // Баржа идёт своим ходом, медленнее течения — мы её нагоняем.
+    if (o.sinkT > 0){ if (--o.sinkT <= 0){ g.obs.splice(i,1); continue; } }
     if(o.type=="barge") bargeStep(o, g.sp*sm*DRIFT_SPEED.barge);
     if(o.type=="boat") boatStep(o);
     stepShove(o);

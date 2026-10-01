@@ -27,18 +27,20 @@ test("бревно, догнавшее камень на узкой реке: щ
   assert.ok(K.gapFor(log, log.t) < K.PASS_MIN, "сначала проход закрыт");
   for (let i = 0; i < 80; i++) K.keepPassage();
   const alive = K.G.obs.includes(log);
-  assert.ok(!alive || K.gapFor(log, log.t) >= K.PASS_MIN, "щель есть или бревна нет");
+  assert.ok(!alive || log.sinkT > 0 || K.gapFor(log, log.t) >= K.PASS_MIN, "щель есть, бревно тонет или его нет");
   assert.ok(K.G.obs.includes(rock), "камень остался");
 });
 
 test("соперник и мель без решения: далеко от лодки — переворачивается и тонет", () => {
   const K = world();
   K.G.scroll = 5000; K.G.pwy = 5000;
-  ob(K, "shallows", -0.50, 5000 + 130, 51);
-  const foe = ob(K, "kayaker", 0.30, 5000 + 130, 32);
+  ob(K, "shallows", -0.50, 5000 + 300, 51);
+  const foe = ob(K, "kayaker", 0.30, 5000 + 300, 32);
   foe.variant = 0;
+  const burst0 = K.G.pts.length;
   K.keepPassage();
   assert.ok(foe.flipT > 0 || !K.G.obs.includes(foe), "соперник не остался стеной");
+  assert.equal(K.G.pts.length, burst0, "без вспышки брызг: переворот тихий");
 });
 
 test("рядом с лодкой подвижное не убирают внезапно", () => {
@@ -90,4 +92,28 @@ test("тройки (pack) только на 3-м и 9-м днях", () => {
     if (L.day === 3 || L.day === 9) assert.ok(packs.length >= 2 && packs.every(f => f.n === 3), "день " + L.day);
     else assert.equal(packs.length, 0, "день " + L.day);
   });
+});
+
+test("бревно без решения далеко от лодки тонет медленно (не пропадает вспышкой)", () => {
+  const K = world();
+  K.G.scroll = 5000; K.G.pwy = 5000;
+  ob(K, "shallows", -0.50, 5000 + 300, 51);
+  const log = ob(K, "log", 0.30, 5000 + 300, 39);
+  const burst0 = K.G.pts.length;
+  K.keepPassage();
+  assert.ok(log.sinkT > 0, "начало тонуть");
+  assert.equal(K.G.pts.length, burst0, "без частиц");
+  const left = log.sinkT;
+  assert.ok(K.G.obs.includes(log), "ещё на месте, исчезает постепенно");
+  for (let i = 0; i < left + 2; i++) { K.G.s = "playing"; K.upd(); }
+  assert.ok(!K.G.obs.includes(log), "утонуло");
+});
+
+test("новый камень не ставится туда, куда придёт плывущее бревно и закроет проход", () => {
+  const K = world();
+  K.G.scroll = 5000; K.G.pwy = 5000;
+  ob(K, "log", -0.10, 5000 + 100, 39);                     // бревно ниже по реке
+  const wy = 5000 + 500, vis = 33;
+  assert.equal(K.leavesPassage(-0.10 + 0.55, wy, vis, vis), false, "справа от бревна щель закрылась бы — отказ");
+  assert.equal(K.leavesPassage(0.55, wy + 2000, vis, vis), true, "далеко за пределами — можно");
 });
