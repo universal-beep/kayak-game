@@ -26,34 +26,48 @@ canvas { display:block;margin:0 auto; }
 .finh { font-family:"Press Start 2P",monospace;font-size:20px;color:#7fd67f;margin-bottom:6px; }
 .wallet { font-family:"Press Start 2P",monospace;font-size:8px;color:#ffd54f;margin-bottom:12px; }
 .days { display:flex;flex-direction:column;gap:4px;width:100%;max-width:360px;margin-bottom:14px; }
-.totals { font-family:"Press Start 2P",monospace;font-size:7px;color:#ffd54f; }
-.dayrow { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#ddd;background:rgba(255,255,255,0.06);border:2px solid transparent;padding:7px 8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer; }
+.totals { font-family:"Press Start 2P",monospace;font-size:8px;color:#ffd54f; }
+.dayrow { font-family:"Press Start 2P",monospace;font-size:8px;color:#ddd;background:rgba(255,255,255,0.06);border:2px solid transparent;padding:7px 8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer; }
 .dayrow.locked { color:#555;cursor:default; }
 .dayrow.cur { border-color:#4fc3f7;color:#fff; }
-.dayrow .st { color:#ffd54f;letter-spacing:1px; }
+.dayrow .st { color:#ffd54f;letter-spacing:1px;font-family:sans-serif;font-size:12px; }
 .maprow { display:flex;gap:8px;flex-wrap:wrap;justify-content:center; }
+.btn { font-family:"Press Start 2P",monospace;font-size:11px;letter-spacing:1px;padding:12px 18px;background:#4fc3f7;color:#12202e;border:2px solid #4fc3f7;cursor:pointer;pointer-events:all;box-shadow:0 4px 0 #0d47a1; }
+.btn:hover { filter:brightness(1.12); }
+.btn:active { transform:translateY(2px);box-shadow:0 2px 0 #0d47a1; }
+.btn:focus-visible { outline:2px solid #ffd54f;outline-offset:2px; }
 .btn.small { font-size:9px;padding:9px 14px;margin-top:8px; }
-.btn.ghost { background:transparent;color:#4fc3f7;border:2px solid #4fc3f7; }
+.btn.ghost { background:transparent;color:#4fc3f7;border:2px solid #4fc3f7;box-shadow:none; }
 .place { font-family:"Press Start 2P",monospace;font-size:11px;color:#4fc3f7;margin-bottom:10px;text-align:center; }
-.stars { font-size:30px;letter-spacing:6px;margin-bottom:10px; }
-.goal { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#9aa9b2;margin:10px 0;text-align:center;line-height:1.8;max-width:320px; }
-.diary { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#ddd;line-height:2.1;max-width:340px;max-height:60vh;overflow:auto;margin-bottom:12px; }
+.stars { font-size:30px;letter-spacing:6px;margin-bottom:10px;color:#ffd54f; }
+.stars .off { color:#3a4a58; }
+.goal .ok { color:#7fd67f; } .goal .no { color:#7a8791; }
+.goal { font-family:"Press Start 2P",monospace;font-size:8px;color:#9aa9b2;margin:10px 0;text-align:center;line-height:1.8;max-width:320px; }
+.diary { font-family:"Press Start 2P",monospace;font-size:8px;color:#ddd;line-height:2.1;max-width:340px;max-height:60vh;overflow:auto;margin-bottom:12px; }
 .diary b { color:#4fc3f7; }
 .namerow { display:flex;gap:6px;align-items:center;margin:6px 0 4px; }
 .namerow input { font-family:"Press Start 2P",monospace;font-size:9px;padding:8px;width:130px;background:#12202e;color:#fff;border:2px solid #4fc3f7;text-transform:uppercase; }
-.boardtitle { font-family:"Press Start 2P",monospace;font-size:7px;color:#888;margin-top:8px; }
-.board { font-family:"Press Start 2P",monospace;font-size:7.5px;color:#bbb;width:100%;max-width:300px;margin:6px 0 4px; }
+.boardtitle { font-family:"Press Start 2P",monospace;font-size:8px;color:#888;margin-top:8px; }
+.board { font-family:"Press Start 2P",monospace;font-size:8px;color:#bbb;width:100%;max-width:300px;margin:6px 0 4px; }
 .brow { display:flex;justify-content:space-between;padding:3px 4px;line-height:1.6; }
-.brow.mine { color:#ffd54f;background:rgba(255,213,79,0.12); }
+#recordsScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px;overflow-y:auto; }
+.recnav { display:flex;align-items:center;gap:10px;margin-bottom:6px; }
+.recnav .place { margin:0;min-width:200px; }
+.finrun { font-family:"Press Start 2P",monospace;font-size:8px;line-height:2;color:#ddd;text-align:center;margin:6px 0; }
+.finrun b { color:#ffd54f;font-weight:normal; }
+.finrun .rec { color:#7fd67f; }
+.brow.top1 { color:#ffd54f; } .brow.top2 { color:#dfe6ea; } .brow.top3 { color:#d9a066; }
+.brow.mine { color:#12202e;background:#ffd54f; }
+.brow.gap { justify-content:center;color:#666; }
 #endScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.97);pointer-events:all;padding:16px;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 .endgrid { display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin:14px 0;font-family:"Press Start 2P",monospace;font-size:9px;color:#ddd; }
 .endgrid b { color:#ffd54f;font-weight:normal; }
 #campCanvas { image-rendering:pixelated;width:300px;height:120px;margin-bottom:10px;border-radius:6px; }
 .gear { display:flex;flex-direction:column;gap:5px;width:100%;max-width:340px;margin-bottom:10px; }
-.gitem { font-family:"Press Start 2P",monospace;font-size:7px;color:#ddd;background:rgba(255,255,255,0.06);padding:7px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px;line-height:1.7; }
+.gitem { font-family:"Press Start 2P",monospace;font-size:8px;color:#ddd;background:rgba(255,255,255,0.06);padding:7px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px;line-height:1.7; }
 .gitem .gn { color:#fff;font-size:8px; }
-.gitem .gnote { color:#8b98a3;font-size:6.5px; }
-.gitem button { font-family:"Press Start 2P",monospace;font-size:7px;padding:6px 8px;background:#4fc3f7;color:#12202e;border:none;cursor:pointer;white-space:nowrap; }
+.gitem .gnote { color:#8b98a3;font-size:8px; }
+.gitem button { font-family:"Press Start 2P",monospace;font-size:8px;padding:6px 8px;background:#4fc3f7;color:#12202e;border:none;cursor:pointer;white-space:nowrap; }
 .gitem button:disabled { background:#2c3b47;color:#6b7a86;cursor:default; }
 .gitem.owned .gn { color:#7fd67f; }
 .gitem.owned { border:1px solid rgba(127,214,127,0.45); }
@@ -62,15 +76,22 @@ canvas { display:block;margin:0 auto; }
 #continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:#000;pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 #continueScreen h1 { font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;margin-bottom:22px;letter-spacing:2px; }
 #continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
+.score { font-family:"Press Start 2P",monospace;font-size:10px;color:#fff;margin:5px 0;line-height:1.6; }
+.score.dist { color:#4fc3f7; } .score.bonus { color:#ffd54f; }
 #continueScreen .score { font-family:"Press Start 2P",monospace;font-size:11px;color:#fff;margin:4px 0; }
 #continueScreen .dist { color:#4fc3f7;font-size:9px; }
-#startScreen,#startScreen h1 { font-family:"Press Start 2P",monospace;font-size:26px;color:#4fc3f7;margin-bottom:20px;text-shadow:4px 4px 0 #0d47a1;letter-spacing:4px; }
-#startScreen p { font-family:"Press Start 2P",monospace;font-size:9px;color:#bbb;margin:5px 0;line-height:2; }
-#startScreen .key { color:#4fc3f7; }
-#startScreen .btn,#startScreen .btn:hover,.hidden { display:none !important; }
+#startScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 16px 28px;background:transparent;pointer-events:all;overflow-y:auto;touch-action:pan-y; }
+#startScreen .menu { display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:18px; }
+#startScreen .menu .btn { min-width:200px; }
+#startScreen #startBtn { font-size:14px;animation:startPulse 1.6s steps(2) infinite; }
+@keyframes startPulse { 50% { background:#7fd8ff; } }
+#startScreen .ctrl { background:rgba(4,10,20,0.55);padding:8px 12px;border-radius:4px; }
+#startScreen p { font-family:"Press Start 2P",monospace;font-size:8px;color:#d6dde3;margin:4px 0;line-height:1.8;text-align:center;max-width:380px; }
+#startScreen .key { color:#ffe27a; }
+.hidden { display:none !important; }
 #pauseBtn { position:absolute;top:40%;right:6px;width:42px;height:42px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:14px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
 #pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.92);pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
-#mHint { position:absolute;top:32%;left:50%;transform:translateX(-50%);background:rgba(4,10,20,0.82);border:2px solid #4fc3f7;border-radius:8px;padding:10px 14px;font-family:"Press Start 2P",monospace;font-size:7px;color:#cfd8c5;line-height:2;text-align:center;z-index:6;pointer-events:none;opacity:1;transition:opacity .8s; }
+#mHint { position:absolute;top:32%;left:50%;transform:translateX(-50%);background:rgba(4,10,20,0.82);border:2px solid #4fc3f7;border-radius:8px;padding:10px 14px;font-family:"Press Start 2P",monospace;font-size:8px;color:#cfd8c5;line-height:2;text-align:center;z-index:6;pointer-events:none;opacity:1;transition:opacity .8s; }
 #mHint b { color:#4fc3f7;font-weight:normal; }
 #mHint.hide { opacity:0; }
 @media (min-width:769px) and (hover:hover) { #mHint { display:none; } }
@@ -79,17 +100,15 @@ canvas { display:block;margin:0 auto; }
 <body>
 <div id="ui">
   <div id="startScreen">
-    <h1>СПЛАВ</h1>
-    <p><span class="key">← →</span> или <span class="key">A D</span> — упр.</p>
-    <p><span class="key">тач</span> — веди пальцем</p>
-    <p>батон — гребок сильнее на 8 сек</p>
-    <p>виски — неуязвим и очки x2 на 6 сек</p>
-    <p><span class="key">↑ ↓</span> или <span class="key">W S</span> — вперёд и назад по реке</p>
-    <p><span class="key">пробел</span> — удар веслом</p>
-    <p><span class="key">M</span> — музыка &nbsp; <span class="key">Esc</span> — пауза</p>
-    <p>аптечка — сердце или щит</p>
-    <p>топор — убирает препятствие по курсу</p>
-    <button class="btn" id="startBtn">> СТАРТ <</button>
+    <div class="menu">
+      <button class="btn" id="startBtn">&gt; В ПОХОД &lt;</button>
+      <button class="btn small ghost" id="startBoardBtn">РЕКОРДЫ</button>
+    </div>
+    <div class="ctrl">
+      <p><span class="key">← →</span> руль &nbsp; <span class="key">↑ ↓</span> вперёд и назад</p>
+      <p><span class="key">пробел</span> удар веслом &nbsp; <span class="key">Esc</span> пауза &nbsp; <span class="key">M</span> музыка</p>
+      <p><span class="key">тач</span> — веди пальцем, двойной тап — удар</p>
+    </div>
   </div>
 </div>
   <div id="pauseScreen" class="hidden">
@@ -128,6 +147,7 @@ canvas { display:block;margin:0 auto; }
     <div class="maprow">
       <button class="btn small" id="campBtn">ЛАГЕРЬ</button>
       <button class="btn small" id="diaryBtn">ДНЕВНИК</button>
+      <button class="btn small" id="recordsBtn">РЕКОРДЫ</button>
       <button class="btn small ghost" id="helpBtn">БОНУСЫ</button>
       <button class="btn small ghost" id="musicBtn">МУЗЫКА: ВКЛ</button>
       <button class="btn small ghost" id="resetBtn">СБРОС</button>
@@ -141,11 +161,12 @@ canvas { display:block;margin:0 auto; }
     <div class="score bonus">Очки: <span id="finScore">0</span></div>
     <div class="score">В рюкзак: <span id="finWallet">0</span></div>
     <div class="goal" id="finGoal"></div>
-    <div class="namerow">
+    <div class="namerow" id="finNameRow">
       <input id="finName" maxlength="12" placeholder="ИМЯ" autocomplete="off">
-      <button class="btn small" id="saveNameBtn">ЗАПИСАТЬ</button>
+      <button class="btn small" id="saveNameBtn">ИМЯ</button>
     </div>
-    <div class="boardtitle">Кто как прошёл этот день</div>
+    <div class="finrun" id="finRun"></div>
+    <div class="boardtitle">Таблица дня · соперники из похода</div>
     <div class="board" id="finBoard"></div>
     <div class="maprow">
       <button class="btn small" id="nextBtn">ДАЛЬШЕ</button>
@@ -162,6 +183,17 @@ canvas { display:block;margin:0 auto; }
       <button class="btn small ghost" id="toMapBtn">К МАРШРУТУ</button>
     </div>
   </div>
+  <div id="recordsScreen" class="hidden">
+    <h1 class="maph">РЕКОРДЫ</h1>
+    <div class="recnav">
+      <button class="btn small ghost" id="recPrev">&lt;</button>
+      <div class="place" id="recTitle"></div>
+      <button class="btn small ghost" id="recNext">&gt;</button>
+    </div>
+    <div class="finrun" id="recRun"></div>
+    <div class="board" id="recBoard"></div>
+    <div class="maprow"><button class="btn small" id="recBack">НАЗАД</button></div>
+  </div>
   <div id="diaryScreen" class="hidden">
     <h1 class="maph">ДНЕВНИК СПЛАВА</h1>
     <div class="diary" id="diaryText"></div>
@@ -175,7 +207,7 @@ canvas { display:block;margin:0 auto; }
     <button class="btn" id="contBtn">&gt; ПРОДОЛЖИТЬ &lt;</button>
   </div>
 </div>
-<div id="mHint">
+<div id="mHint" class="hide">
   <div><b>ВЕДИ ПАЛЕЦ</b> — РУЛЬ</div>
   <div><b>ПАЛЕЦ СВЕРХУ</b> — ГРЕБИ&nbsp;&nbsp;·&nbsp;&nbsp;<b>ПАЛЕЦ СНИЗУ</b> — ТАБАНЬ</div>
   <div><b>ДВОЙНОЙ ТАП</b> — УДАР ВЕСЛОМ</div>
@@ -4541,6 +4573,11 @@ function speedMulAt(w){ return 1 + 0.4*rapidBlend(w); }
 
 const keys={};let mt=null;
 addEventListener("keydown",e=>{
+  // Печать имени не должна включать музыку, делать скриншот или листать экраны.
+  if(e.target&&e.target.tagName==="INPUT"){
+    if(e.key==="Enter"){e.preventDefault();document.getElementById("saveNameBtn").click();}
+    return;
+  }
   // Удержание не должно дёргать тумблеры и автопарировать пробелом:
   // только одиночные нажатия.
   if(e.repeat&&(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь"||
@@ -4654,11 +4691,10 @@ function recordFinish(){
   if (g.s !== "finish") return;   // Enter + клик по сфокусированной кнопке не дублируются
   const L = level(), total = g.pendingScore || 0;
   if (!save.name){
-    const v = (document.getElementById("finName").value || "").trim().slice(0,12);
-    save.name = v || "ПУТНИК"; commitSave();
+    save.name = cleanName(document.getElementById("finName").value) || "ПУТНИК"; commitSave();
   }
   addResult(L.day, save.name, total);
-  renderBoard(L.day, total);
+  renderBoard(L.day, total, g.prevBest);
 }
 function nextDay(){
   if (g.s !== "finish") return;   // повторный вызов (Enter + клик) день не двигает
@@ -4672,14 +4708,11 @@ function nextDay(){
   else playCut(nightName(g.day), showCamp);
 }
 document.getElementById("saveNameBtn").addEventListener("click",()=>{
-  const nm = (document.getElementById("finName").value || "").trim().slice(0,12);
-  if (!nm) return;
-  // Переименование заменяет строку-заглушку «ПУТНИК», а не плодит вторую.
-  const prev = save.name || "ПУТНИК";
-  save.name = nm; commitSave();
+  if (!renameMe(document.getElementById("finName").value)) return;
   const L = level(), total = g.pendingScore || 0;
-  addResult(L.day, nm, total, prev);
-  renderBoard(L.day, total);
+  addResult(L.day, save.name, total);
+  renderBoard(L.day, total, g.prevBest);
+  campToast("ИМЯ: " + save.name);
 });
 document.getElementById("nextBtn").addEventListener("click",()=>{
   recordFinish();
@@ -4693,6 +4726,11 @@ document.getElementById("diaryBtn").addEventListener("click",showDiary);
 document.getElementById("musicBtn").addEventListener("click",()=>{ startMusic(); toggleMusic(); });
 document.getElementById("helpBtn").addEventListener("click",showHelp);
 document.getElementById("diaryBack").addEventListener("click",showMap);
+document.getElementById("recordsBtn").addEventListener("click",()=>showRecords());
+document.getElementById("startBoardBtn").addEventListener("click",()=>{ startMusic(); showRecords(); });
+document.getElementById("recPrev").addEventListener("click",()=>showRecords(recDay-1));
+document.getElementById("recNext").addEventListener("click",()=>showRecords(recDay+1));
+document.getElementById("recBack").addEventListener("click",showMap);
 document.getElementById("endMapBtn").addEventListener("click",showMap);
 document.getElementById("campBtn").addEventListener("click",showCamp);
 // Пауза: мышь — мгновенно, тач — только удержанием. Кнопка теперь в середине
@@ -5653,16 +5691,63 @@ function addResult(dayNo, name, score, prevName){
   return save.board[dayNo];
 }
 
-function renderBoard(dayNo, highlightScore){
+// Экранное имя игрока: верхний регистр, не длиннее 12 знаков.
+function cleanName(v){ return String(v || "").trim().slice(0,12).toUpperCase(); }
+function escHtml(v){
+  return String(v).replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch]));
+}
+function mineRow(dayNo){
+  const rows = save.board[dayNo];
+  return rows ? rows.find(r => r.mine) || null : null;
+}
+// Что показать в таблице: первые n строк, а если игрок ниже — его строка
+// с настоящим местом после разрыва. Раньше строки ниже восьмой просто пропадали,
+// и игрок не видел себя в таблице вовсе.
+function boardView(dayNo, n){
+  n = n || 8;
   const rows = ensureBoard(dayNo);
+  const all = rows.map((r, i) => ({ rank:i+1, name:r.name, score:r.score, mine:!!r.mine }));
+  const view = all.slice(0, n);
+  const me = all.find(r => r.mine);
+  if (me && me.rank > n) view.push({ gap:true }, me);
+  return { rows:view, total:all.length, me:me || null };
+}
+// Итог заброда над таблицей: этот заход, лучший результат и место.
+// prevBest — лучший результат ДО этого захода (0, если дня ещё не проходили).
+function runSummary(dayNo, run, prevBest){
+  const v = boardView(dayNo);
+  return { run, best: v.me ? v.me.score : run, rank: v.me ? v.me.rank : 0, total: v.total,
+           record: run > (prevBest || 0), first: !prevBest };
+}
+function renameMe(nm){
+  nm = cleanName(nm);
+  if (!nm) return false;
+  save.name = nm;
+  // Имя меняется во всех днях: иначе в старых таблицах остаётся «ПУТНИК»,
+  // и непонятно, что это тоже ты.
+  for (const d in save.board)
+    for (const r of save.board[d]) if (r.mine) r.name = nm;
+  commitSave();
+  return true;
+}
+function boardHtml(dayNo){
+  const v = boardView(dayNo);
+  return v.rows.map(r => {
+    if (r.gap) return "<div class='brow gap'><span>...</span></div>";
+    const cls = "brow" + (r.mine ? " mine" : "") + (r.rank <= 3 ? " top" + r.rank : "");
+    return "<div class='" + cls + "'><span>" + r.rank + ". " + (r.mine ? "> " : "") + escHtml(r.name) +
+           (r.mine ? " (ВЫ)" : "") + "</span><span>" + r.score + "</span></div>";
+  }).join("");
+}
+function renderBoard(dayNo, run, prevBest){
   const box = document.getElementById("finBoard");
-  box.innerHTML = "";
-  rows.slice(0, 8).forEach((r, i) => {
-    const el = document.createElement("div");
-    el.className = "brow" + (r.mine ? " mine" : "");
-    el.innerHTML = "<span>" + (i+1) + ". " + r.name + "</span><span>" + r.score + "</span>";
-    box.appendChild(el);
-  });
+  box.innerHTML = boardHtml(dayNo);
+  const sum = document.getElementById("finRun");
+  if (!sum) return;
+  if (run == null){ sum.innerHTML = ""; return; }
+  const r = runSummary(dayNo, run, prevBest);
+  sum.innerHTML = "ЭТОТ ЗАХОД: <b>" + r.run + "</b><br>ЛУЧШИЙ: <b>" + r.best + "</b> · МЕСТО " + r.rank + " ИЗ " + r.total +
+    (r.record ? "<br><span class='rec'>" + (r.first ? "ПЕРВЫЙ РЕЗУЛЬТАТ ДНЯ" : "НОВЫЙ РЕКОРД!") + "</span>" : "");
 }
 function totalStars(){
   let n = 0;
@@ -5873,27 +5958,24 @@ function showMap(){
 function showFinish(L, stars, total){
   hideAllScreens();
   document.getElementById("finPlace").textContent = L.place;
-  document.getElementById("finStars").textContent = "★".repeat(stars) + "☆".repeat(3-stars);
+  document.getElementById("finStars").innerHTML = "★".repeat(stars) + "<span class='off'>" + "★".repeat(3-stars) + "</span>";
   document.getElementById("finDist").textContent = Math.floor(g.dist);
   document.getElementById("finScore").textContent = total;
   document.getElementById("finWallet").textContent =
     (g.walletCredit != null ? g.walletCredit : Math.floor(total/3));
   document.getElementById("finGoal").innerHTML =
-    (g.livesLost === 0 ? "★ без потери попыток" : "☆ потеряно попыток: " + g.livesLost) + "<br>" +
-    (goalMet() ? "★ " : "☆ ") + L.goalText;
+    (g.livesLost === 0 ? "<span class='ok'>+ без потери попыток</span>" : "<span class='no'>- потеряно попыток: " + g.livesLost + "</span>") + "<br>" +
+    (goalMet() ? "<span class='ok'>+ " : "<span class='no'>- ") + L.goalText + "</span>";
   document.getElementById("nextBtn").textContent = (g.day >= LEVELS.length-1) ? "К МАРШРУТУ" : "ДАЛЬШЕ";
   g.pendingScore = total;
-  // Имя спрашиваем один раз за поход; результат пишется сразу — даже если
-  // игрок ушёл дальше, не вписав имя, запись появится под «ПУТНИК».
-  const row = document.querySelector(".namerow");
-  if (save.name){
-    row.classList.add("hidden");
-  } else {
-    row.classList.remove("hidden");
-    document.getElementById("finName").value = "";
-  }
+  // Имя можно поменять в любой момент; результат пишется сразу, под «ПУТНИК»,
+  // если имени ещё нет.
+  document.getElementById("finNameRow").classList.remove("hidden");
+  document.getElementById("finName").value = save.name || "";
+  const mine = mineRow(L.day);
+  g.prevBest = mine ? mine.score : 0;
   addResult(L.day, save.name || "ПУТНИК", total);
-  renderBoard(L.day, total);
+  renderBoard(L.day, total, g.prevBest);
   document.getElementById("finishScreen").classList.remove("hidden");
 }
 
@@ -5971,7 +6053,7 @@ function showCamp(){
       (locked ? "нужно звёзд: " + it.stars + " · сейчас " + st
               : (owned ? "в рюкзаке — " + it.note : it.note)) + "</div></div>";
     const b = document.createElement("button");
-    b.textContent = owned ? "✓ В РЮКЗАКЕ" : (locked ? "★" + it.stars : it.price);
+    b.textContent = owned ? "В РЮКЗАКЕ" : (locked ? it.stars + " ЗВ." : it.price);
     b.disabled = owned || locked || save.wallet < it.price;
     b.onclick = () => {
       if (hasGear(it.id) || locked || save.wallet < it.price) return;
@@ -6049,6 +6131,25 @@ function showDiary(){
     ? got.map(d => "<p>" + DIARY[d] + "</p>").join("")
     : "<p>Пока пусто. Записи появляются за пройденные дни.</p>";
   document.getElementById("diaryScreen").classList.remove("hidden");
+}
+
+// Экран рекордов: таблицы всех открытых дней, листаются стрелками.
+let recDay = 0;
+function showRecords(dayIdx){
+  hideAllScreens();
+  g.s = "records";
+  const last = Math.min(save.day, LEVELS.length-1);
+  recDay = Math.max(0, Math.min(dayIdx == null ? last : dayIdx, last));
+  const L = LEVELS[recDay];
+  document.getElementById("recTitle").textContent = "ДЕНЬ " + L.day + " · " + RIVERS[L.river].name;
+  document.getElementById("recBoard").innerHTML = boardHtml(L.day);
+  const me = mineRow(L.day);
+  document.getElementById("recRun").innerHTML = me
+    ? "ЛУЧШИЙ: <b>" + me.score + "</b> · МЕСТО " + boardView(L.day).me.rank
+    : "ТЫ ЕЩЁ НЕ ПРОШЁЛ ЭТОТ ДЕНЬ";
+  document.getElementById("recPrev").disabled = recDay <= 0;
+  document.getElementById("recNext").disabled = recDay >= last;
+  document.getElementById("recordsScreen").classList.remove("hidden");
 }
 
 // Мост: настил через реку и две опоры. Средний пролёт всегда свободен,
@@ -7263,12 +7364,13 @@ function togglePause(){
 function hideAllScreens(){
   if (typeof campTimer !== "undefined" && campTimer){ clearInterval(campTimer); campTimer = null; }
   for (const id of ["startScreen","continueScreen","pauseScreen","endScreen",
-                    "mapScreen","finishScreen","failScreen","campScreen","diaryScreen"]){
+                    "mapScreen","finishScreen","failScreen","campScreen","diaryScreen","recordsScreen"]){
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   }
   document.getElementById("pauseScreen").classList.add("hidden");
   document.getElementById("pauseBtn").classList.add("hidden");
+  showMobileHint(false);   // подсказка про тапы — только в самом заплыве
 }
 
 function sg(){
@@ -7996,8 +8098,77 @@ function drawOrderOf(obs){
   return ground.concat(rest);
 }
 
+// Заставка: рассвет над рекой, силуэты ёлок, байдарка покачивается на воде.
+// Рисуется, пока игра в состоянии «start»; кнопки — поверх, в DOM.
+let titleT = 0;
+function drwTitle(){
+  titleT++;
+  const hz = 330;                                         // линия горизонта
+  const sky = cx.createLinearGradient(0, 0, 0, hz);
+  sky.addColorStop(0, "#2b3a78"); sky.addColorStop(0.55, "#e0789a"); sky.addColorStop(1, "#ffc77a");
+  cx.fillStyle = sky; cx.fillRect(0, 0, W, hz);
+  // Звёзды гаснут к горизонту.
+  cx.fillStyle = "rgba(255,255,255,0.8)";
+  for (let i = 0; i < 26; i++){
+    const x = (i*97 + 13) % W, y = (i*53 + 7) % 150;
+    if ((titleT + i*11) % 90 < 70) cx.fillRect(x, y, 2, 2);
+  }
+  // Солнце: диск и кольца.
+  for (let r = 3; r >= 0; r--){
+    cx.fillStyle = ["#fff2b0","#ffe27a","rgba(255,226,122,0.35)","rgba(255,226,122,0.15)"][r];
+    cx.beginPath(); cx.arc(300, hz, [34, 44, 64, 88][r], Math.PI, 0); cx.fill();
+  }
+  // Два гребня дальних холмов.
+  const ridge = (col, base, amp, f, ph) => {
+    cx.fillStyle = col; cx.beginPath(); cx.moveTo(0, hz);
+    for (let x = 0; x <= W; x += 14) cx.lineTo(x, base - amp*Math.sin(x*f + ph) - amp*0.5*Math.sin(x*f*2.3 + ph));
+    cx.lineTo(W, hz); cx.closePath(); cx.fill();
+  };
+  ridge("#6a4f86", hz - 26, 12, 0.012, 1.0);
+  ridge("#3d3a6b", hz - 8,  10, 0.018, 2.4);
+  // Ёлки на дальнем берегу.
+  for (let i = 0; i < 15; i++){
+    const nm = i % 4 === 3 ? "sbirch" : "sfir";
+    const sz = spriteSize(nm);
+    if (sz) drawSprite(nm, 14 + i*29 + (i%2)*7, hz - sz.h/2 + 6);
+  }
+  // Вода.
+  const wat = cx.createLinearGradient(0, hz, 0, H);
+  wat.addColorStop(0, "#f2a77a"); wat.addColorStop(0.18, "#3f77b8"); wat.addColorStop(1, "#0d3f7a");
+  cx.fillStyle = wat; cx.fillRect(0, hz, W, H - hz);
+  // Солнечная дорожка и рябь: пиксельные полоски плывут к зрителю.
+  for (let i = 0; i < 34; i++){
+    const k = ((i*0.137 + titleT*0.0016) % 1);
+    const y = hz + 4 + k*k*(H - hz - 10);
+    const w = 10 + k*70, x = (i*79 % W);
+    cx.fillStyle = "rgba(255,240,190," + (0.55 - k*0.35) + ")";
+    if (Math.abs(x - 300) < 110 + k*60) cx.fillRect(x - w/2, y, w, 2 + k*2);
+    cx.fillStyle = "rgba(200,230,255," + (0.22 + k*0.18) + ")";
+    cx.fillRect((i*131 + titleT*0.6*(0.3 + k)) % (W + 80) - 40, y + 3, 14 + k*34, 2);
+  }
+  // Байдарка с гребцом: качается и чуть дрейфует.
+  const bob = Math.sin(titleT*0.05)*3, kx = 138 + Math.sin(titleT*0.012)*10, ky = 452 + bob;
+  cx.fillStyle = "rgba(0,0,0,0.25)";
+  cx.beginPath(); cx.ellipse(kx, ky + 26, 70, 7, 0, 0, Math.PI*2); cx.fill();
+  cx.fillStyle = "rgba(255,255,255,0.45)";
+  for (let i = 1; i <= 4; i++) cx.fillRect(kx - 58 - i*22, ky + 22 + (i%2)*3, 14 + i*2, 2);
+  drawSprite("kayak_side", kx, ky);
+  // Название.
+  cx.textAlign = "center";
+  cx.font = "44px " + F;
+  cx.fillStyle = "#0d2b5e"; cx.fillText("СПЛАВ", W/2 + 4, 104 + 4);
+  cx.fillStyle = "#4fc3f7"; cx.fillText("СПЛАВ", W/2, 104);
+  cx.font = "14px " + F;
+  cx.fillStyle = "#0d2b5e"; cx.fillText("НА БАЙДАРКЕ", W/2 + 2, 142 + 2);
+  cx.fillStyle = "#ffe27a"; cx.fillText("НА БАЙДАРКЕ", W/2, 142);
+  cx.font = "8px " + F;
+  cx.fillStyle = "rgba(255,255,255," + (0.65 + 0.3*Math.sin(titleT*0.06)) + ")";
+  cx.fillText("ВОЛГА · МЕДВЕДИЦА · ТВЕРЦА · ОСУГА", W/2, 172);
+  cx.textAlign = "left";
+}
 function rndr(){
   cx.clearRect(0,0,W,H);
+  if (g.s == "start"){ drwTitle(); return; }
   if (g.s == "cutscene" && g.cut){ drwCut(); return; }
   cx.save();
   const amp = g.shake + rapidBlend(g.pwy)*2;
@@ -8068,7 +8239,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum,
+  campaignSum, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
