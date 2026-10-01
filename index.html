@@ -2568,6 +2568,11 @@ function sfx(kind){
   } else if (kind === "swing"){
     tone(180, t, 0.09, "sawtooth", 0.07);
     tone(240, t + 0.07, 0.07, "square", 0.05);
+  } else if (kind === "growl"){
+    // Рык медведя: низкие «пилы» с дрожью, как мотор, но злее.
+    tone(95, t, 0.30, "sawtooth", 0.10);
+    tone(70, t + 0.08, 0.34, "square", 0.07);
+    tone(52, t + 0.20, 0.30, "sawtooth", 0.08);
   } else if (kind === "parry"){
     tone(1200, t, 0.05, "square", 0.10);
     tone(1600, t + 0.04, 0.06, "square", 0.09);
@@ -4097,7 +4102,7 @@ const LEVELS = [
   { day:7, river:3, place:"ПОРОГ ПЕРВЫЙ",       len:1200, goal:"cleanrapids", need:3,
     goalText:"Пройти 3 порога чисто",        aggro:0.55, arrive:"camp",   dens:0.016 },
   { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:20,
-    goalText:"Набрать комбо 20",             aggro:0.55, fog:0.85, arrive:"camp",   dens:0.018 },
+    goalText:"Набрать комбо 20",             aggro:0.55, fog:0.85, bearChase:[0.28, 0.70], arrive:"camp",   dens:0.018 },
   { day:9, river:3, place:"УСТЬЕ ОСУГИ",        len:1200, goal:"parries",     need:4,
     goalText:"Парировать 4 удара веслом",    aggro:0.60, arrive:"camp",   dens:0.019 }
 ];
@@ -7061,6 +7066,135 @@ function chkCl(){
     if(Math.hypot(dx,dy)<kr+14){apBn(b);g.bns.splice(i,1);}
   }
 }
+/* ===== Погоня медведя (день 8) ===== */
+// Медведь выходит из воды у берега позади лодки и плывёт следом. Расстояние
+// до него (b.d, px) каждый кадр сокращается на BEAR_CLOSE от скорости течения,
+// а гребок вперёд его увеличивает на BEAR_ROW: стоя на месте лодку догоняют за
+// три-четыре секунды, гребя вперёд рывками (сил хватает на треть времени) —
+// держатся на расстоянии. Продержался BEAR_FRAMES или оторвался на BEAR_QUIT —
+// медведь выходит на берег и машет лапой вслед (награда в очках).
+const BEAR_CLOSE = 0.12, BEAR_ROW = 0.18, BEAR_FRAMES = 420, BEAR_GRACE = 45;
+const BEAR_GAP0 = 90, BEAR_BITE = 30, BEAR_QUIT = 240, BEAR_WAVE = 170;
+function bearChaseDue(){
+  const L = level();
+  if (!L.bearChase || g.bc) return false;
+  const f = L.bearChase[g.bcIdx | 0];
+  return f !== undefined && g.dist >= L.len*f && g.dist < L.len - FIN_SPAWN_M - 40;
+}
+function startBearChase(side){
+  side = side || (Math.random() < 0.5 ? -1 : 1);
+  g.bc = { d: BEAR_GAP0, wy: g.pwy - BEAR_GAP0, t: side*0.9, side, age: 0, state: "swim", fade: 0 };
+  g.bcIdx = (g.bcIdx | 0) + 1;
+  sfx("growl");
+  popText("МЕДВЕДЬ! ГРЕБИ ВПЕРЁД!", "#ff5252");
+  explain("bear", "МЕДВЕДЬ быстрее течения. Уйти можно только греблей вперёд (стрелка вверх), но сил мало — рывками");
+}
+function bearLeave(frames){ g.bc.state = "gone"; g.bc.fade = frames; }
+// Не догнал: вылезает на берег там, где его видно, и бежит вдоль воды, махая лапой.
+function bearWave(){
+  const b = g.bc;
+  g.bearsLost++;
+  addBonus(150);
+  popText("МЕДВЕДЬ ОТСТАЛ +" + award(150), "#7fd67f");
+  sfx("clean");
+  b.state = "wave"; b.fade = BEAR_WAVE;
+  b.wy = g.pwy - Math.min(b.d, 62);
+}
+function bearStep(step){
+  const b = g.bc;
+  if (!b) return;
+  b.age++;
+  if (b.state === "gone"){ b.wy += step*0.6; if (--b.fade <= 0) g.bc = null; return; }
+  if (b.state === "wave"){
+    // Бежит вдоль берега чуть медленнее лодки, прижимаясь к кромке воды: отстаёт
+    // по экрану плавно, и его видно все две-три секунды.
+    b.wy += step*0.9;
+    b.t += Math.max(-0.01, Math.min(0.01, (b.side*0.97 - b.t)*0.05));
+    if (--b.fade <= 0) g.bc = null;
+    return;
+  }
+  if (b.age > BEAR_GRACE) b.d -= BEAR_CLOSE*step;
+  b.d += (g.rowing || 0)*BEAR_ROW*step;          // гребок вперёд отдаляет, табанить — наоборот
+  b.d = Math.min(b.d, BEAR_QUIT);
+  b.wy = g.pwy - b.d;
+  b.t += Math.max(-0.012, Math.min(0.012, (g.t - b.t)*0.04));
+  const hw = widthAt(b.wy)/2;
+  if (b.age > BEAR_GRACE && b.d <= BEAR_BITE && Math.abs(b.t - g.t)*hw < 70){
+    spPt(screenXOf(b.t, b.wy), screenYOf(b.wy), "#cfe8f5", 22);
+    damage();
+    popText("МЕДВЕДЬ ДОГНАЛ", "#ff5252");
+    bearLeave(40);
+    return;
+  }
+  if (b.d < -60){ bearLeave(40); return; }       // проплыл мимо — теряет интерес
+  if (b.age >= BEAR_FRAMES || b.d >= BEAR_QUIT) bearWave();
+}
+// Медведь на берегу: стоит у кромки лицом к воде и машет лапой вслед.
+function drwBearWave(x, y, side){
+  const half = spriteSize("bear").w/2, dirW = -side;           // к воде
+  const bx = x + side*(half + 4);
+  const wob = Math.floor(g.frame/18) % 2 ? "bear_b" : "bear";
+  drawSprite(wob, bx, y);
+  const sh = { x: bx + dirW*half*0.55, y: y - 18 };
+  const sw = Math.sin(g.frame*0.32);
+  const px = sh.x + dirW*(10 + sw*9), py = sh.y - 24 - Math.abs(Math.cos(g.frame*0.32))*5;
+  cx.strokeStyle = "#5b3a1c"; cx.lineWidth = 7; cx.lineCap = "round";
+  cx.beginPath(); cx.moveTo(sh.x, sh.y); cx.lineTo(px, py); cx.stroke();
+  cx.lineCap = "butt";
+  cx.fillStyle = "#3a2410";
+  cx.beginPath(); cx.arc(px, py, 5, 0, Math.PI*2); cx.fill();
+}
+// Медведь плывёт мордой по течению: голова с ушами над водой, спина под водой,
+// лапы гребут по очереди, сзади расходится усиками волна. Пока он за нижним
+// краем кадра, на краю мигает красный знак — откуда ждать.
+function drwBearSwim(){
+  const b = g.bc;
+  if (!b) return;
+  const x = screenXOf(b.t, b.wy), y = screenYOf(b.wy);
+  if (b.state === "wave"){ if (y > -40 && y < H + 40) drwBearWave(x, y, b.side); return; }
+  if (y > H + 30){
+    if (Math.floor(g.frame/10) % 2 === 0){
+      const wx = Math.max(24, Math.min(W - 24, x));
+      cx.fillStyle = "#ff5252";
+      cx.beginPath(); cx.moveTo(wx, H - 6); cx.lineTo(wx - 14, H - 30); cx.lineTo(wx + 14, H - 30); cx.closePath(); cx.fill();
+      cx.fillStyle = "#fff"; cx.font = "12px " + F; cx.textAlign = "center"; cx.fillText("!", wx, H - 11); cx.textAlign = "left";
+    }
+    return;
+  }
+  const a = b.state === "gone" ? Math.max(0, b.fade/40) : 1;
+  const ph = Math.sin(g.frame*0.25);
+  cx.save();
+  cx.globalAlpha = a;
+  // Волна за кормой.
+  cx.strokeStyle = "rgba(255,255,255,0.75)"; cx.lineWidth = 3;
+  for (let i = 1; i <= 3; i++){
+    const k = i*16 + (g.frame % 16);
+    cx.beginPath(); cx.moveTo(x - 10 - k*0.5, y + 16 + k); cx.lineTo(x - 22 - k*0.9, y + 22 + k); cx.stroke();
+    cx.beginPath(); cx.moveTo(x + 10 + k*0.5, y + 16 + k); cx.lineTo(x + 22 + k*0.9, y + 22 + k); cx.stroke();
+  }
+  // Спина под водой — тёмное пятно.
+  cx.fillStyle = "rgba(40,24,10,0.55)";
+  cx.beginPath(); cx.ellipse(x, y + 14, 27, 34, 0, 0, Math.PI*2); cx.fill();
+  // Лапы гребут по очереди.
+  cx.fillStyle = "#4a2d14";
+  cx.beginPath(); cx.ellipse(x - 27, y + 2 + ph*5, 6, 10, 0.4, 0, Math.PI*2); cx.fill();
+  cx.beginPath(); cx.ellipse(x + 27, y + 2 - ph*5, 6, 10, -0.4, 0, Math.PI*2); cx.fill();
+  // Голова: уши, лоб, морда, нос и глаза.
+  cx.fillStyle = "#5b3a1c";
+  cx.beginPath(); cx.arc(x - 13, y - 14, 6, 0, Math.PI*2); cx.arc(x + 13, y - 14, 6, 0, Math.PI*2); cx.fill();
+  cx.fillStyle = "#6b4423";
+  cx.beginPath(); cx.ellipse(x, y - 4, 19, 20, 0, 0, Math.PI*2); cx.fill();
+  cx.fillStyle = "#b8956a";
+  cx.beginPath(); cx.ellipse(x, y - 14, 9, 8, 0, 0, Math.PI*2); cx.fill();
+  cx.fillStyle = "#1a0f08";
+  cx.beginPath(); cx.ellipse(x, y - 19, 3.5, 2.5, 0, 0, Math.PI*2); cx.fill();
+  cx.fillRect(x - 10, y - 8, 3, 3); cx.fillRect(x + 7, y - 8, 3, 3);
+  // Круги по воде у головы.
+  cx.strokeStyle = "rgba(255,255,255,0.55)"; cx.lineWidth = 2;
+  cx.beginPath(); cx.ellipse(x, y + 4, 31 + ph*2, 26 + ph*2, 0, 0, Math.PI*2); cx.stroke();
+  cx.restore();
+}
+
 /* ===== 6. Прочность и бонусы ===== */
 const INV_FRAMES = 90, BREAD_FRAMES = 480, WHISKY_FRAMES = 360, AXE_RANGE = 420, AXE_MAX = 2;
 
@@ -7111,6 +7245,7 @@ function damage(){
 
 // Потеря попытки: экран «Продолжить» с обратным отсчётом, как на приставках.
 function loseAttempt(){
+  g.bc = null;                        // после переворота погоня не продолжается
   g.lives -= 1;
   g.livesLost++;
   sfx("splash");                      // лодка перевернулась — всплеск воды
@@ -7379,7 +7514,7 @@ function sg(){
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
-  g.cleanRun=false;g.wasRapid=false;
+  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;
   ensureSegments(H*2);
   const r = river();
   g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks; g.rFreq = r.freq || 1;
@@ -7710,6 +7845,8 @@ function upd(){
   tickStamina();
   axeStep();
   g.scroll += step;
+  if (bearChaseDue()) startBearChase();
+  bearStep(step);
   ensureSegments(g.scroll + H*2);
   while (g.segs.length > 40) g.segs.shift();
   g.pa=Math.sin(g.frame*0.12);
@@ -8180,6 +8317,7 @@ function rndr(){
   for(const b of g.bridges_) drwBridgeAim(b);   // поплавки лежат на воде
   for(const o of drawOrderOf(g.obs))drwOb(o);
   for(const b of g.bns)drwBn(b);
+  drwBearSwim();                                // медведь в воде — под туманом
   drwFog();                                     // туман и мгла — под своей байдаркой
   drwWake();drwPt();drwKy();drwClash();
   // Мост рисуется ПОСЛЕ байдарки: под мостом проплывают, а не по нему.
@@ -8239,7 +8377,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
