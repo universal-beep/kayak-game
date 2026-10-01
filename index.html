@@ -5583,12 +5583,14 @@ const DEEP_SETS = [
 // траве. Теперь — только напротив своего жителя берега (деревня, пляж,
 // лагерь) на той же стороне; иначе на их месте природное из набора реки.
 const DEEP_NEAR = { house:["village"], church:["village"], banya:["village","banya"], umbrella:["beach"], tent2:["camp","fire"] };
-function deepPick(name, wy, side){
+// key — устойчивый номер места декора (полоса vwx и ряд): по нему выбирается
+// подмена. Раньше выбор шёл по wy полосы, а он меняется каждый кадр — деревья мигали.
+function deepPick(name, wy, side, key){
   const near = DEEP_NEAR[name];
   if (!near) return name;
   if (g.bev.some(e => near.includes(e.type) && e.side === side && Math.abs(e.wy - wy) < 320)) return name;
   const nat = deepDecor().filter(n => !DEEP_NEAR[n]);
-  return nat[Math.floor(hsh(Math.round(wy)*7 + side*3)*nat.length) % nat.length];
+  return nat[Math.floor(hsh((key || 0)*7 + side*3)*nat.length) % nat.length];
 }
 function deepDecor(){
   const r = Math.min(level().river, DEEP_SETS.length - 1);
@@ -5738,7 +5740,7 @@ function drwBg(x0, x1){
         for (let r = 0; r*DEEP_DX < reach + 20; r++){
           const h = hsh(vwx*41 + r*13 + side*7), h2 = hsh(vwx*23 + r*29 + side*5);
           if (h < DEEP_SKIP[level().river]) continue;
-          const list = deepDecor(), name = deepPick(list[Math.floor(h2*list.length) % list.length], wy, side), sz = spriteSize(name);
+          const list = deepDecor(), name = deepPick(list[Math.floor(h2*list.length) % list.length], wy, side, vwx*41 + r), sz = spriteSize(name);
           const x = side < 0 ? -(r*DEEP_DX) - 8 - h*14 : W + r*DEEP_DX + 8 + h*14;
           if (x + sz.w/2 > L - 12 && x - sz.w/2 < R + 12) continue;       // не на воде
           drawSprite(name, x, foot - sz.h/2);

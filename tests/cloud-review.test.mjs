@@ -75,3 +75,14 @@ test("дома, зонтики и палатки по бокам — тольк�
   K.G.bev = [{ type: "beach", side: 1, wy: 3000 }];
   assert.equal(K.deepPick("umbrella", 3050, 1), "umbrella", "зонтик за пляжем");
 });
+
+// Деревья по бокам мигали: подмена дома на дерево выбиралась по wy полосы,
+// а он меняется каждый кадр прокрутки. Выбор должен зависеть только от места.
+test("подмена в боковых зонах не меняется от кадра к кадру", () => {
+  const { K } = loadGame();
+  K.G.day = 4; setupWorld(K, { wy: 3000 });
+  K.G.bev = [];
+  const picks = new Set();
+  for (let wy = 3000; wy < 3020; wy += 0.37) picks.add(K.deepPick("house", wy, -1, 4242));
+  assert.equal(picks.size, 1, "одно и то же место — одно дерево: " + [...picks]);
+});
