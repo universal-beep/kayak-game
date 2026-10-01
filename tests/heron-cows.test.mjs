@@ -22,7 +22,7 @@ test("цапля улетает, только когда байдарка под
   const far = { type: "heron", side: 1, wy: 1000, phase: 0 };
   K.G.t = -0.6; K.updBev(far);
   assert.ok(!far.away, "с другого берега не пугается");
-  const near = { type: "heron", side: 1, wy: 1000, phase: 0 };
+  const near = { type: "heron", side: 1, wy: 1000, phase: 0, hops: K.HERON_HOPS };   // перелёты уже были
   K.G.t = 0.5; K.updBev(near);
   assert.ok(near.away, "подошли к её берегу — улетает");
   for (let i = 0; i < 200; i++) K.updBev(near);

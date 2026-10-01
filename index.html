@@ -1101,6 +1101,76 @@ const SPR = {
     ".ffff.ffffffffffff.fff",
     "..ffffffffffffffffff..",
     "....ffffff..ffffff...."]},
+  // Мазай и зайцы (день 5): значок-бонус, заяц на песчаном островке, яхта-подарок (вид сверху).
+  badge:{map:["....kkkkkk....",
+    "...kuwuuwuk...",
+    "..kuwwuuwwuk..",
+    ".kuuwwuuwwuuk.",
+    "kuuuwwuuwwuuuk",
+    "kuuuuwuuwuuuuk",
+    "kuuuuwwwwuuuYk",
+    "kuuuwKwwKwuuYk",
+    "kuuuwwwwwwuuYk",
+    "kuuuuwqqwuuYYk",
+    ".kuuuuwwuuuYYk",
+    "..kuYuuuuYYYk.",
+    "...kuYYYYYYk..",
+    "..krrrkkrrrk..",
+    "..krrrkkrrrk..",
+    "..krrrkkrrrk..",
+    "..kRrrkkrrRk.."]},
+  hare_isle:{map:["............knknk.....",
+    "............knknnk....",
+    "............kHkHnk....",
+    "............knnnk.....",
+    "......kkkkkknnKnkk....",
+    ".....knnnnnnnnneeKk...",
+    "...kknnnnnnnnnneeek...",
+    "..kwwwnnnnnnnnnnkk....",
+    "..kwwweeeeeenSSSSSkk..",
+    ".kSwwneeeeoondddSSSSk.",
+    "kSSddddnnnoodddddddSSk",
+    "kSddddddddddddddddddSk",
+    ".kkddddddddddddddddkk.",
+    "..fkkkSSSSSSSSSSkkk..."]},
+  yacht:{map:["......kiiZwwZiik......",
+    ".....kWWZwwwwZWWk.....",
+    ".....kiZwwggwwZik.....",
+    "f...kWWZwwgwwwZWWk...f",
+    "f..kiiZLLLLLLLLZiik..f",
+    "f..kWZLLLLLLLLLLZWk..f",
+    "f.kiiZLLLLLLLLLLZiik.f",
+    "f.kWZLLLLLLLLLLLLZWk.f",
+    "fkiiZLLLLLLLLLLLLZiikf",
+    "fkWZLLLLLLLLLLLLLLZWkf",
+    "kiiZLLLLLLLLLLLLLLZiik",
+    "kWZLLLLLLLLLLLLLLLLZWk",
+    "iiZLLLLLLLLLLLLLLLLZii",
+    "WWZLLLLLZZZZZZLLLLLZWW",
+    "iiZLLLIIIIIIIIIILLLZii",
+    "WWZLLLIIIIIIIIIILLLZWW",
+    "iiZLLLiZZiiiiZZiLLLZii",
+    "WWZLLLiZZWWWWZZiLLLZWW",
+    "iiZLLLiZZWWWWZZiLLLZii",
+    "WWZLLLiZZWWWWZZiLLLZWW",
+    "iiZLLLiZZWWWWZZiLLLZii",
+    "WWZLLLiZZWWWWZZiLLLZWW",
+    "iiZLLLiZZWWWWZZiLLLZii",
+    "WWZLLLiZZiiiiZZiLLLZWW",
+    "iiZLLLiiiiiiiiiiLLLZii",
+    "WWZLLLIIIIIIIIIILLLZWW",
+    "iiZLLLIIIIIIIIIILLLZii",
+    "WWZLLLLLLLLLLLLLLLLZWW",
+    "iiZLLLLLLLLLLLLLLLLZii",
+    "WWZLLLLLDDDDDDLLLLLZWW",
+    "iiZLLLLLDMMMMDLLLLLZii",
+    "WWZLLLLLDMMMMDLLLLLZWW",
+    "iiZLLLLLDMMMMDLLLLLZii",
+    "WWZLLLLLDDDDDDLLLLLZWW",
+    "kiiZLLLLLLLLLLLLLLZiik",
+    ".kWZLLLLLLrrLLLLLLZWk.",
+    "..kiZLLLLLrrrLLLLZik..",
+    "..kWWZLLLLrrLLLLZWWk.."]},
   // Цапля (Медведица, вместо уток): серая, стоит на одной ноге у берега,
   // белая шея буквой S, чёрный хохол, длинный жёлтый клюв. Два кадра полёта:
   // шея втянута, ноги назад, крыло вверх / вниз. Смотрит вправо — к воде
@@ -4364,7 +4434,7 @@ const LEVELS = [
   { day:4, river:1, place:"ЛАГЕРЬ НА МЕДВЕДИЦЕ",len:1000, goal:"parries",     need:3,
     goalText:"Парировать 3 удара веслом",    aggro:0.25, fights:[{at:0.15,n:2},{at:0.40,n:1},{at:0.62,n:2},{at:0.85,n:2}], forks:true, snags:true, arrive:"camp", dens:0.016 },
   { day:5, river:2, place:"ДЕРЕВНЯ",            len:1000, goal:"bridges",     need:4,
-    goalText:"Пройти 4 моста в пролёт",      aggro:0.12, fights:[{at:0.45,n:1}], rain:0.55, bridges:true, arrive:"village", dens:0.017 },
+    goalText:"Пройти 4 моста в пролёт",      aggro:0.12, fights:[{at:0.45,n:1}], rain:0.55, mazai:{ at:0.30, n:10 }, bridges:true, arrive:"village", dens:0.017 },
   { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:1,
     goalText:"Дойти, сохранив сердце",       aggro:0.10, fights:[{at:0.55,n:1}], rain:0.85, wind:1, bridges:true, boats:true, arrive:"town", dens:0.016 },
   { day:7, river:3, place:"ПОРОГ ПЕРВЫЙ",       len:1200, goal:"cleanrapids", need:3,
@@ -5231,7 +5301,7 @@ function drwBg(){
 }
 // Соответствие внутренних типов препятствий именам спрайтов.
 const OB_SPRITE = { boat:"boat", log:"log", shallows:"shallows", kayaker:"rower", snag:"snag", branch:"branch", barge:"barge" };
-const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun" };
+const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun", mazai:"badge", hare:"hare_isle" };
 
 // Искра, где встретились вёсла при парировании.
 function drwClash(){
@@ -5249,10 +5319,27 @@ function drwKy(){
   const x = screenXOf(g.t, g.pwy), y = g.py;
   // Мигание в кадрах неуязвимости после удара.
   if (g.inv > 0 && Math.floor(g.frame/4) % 2 === 0) return;
+  if (g.yacht){
+    // Яхта-подарок (вид сверху): чуть покачивается и кренится на рулении.
+    const ysz = spriteSize("yacht");
+    drawShadow(x, y + ysz.h/2 - 10, ysz.w);
+    cx.save(); cx.translate(x, y - 6); cx.rotate(Math.max(-0.12, Math.min(0.12, g.vt*5)) + Math.sin(g.frame*0.06)*0.015);
+    drawSprite("yacht", 0, 0);
+    cx.restore();
+    if (g.sh){
+      cx.strokeStyle = "rgba(79,195,247,0.4)"; cx.lineWidth = 4;
+      cx.beginPath(); cx.ellipse(x, y, 40, 52, 0, 0, Math.PI*2); cx.stroke();
+    }
+    return;
+  }
   const name = leanOf(g.vt);
   const sz = spriteSize(name);
   drawShadow(x, y + sz.h/2 - 4, sz.w);
   drawSprite(name, x, y);
+  if (g.mazai && !g.mazai.done){        // Мазай: зелёное кольцо вокруг лодки
+    cx.strokeStyle = "rgba(127,214,127," + (0.45 + Math.sin(g.frame*0.12)*0.2) + ")"; cx.lineWidth = 3;
+    cx.beginPath(); cx.ellipse(x, y, 36, 30, 0, 0, Math.PI*2); cx.stroke();
+  }
   if (g.strikeT > 0){
     // Взмах: весло взлетает над головой и обрушивается в сторону соперника.
     const k = 1 - g.strikeT/12, s = g.strikeSide || 1;
@@ -6154,6 +6241,7 @@ function drwHUD(){
     cx.fillStyle = "rgba(0,0,0,0.5)"; cx.fillRect(ax0, 76, 14, 14);
     if (SPR.axe.img) cx.drawImage(SPR.axe.img, ax0 + 1, 77, 12, 12);
   }
+  drwMazaiHud();
   let ey = 96;
   if (g.breadT  > 0){ drwEffBar("ГРЕБОК+", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
   if (g.whiskyT > 0){ drwEffBar("НЕУЯЗВИМ", g.whiskyT/WHISKY_FRAMES,"#e8a838", ey); ey += 16; }
@@ -7353,7 +7441,7 @@ function chkCl(){
     const dx=(g.t-o.t)*hw,dy=g.pwy-o.wy;
     if(o.type=="boat"){
       // Катер длинный — столкновение по его прямоугольнику, а не по кругу.
-      if(Math.abs(dx)<o.visHalf+kr-6 && Math.abs(dy)<o.visHalfY+kr-6 && g.inv<=0 && g.whiskyT<=0){
+      if(Math.abs(dx)<o.visHalf+kr-6 && Math.abs(dy)<o.visHalfY+kr-6 && g.inv<=0 && g.whiskyT<=0 && !g.yacht){
         spPt(screenXOf(g.t,g.pwy),screenYOf(g.pwy),"#ffffff",16);
         damage();
         return;
@@ -7363,7 +7451,7 @@ function chkCl(){
     if((o.cow || o.tied) && Math.hypot(dx,dy)<kr+(o.halfPx||16)){
       // Корова: под виски или неуязвимостью байдарку просто отжимает к
       // середине; иначе удар и «МУ-У!» — корова стоит где стояла.
-      if (g.inv > 0 || g.whiskyT > 0){ g.t -= Math.sign(o.t || 1)*0.02; g.vt = 0; continue; }
+      if (g.inv > 0 || g.whiskyT > 0 || g.yacht){ g.t -= Math.sign(o.t || 1)*0.02; g.vt = 0; continue; }
       if (o.cow) popText("МУ-У!", "#f2f2f2");
       damage();
       if (o.cow) sfx("moo");
@@ -7378,7 +7466,7 @@ function chkCl(){
         return;
       }
       if(o.type=="rock"||o.type=="log"||o.type=="branch"||o.type=="kayaker"||o.type=="snag"){
-        if(g.whiskyT>0){                       // под виски всё разлетается в щепки
+        if(g.whiskyT>0 || g.yacht){            // под виски и на яхте всё разлетается в щепки
           spPt(ox,oy,"#e8a838",20);g.obs.splice(i,1);addScore(10);
         }else{
           // Препятствие убирается ДО вызова damage(), потому что damage()
@@ -7394,9 +7482,92 @@ function chkCl(){
   for(let i=g.bns.length-1;i>=0;i--){
     const b=g.bns[i],hw=widthAt(b.wy)/2;
     const dx=(g.t-b.t)*hw,dy=g.pwy-b.wy;
-    if(Math.hypot(dx,dy)<kr+14){apBn(b);g.bns.splice(i,1);}
+    if(Math.hypot(dx,dy)<kr+(b.type==="hare"?30:14)){apBn(b);g.bns.splice(i,1);}
   }
 }
+/* ===== Мазай и зайцы (день 5) ===== */
+// Весенний разлив, Тверца: на реке лежит значок Мазая. Кто его берёт — 30 секунд
+// «дедушка Мазай»: на песчаных островках сидят зайцы (g.bns, type "hare"), их
+// надо собрать. Собрал не меньше 80% — зайцы дарят яхту (g.yacht): до конца
+// уровня она идёт на 15% быстрее и не боится ни камней, ни брёвен, ни соперников;
+// только баржа её по-прежнему давит. Меньше — очки за каждого зайца.
+const MAZAI_FRAMES = 1800, MAZAI_NEED = 0.8, MAZAI_GAP = 165, YACHT_SPEED = 1.15;
+function mazaiBadgeDue(){
+  const L = level();
+  return !g.custom && !!L.mazai && !g.mazaiPlaced && g.dist >= L.len*L.mazai.at && g.dist < L.len - FIN_SPAWN_M - 250;
+}
+function placeMazaiBadge(){
+  const wy = spawnWy(), vn = BN_SPRITE.mazai, visHalf = spriteSize(vn).w/2;
+  for (let a = 0; a < 12; a++){
+    const t = (Math.random()*2 - 1)*0.6;
+    if (inIsland(t, wy) || !spaceFree(t, wy, visHalf)) continue;
+    g.bns.push({ t, wy, type:"mazai", visHalf, visHalfY: spriteSize(vn).h/2 });
+    g.mazaiPlaced = true;
+    return true;
+  }
+  return false;
+}
+function startMazai(){
+  g.mazai = { n: level().mazai.n, spawned: 0, got: 0, gone: 0, wait: 60, t: 0, done: false };
+  sfx("bonus");
+  popText("МАЗАЙ! СОБЕРИ ЗАЙЦЕВ", "#7fd67f");
+  explain("mazai", "ЗНАЧОК МАЗАЯ: 30 секунд ты дедушка Мазай. Плыви к зайцам на песчаных островках и подбирай их. Собрал 8 из 10 — зайцы подарят яхту до конца дня");
+}
+function spHare(){
+  const wy = spawnWy(), vn = BN_SPRITE.hare, visHalf = spriteSize(vn).w/2;
+  for (let a = 0; a < 14; a++){
+    const t = (Math.random()*2 - 1)*0.72;
+    if (inIsland(t, wy) || !spaceFree(t, wy, visHalf)) continue;
+    g.bns.push({ t, wy, type:"hare", visHalf, visHalfY: spriteSize(vn).h/2 });
+    return true;
+  }
+  return false;
+}
+function mazaiStep(){
+  if (!g.custom && mazaiBadgeDue()) placeMazaiBadge();
+  const m = g.mazai;
+  if (!m || m.done) return;
+  m.t++;
+  if (m.spawned < m.n){
+    if (m.wait > 0) m.wait--;
+    else if (spHare()){ m.spawned++; m.wait = MAZAI_GAP; }
+  }
+  if (m.got + m.gone >= m.n) finishMazai();
+}
+function finishMazai(){
+  const m = g.mazai;
+  m.done = true;
+  if (m.got/m.n >= MAZAI_NEED){
+    g.yacht = true;
+    addBonus(300);
+    sfx("clean"); sfx("bell");
+    popText("ЗАЙЦЫ ПОДАРИЛИ ЯХТУ!", "#ffd54f");
+    spPt(screenXOf(g.t, g.pwy), g.py, "#ffd54f", 30);
+  } else {
+    popText("ЗАЙЦЕВ " + m.got + " ИЗ " + m.n, "#cfe8f5");
+  }
+}
+// Подбор зайца (вызывается из apBn).
+function pickHare(){
+  const m = g.mazai;
+  if (!m || m.done) return;
+  m.got++;
+  addBonus(30);
+  popText("ЗАЯЦ " + m.got + "/" + m.n, "#7fd67f");
+}
+function drwMazaiHud(){
+  const m = g.mazai;
+  if (!m || m.done) return;
+  const left = Math.max(0, Math.ceil((MAZAI_FRAMES - m.t)/60));
+  cx.save();
+  cx.textAlign = "center";
+  cx.fillStyle = "rgba(4,10,20,0.6)"; cx.fillRect(W/2 - 92, 78, 184, 30);
+  cx.font = "9px " + F; cx.fillStyle = "#7fd67f";
+  cx.fillText("МАЗАЙ · ЗАЙЦЫ " + m.got + "/" + m.n, W/2, 92);
+  cx.fillStyle = "#cfe8f5"; cx.fillText(left + " С", W/2, 104);
+  cx.restore();
+}
+
 /* ===== Страж проходимости ===== */
 // Препятствия, которые двигаются (бревно, ветка, соперник), после появления
 // сходятся с камнями и друг с другом, и на узкой реке щели не оставалось:
@@ -7785,7 +7956,7 @@ function bonusWeights(){
 // Три попытки, в каждой три сердца. Ничего не обнуляется: дистанция и счёт
 // идут сквозь все попытки, теряются только сердца.
 function damage(){
-  if (g.inv > 0 || g.whiskyT > 0) return;
+  if (g.inv > 0 || g.whiskyT > 0 || g.yacht) return;       // яхта не боится никого, кроме баржи
   if (g.sh){ g.sh = false; g.shake = 8; sfx("hit"); popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
   g.hp -= 1;
   g.inv = INV_FRAMES;
@@ -7899,6 +8070,14 @@ function apBn(b){
       popText("СОЛНЦЕ +" + award(80) + " · КОМБО","#ffd54f");
       explain("sun","СОЛНЦЕ: не хлеб и не виски, просто жаркий выходной на реке. Очки идут в счёт");
       break;
+    case "mazai":                       // значок: на 30 секунд — Мазай
+      g.bonuses--;                      // значок не считается бонусом дня
+      addBonus(10); startMazai();
+      break;
+    case "hare":                        // заяц на песчаном островке
+      g.bonuses--;
+      pickHare();
+      break;
     case "axe": {                       // в запас: кидается двойным тапом
       // Раньше топор срабатывал сам и молча убирал препятствие где-то
       // впереди — игрок не видел, что и как он срубил.
@@ -7946,6 +8125,8 @@ const DEBUG_SCENES = {
   moose: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   village: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   dog: { wy: 420, side: -1 },         // рыбак с собакой (?day=3&scene=dog)
+  mazai: { wy: 420, side: 1 },        // значок и зайцы (?day=5&scene=mazai)
+  yacht: { wy: 420, side: 1 },        // яхта-подарок (?day=5&scene=yacht)
   bearswim: { wy: 420, side: 1 },     // медведь в воде позади лодки (?day=8&scene=bearswim)
   bearwave: { wy: 420, side: -1 },    // медведь на берегу машет лапой (?day=8&scene=bearwave)
   cyclists: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
@@ -7984,6 +8165,15 @@ function sceneAt(s){
     spawnCamp(tape);
     // Лента в верхней трети кадра (y≈150), лагерь под ней виден целиком.
     teleportTo(Math.max(0, tape - 120));
+  } else if (s === "mazai" || s === "yacht"){
+    teleportTo(DEBUG_SCENES[s].wy);
+    if (s === "yacht") g.yacht = true;
+    else {
+      g.mazaiPlaced = true;
+      g.bns.push({ t:0, wy:g.pwy + 150, type:"mazai", visHalf:spriteSize("badge").w/2, visHalfY:spriteSize("badge").h/2 });
+      startMazai(); g.mazai.spawned = g.mazai.n - 2;
+      for (const [t, dy] of [[-0.5, 260], [0.45, 380]]) g.bns.push({ t, wy:g.pwy + dy, type:"hare", visHalf:spriteSize("hare_isle").w/2, visHalfY:spriteSize("hare_isle").h/2 });
+    }
   } else if (s === "bearswim" || s === "bearwave"){
     const sd = DEBUG_SCENES[s].side;
     teleportTo(DEBUG_SCENES[s].wy);
@@ -8090,7 +8280,7 @@ function sg(){
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
-  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;g.packZones=[];
+  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.mazai=null;g.yacht=false;g.mazaiPlaced=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;g.packZones=[];
   ensureSegments(H*2);
   const r = river();
   g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks; g.rFreq = r.freq || 1;
@@ -8414,7 +8604,7 @@ function upd(){
   // Один шаг на всё: и прокрутка мира, и пройденные метры. Раньше дистанция
   // считалась мимо множителей, и стрежень с порогами на неё не влияли.
   const step = g.sp * sm * speedMulAt(g.scroll) * flowMul(g.t)
-             * (g.whiskyT > 0 ? 1.2 : 1) * windMul(g.frame, g.t);
+             * (g.whiskyT > 0 ? 1.2 : 1) * (g.yacht ? YACHT_SPEED : 1) * windMul(g.frame, g.t);
   if (level().wind && g.frame % 480 === 1) sfx("wind");
   g.dist += step * 0.04;
   rowStep(step);
@@ -8520,6 +8710,7 @@ function upd(){
   if(!g.custom && Math.random()<0.003)spBn();
   spCustom();
   fightStep();
+  mazaiStep();
   if(g.dist>=g.ned)spBev();
   spVillage();
   for(let i=g.obs.length-1;i>=0;i--){
@@ -8567,7 +8758,7 @@ function upd(){
         const reach=Math.min(STRIKE_REACH, ahw*0.8);
         const lat=Math.abs(o.t-g.t)*ahw;
         const alongside=Math.abs(o.wy-g.pwy)<75 && lat<reach;
-        if(o.swingT<0 && alongside && g.inv<=0 && g.whiskyT<=0){
+        if(o.swingT<0 && alongside && g.inv<=0 && g.whiskyT<=0 && !g.yacht){
           o.swingT=SWING_FRAMES; sfx("swing");
           if(!g.taughtParry){ g.taughtParry=true; popText("ПРОБЕЛ — ВЕСЛОМ!","#ff5252"); }
         }
@@ -8633,7 +8824,10 @@ function upd(){
   for(const o of g.obs) pushOutOfIsland(o);
   keepPassage();
   for(const b of g.bns) pushOutOfIsland(b);
-  for(let i=g.bns.length-1;i>=0;i--)if(offScreen(g.bns[i].wy))g.bns.splice(i,1);
+  for(let i=g.bns.length-1;i>=0;i--)if(offScreen(g.bns[i].wy)){
+    if (g.bns[i].type === "hare" && g.mazai && !g.mazai.done) g.mazai.gone++;     // заяц остался на берегу
+    g.bns.splice(i,1);
+  }
   for(let i=g.bev.length-1;i>=0;i--){
     const e = g.bev[i];
     updBev(e);
@@ -9258,7 +9452,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
