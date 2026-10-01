@@ -63,3 +63,31 @@ test("дальние сцены живые: коровы щиплют траву
   assert.ok(bearX.size > 3, "медведь ходит");
   assert.ok(at("fire", 100).smoke, "у костра дым");
 });
+
+// Велосипедисты: дорога на концах уходит от реки за край экрана. На десктопе
+// экран шире — дорога обрывалась у края поля, а ездоки пропадали в конце
+// пути (±CYC_SPAN) посреди луга. Теперь дорога загибается дальше, пока не уйдёт
+// за край окна, и ездоки едут по ней до края.
+test("велосипедисты: дорога и ездоки уходят за край окна, а не обрываются у поля", () => {
+  const K = world(2);
+  assert.ok(K.cycRoadOff(2*K.CYC_SPAN) > 800, "дальше загибается: " + K.cycRoadOff(2*K.CYC_SPAN));
+  const e = { type: "cyclists", side: 1, wy: K.G.pwy + 300, phase: 0, count: 1, f0: K.G.frame };
+  const ax = w => K.centerAt(w) + K.widthAt(w)/2;
+  // ездок на 1000 px ниже места дороги: раньше его уже не рисовали
+  const w = e.wy - 1000, x = ax(w) + K.cycRoadOff(w - e.wy);
+  let wide = null, phone = null;
+  K.withView(X0, X1, () => { wide = K.cyclistShown(e, w); });
+  phone = K.cyclistShown(e, w);
+  assert.equal(wide, x < X1 + 30 && K.screenYOf(w) > -40 && K.screenYOf(w) < K.H + 40, "на десктопе виден, пока в окне");
+  assert.equal(phone, x < K.W + 30 && K.screenYOf(w) > -40 && K.screenYOf(w) < K.H + 40, "на телефоне — пока на экране");
+});
+
+test("медведь на берегу бродит шире на десктопе, но не дальше 260 px от воды", () => {
+  const K = world(2);
+  const e = { type: "bear", side: 1, wy: K.G.pwy + 200, phase: 0 };
+  const phone = K.bearRoam(e);
+  let wide = null;
+  K.withView(X0, X1, () => { wide = K.bearRoam(e); });
+  assert.ok(wide > phone, "шире: " + Math.round(wide) + " против " + Math.round(phone));
+  assert.ok(wide <= 260, "не дальше 260: " + Math.round(wide));
+});

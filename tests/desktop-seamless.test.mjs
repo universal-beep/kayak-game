@@ -115,3 +115,15 @@ test("дальние сцены рисуются в широкой отрисо�
   assert.ok(wideFar > 0, "на десктопе есть");
   assert.equal(phoneFar, 0, "на телефоне нет");
 });
+
+test("на полосе дороги велосипедистов по бокам нет деревьев и камней", () => {
+  const K = world(2);
+  const e = { type: "cyclists", side: -1, wy: K.G.pwy + 300, phase: 0, count: 2, f0: K.G.frame };
+  K.G.bev = [e];
+  // дорога в мире: x(w) = кромка + сдвиг; любая точка декора на ней — помеха
+  for (let w = e.wy - 1500; w < e.wy + 1500; w += 40) {
+    const rx = K.centerAt(w) - (K.widthAt(w)/2 + K.cycRoadOff(w - e.wy));
+    assert.equal(K.onCycRoad(rx, w, 20), true, "середина дороги — занято");
+    assert.equal(K.onCycRoad(rx - 200, w, 20), false, "в стороне — свободно");
+  }
+});

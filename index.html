@@ -5596,6 +5596,18 @@ function deepPick(name, wy, side, key){
 }
 // Полоса дороги моста (мир): дорога и перила от wy−26 до wy+42. Спрайт высотой h
 // с низом в swy занимает swy…swy+h — пересёкся с дорогой → не ставим.
+// На полевой дороге велосипедистов (она на десктопе уходит далеко в бок) декор
+// не ставим: x — центр спрайта, swy — его низ в мире, half — полширины.
+function onCycRoad(x, swy, half){
+  for (const e of g.bev){
+    if (e.type !== "cyclists" || Math.abs(swy - e.wy) > CYC_REACH) continue;
+    for (const w of [swy, swy + 30]){
+      const rx = centerAt(w) + e.side*(widthAt(w)/2 + cycRoadOff(w - e.wy));
+      if (Math.abs(x - rx) < CYC_GAP + 15 + half) return true;
+    }
+  }
+  return false;
+}
 function nearRoad(swy, h){
   for (const b of g.bridges_ || []) if (swy > b.wy - 30 - h && swy < b.wy + 46) return true;
   return false;
@@ -5787,6 +5799,7 @@ function drwBg(x0, x1){
       const place = (name, side, gap) => {
         const dz = spriteSize(name);
         if (nearRoad(swy, dz.h)) return;               // у моста дорога идёт через всю ширину
+        if (onCycRoad(edgeOf(side) + side*(dz.w/2 + gap), swy, dz.w/2)) return;
         const box = { side, in0: gap, in1: gap + dz.w, lo: swy, hi: swy + dz.h };
         if (g.bev.some(e => boxesOverlap(box, boxOf(e), 2))) return;
         if (sandBar(swy, side) > 1) return;            // на песчаной отмели не растёт
@@ -5826,7 +5839,7 @@ function drwBg(x0, x1){
           const list = deepDecor(), name = deepPick(list[Math.floor(h2*list.length) % list.length], wy, side, vwx*41 + r), sz = spriteSize(name);
           const x = side < 0 ? -(r*DEEP_DX) - 8 - h*14 : W + r*DEEP_DX + 8 + h*14;
           if (x + sz.w/2 > L - 12 && x - sz.w/2 < R + 12) continue;       // не на воде
-          if (nearRoad(swy, sz.h) || farBlock(vwx, side, x)) continue;      // дорога моста, дальняя сцена
+          if (nearRoad(swy, sz.h) || farBlock(vwx, side, x) || onCycRoad(x, swy, sz.w/2)) continue;   // дороги, дальняя сцена
           drawSprite(name, x, foot - sz.h/2);
         }
       }
@@ -5836,7 +5849,7 @@ function drwBg(x0, x1){
         if (fs) fs.parts.forEach((p, i) => {
           const a = farPart(p, i, g.frame), sz = spriteSize(a.spr);
           const x = (fs.side < 0 ? -p.dx : W + p.dx) + a.ox, pw = swy + (p.dy || 0);
-          if (x + sz.w/2 < x0 - 10 || x - sz.w/2 > x1 + 10 || nearRoad(pw, sz.h)) return;
+          if (x + sz.w/2 < x0 - 10 || x - sz.w/2 > x1 + 10 || nearRoad(pw, sz.h) || onCycRoad(x, pw, sz.w/2)) return;
           const yy = screenYOf(pw) - sz.h/2 + a.oy;
           drawSprite(a.spr, x, yy, p.v);
           if (a.smoke) for (let k = 0; k < 3; k++){              // дым клубами вверх
@@ -6040,10 +6053,23 @@ function widerBevSide(wy, pref){
   const mL = c - hw, mR = W - (c + hw);
   return mR > mL + 4 ? 1 : mL > mR + 4 ? -1 : pref;
 }
+// Сколько суши у медведя: на телефоне — до края экрана; на десктопе — до края
+// окна, но не дальше 260 px от воды (раньше он разворачивался у края поля,
+// как у невидимой стены посреди луга).
+function bearRoamLand(e, edg){
+  const lim = e.side < 0 ? edg - VX0 : VX1 - edg;
+  return VX0 < 0 || VX1 > W ? Math.min(lim, 260) : lim;
+}
+function bearRoam(e){
+  const edg = centerAt(e.wy) + e.side*widthAt(e.wy)/2, half = spriteSize("bear").w/2;
+  return half + 3 + Math.max(0, bearRoamLand(e, edg) - 2*half - 6);
+}
 function drwBev(e){
   const ax = centerAt(e.wy), hw = widthAt(e.wy)/2;
   const by = screenYOf(e.wy);
-  if (by < -160 || by > H + 160) return;
+  // Дорога велосипедистов тянется далеко вверх и вниз от своей точки.
+  const cull = e.type === "cyclists" ? CYC_REACH + 160 : 160;
+  if (by < -cull || by > H + cull) return;
   const ph = e.phase || 0;
 
   // Утки ВСЕГДА на воде — у самой кромки, на сушу не выходят. Если байдарка
@@ -6150,11 +6176,11 @@ function drwBev(e){
     // колее. Полосами по 6 px мира — дорога гнётся вместе с берегом.
     const grass = g.rGrass || river().grass;
     const RW = CYC_GAP + 11;
-    for (let w = e.wy - CYC_SPAN; w <= e.wy + CYC_SPAN; w += 6){
+    for (let w = e.wy - CYC_REACH; w <= e.wy + CYC_REACH; w += 6){
       const sy = Math.round(screenYOf(w));
       if (sy < -8 || sy > H + 8) continue;
       const x = Math.round(edgAt(w) + e.side*cycRoadOff(w - e.wy)), n = Math.floor(w/6);
-      if (x < -RW - 10 || x > W + RW + 10) continue;              // конец дороги ушёл за экран
+      if (x < VX0 - RW - 10 || x > VX1 + RW + 10) continue;       // конец дороги ушёл за край видимой сцены
       const r1 = hsh(n*17 + 3), r2 = hsh(n*29 + 11), r3 = hsh(n*41 + 7);
       cx.fillStyle = "#a08354"; cx.fillRect(x - RW, sy, RW*2, 7);           // полотно
       cx.fillStyle = "#7c6342";                                              // колеи
@@ -6173,7 +6199,7 @@ function drwBev(e){
     const cnt = e.count || cyclistCount(e);
     for (let i = 0; i < cnt; i++){
       const w = cyclistWy(e, i);
-      if (Math.abs(w - e.wy) > CYC_SPAN) continue;
+      if (!cyclistShown(e, w)) continue;
       const fr = Math.floor(g.frame/6 + i) % 2;
       drawSprite("cyclist" + fr, edgAt(w) + e.side*(cycRoadOff(w - e.wy) + cyclistLane(i, cnt)), screenYOf(w) - 24, i % 3);
     }
@@ -6271,7 +6297,7 @@ function drwBev(e){
     // Бродит туда-обратно только по суше: от кромки воды до края кадра.
     // Под него русло отступает (BEV_ROOM.bear), так что места хватает.
     const half = spriteSize("bear").w/2;
-    const land = e.side < 0 ? edg : W - edg;
+    const land = bearRoamLand(e, edg);
     const free = Math.max(0, land - 2*half - 6);
     const dist = half + 3 + free*(0.5 + 0.5*Math.sin(g.frame*0.012 + ph));
     const bx = edg + e.side*dist;
@@ -8051,8 +8077,17 @@ const CYC_OFF = 64, CYC_GAP = 21, CYC_SPAN = 900, CYC_CORE = 420, CYC_V = 1.6;
 function cycRoadOff(dw){
   const a = Math.abs(dw);
   if (a <= CYC_CORE) return CYC_OFF;
-  const u = Math.min(1, (a - CYC_CORE)/(CYC_SPAN - CYC_CORE));
+  // Без потолка: за CYC_SPAN дорога загибается дальше и уходит за край любого
+  // экрана (на десктопе он шире — раньше дорога там обрывалась посреди луга).
+  const u = (a - CYC_CORE)/(CYC_SPAN - CYC_CORE);
   return CYC_OFF + 240*u*u;
+}
+// Длина дороги в мире в каждую сторону: дальше — заведомо за краем окна.
+const CYC_REACH = CYC_SPAN*2.5;
+// Виден ли ездок в точке w: по экрану и по видимой ширине сцены.
+function cyclistShown(e, w){
+  const sy = screenYOf(w), x = centerAt(w) + e.side*(widthAt(w)/2 + cycRoadOff(w - e.wy));
+  return sy > -40 && sy < H + 40 && x > VX0 - 30 && x < VX1 + 30;
 }
 // Сколько едет: один, двое, трое или группа из семи — от места, без
 // Math.random.
@@ -9623,7 +9658,7 @@ function upd(){
     if (e.dog) dogStep(e);
     // Житель, под которого сужено русло, удаляется только когда за нижнюю
     // кромку ушла вся зона сужения — иначе русло на экране прыгало назад.
-    const reach = e.roomDef ? ROOM_FULL + ROOM_TAPER : 0;
+    const reach = e.type === "cyclists" ? CYC_REACH : e.roomDef ? ROOM_FULL + ROOM_TAPER : 0;
     // Собака в деле (бежит, прыгает, плывёт) держит сцену, даже если рыбак уже за кадром.
     if ((e.dead || offScreen(e.wy + reach)) && !(e.dog && dogBusy(e.dog))) g.bev.splice(i,1);
   }
@@ -11125,7 +11160,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
