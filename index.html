@@ -178,6 +178,8 @@ canvas { display:block;margin:0 auto; }
     <div class="finrun" id="finRun"></div>
     <div class="boardtitle">Таблица дня · соперники из похода</div>
     <div class="board" id="finBoard"></div>
+    <div class="boardtitle" id="finOnlineTitle">Все игроки · онлайн</div>
+    <div class="board" id="finOnline"></div>
     <div class="maprow">
       <button class="btn small" id="nextBtn">ДАЛЬШЕ</button>
       <button class="btn small ghost" id="againBtn">ЗАНОВО</button>
@@ -237,7 +239,9 @@ canvas { display:block;margin:0 auto; }
       <button class="btn small ghost" id="recNext">&gt;</button>
     </div>
     <div class="finrun" id="recRun"></div>
+    <div class="maprow" id="recModeRow"><button class="btn small ghost" id="recMode">ВСЕ ИГРОКИ</button></div>
     <div class="board" id="recBoard"></div>
+    <div class="board" id="recOnline"></div>
     <div class="maprow"><button class="btn small" id="recBack">НАЗАД</button></div>
   </div>
   <div id="diaryScreen" class="hidden">
@@ -5069,6 +5073,7 @@ document.getElementById("saveNameBtn").addEventListener("click",()=>{
   const L = level(), total = g.pendingScore || 0;
   addResult(L.day, save.name, total);
   renderBoard(L.day, total, g.prevBest);
+  onlineRename(save.name);
   campToast("ИМЯ: " + save.name);
 });
 document.getElementById("nextBtn").addEventListener("click",()=>{
@@ -5085,8 +5090,9 @@ document.getElementById("helpBtn").addEventListener("click",showHelp);
 document.getElementById("diaryBack").addEventListener("click",showMap);
 document.getElementById("recordsBtn").addEventListener("click",()=>showRecords());
 document.getElementById("startBoardBtn").addEventListener("click",()=>{ startMusic(); showRecords(); });
-document.getElementById("recPrev").addEventListener("click",()=>showRecords(recDay-1));
-document.getElementById("recNext").addEventListener("click",()=>showRecords(recDay+1));
+document.getElementById("recPrev").addEventListener("click",()=>showRecords(recOnlineMode && !recTotal && recDay === 0 ? -1 : recDay-1));
+document.getElementById("recMode").addEventListener("click",()=>{ recOnlineMode = !recOnlineMode; showRecords(recTotal ? -1 : recDay); });
+document.getElementById("recNext").addEventListener("click",()=>showRecords(recTotal ? 0 : recDay+1));
 document.getElementById("recBack").addEventListener("click",showMap);
 document.getElementById("endMapBtn").addEventListener("click",showMap);
 document.getElementById("campBtn").addEventListener("click",showCamp);
@@ -5997,7 +6003,7 @@ const SAVE_KEY = "kayak_campaign";
 // ломало бы чужой прогресс.
 const SAVE_VERSION = 1;
 const SAVE_DEFAULT = { v:SAVE_VERSION, day:0, stars:{}, wallet:0, gear:[], diary:[], failPaid:[],
-                       best:{}, name:"", board:{}, music:true, seen:{} };
+                       best:{}, name:"", board:{}, music:true, seen:{}, pid:"" };
 let save = loadSave();
 musicOn = save.music !== false;
 
@@ -6158,6 +6164,114 @@ function renderBoard(dayNo, run, prevBest){
   sum.innerHTML = "ЭТОТ ЗАХОД: <b>" + r.run + "</b><br>ЛУЧШИЙ: <b>" + r.best + "</b> · МЕСТО " + r.rank + " ИЗ " + r.total +
     (r.record ? "<br><span class='rec'>" + (r.first ? "ПЕРВЫЙ РЕЗУЛЬТАТ ДНЯ" : "НОВЫЙ РЕКОРД!") + "</span>" : "");
 }
+/* ===== Общая онлайн-таблица ===== */
+// Игра по-прежнему одним файлом и работает без сети. Если задан адрес сервера
+// (Cloudflare Worker из server/README.md) — результаты уходят на него, а на
+// экранах «Дошли» и «Рекорды» показываются все игроки. Результат, который не
+// ушёл (нет сети), лежит в очереди (localStorage) и уходит при следующем случае.
+const ONLINE_DEFAULT_URL = "";                // адрес Worker; пусто — онлайн выключен
+const OUTBOX_KEY = "kayak_outbox", ONLINE_URL_KEY = "kayak_board_url";
+function onlineUrl(){
+  try {
+    const q = new URLSearchParams(location.search).get("board");       // ?board=https://… — запомнить адрес
+    if (q){ localStorage.setItem(ONLINE_URL_KEY, q); return q; }
+    return localStorage.getItem(ONLINE_URL_KEY) || ONLINE_DEFAULT_URL;
+  } catch(e){ return ONLINE_DEFAULT_URL; }
+}
+// Анонимный постоянный номер игрока: по нему сервер хранит одну строку на день и
+// помечает «твою» строку. Имя можно менять — номер тот же.
+function playerId(){
+  if (!/^[0-9a-f]{16,32}$/.test(save.pid || "")){
+    let id = "";
+    for (let i = 0; i < 4; i++) id += Math.floor(Math.random()*0x100000000).toString(16).padStart(8, "0");
+    save.pid = id; commitSave();
+  }
+  return save.pid;
+}
+// Спрятать/показать элемент (classList.toggle с флагом нет в мок-DOM пробы).
+function setHidden(el, hide){ el.classList[hide ? "add" : "remove"]("hidden"); }
+// Адрес сервера: из настроек пробы (deps.url) или из браузера.
+function onlineBase(deps){ return (deps && deps.url) || onlineUrl(); }
+function onlineStore(){ try { return localStorage; } catch(e){ return null; } }
+function outboxLoad(store){
+  try { const v = JSON.parse((store || onlineStore()).getItem(OUTBOX_KEY)); return Array.isArray(v) ? v : []; } catch(e){ return []; }
+}
+function outboxSave(list, store){ try { (store || onlineStore()).setItem(OUTBOX_KEY, JSON.stringify(list.slice(-40))); } catch(e){} }
+// В очереди одна запись на день: лучший счёт, последнее имя.
+function outboxPush(item, store){
+  const l = outboxLoad(store), i = l.findIndex(x => x.day === item.day);
+  if (i >= 0){ item.score = Math.max(item.score, l[i].score); l.splice(i, 1); }
+  l.push(item); outboxSave(l, store);
+  return l;
+}
+function onlinePayload(day, name, score){
+  return { pid: playerId(), day, name: cleanName(name) || "ПУТНИК", score: Math.max(0, Math.floor(score)) };
+}
+// Отправить очередь. Не дошло из-за сети или перегрузки (429, 5xx) — остаётся; отклонено сервером (4xx) — выбрасывается.
+async function onlineFlush(deps){
+  const url = onlineBase(deps), f = (deps && deps.fetch) || (typeof fetch === "function" ? fetch : null);
+  if (!url || !f) return { sent: 0, left: outboxLoad(deps && deps.store).length };
+  const store = deps && deps.store, keep = [];
+  let sent = 0;
+  for (const it of outboxLoad(store)){
+    try {
+      const r = await f(url, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(it) });
+      if (r && r.ok) sent++;
+      else if (!r || r.status === 429 || r.status >= 500) keep.push(it);
+    } catch(e){ keep.push(it); }
+  }
+  outboxSave(keep, store);
+  return { sent, left: keep.length };
+}
+function onlineReport(day, name, score, deps){
+  if (!onlineBase(deps)) return Promise.resolve(null);
+  outboxPush(onlinePayload(day, name, score), deps && deps.store);
+  return onlineFlush(deps);
+}
+async function onlineTop(day, deps){
+  const url = onlineBase(deps), f = (deps && deps.fetch) || (typeof fetch === "function" ? fetch : null);
+  if (!url || !f) return null;
+  try {
+    const ctl = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = ctl && typeof setTimeout === "function" ? setTimeout(() => ctl.abort(), 6000) : null;
+    const r = await f(url + (url.indexOf("?") < 0 ? "?" : "&") + "day=" + day + "&pid=" + playerId(), ctl ? { signal: ctl.signal } : undefined);
+    if (timer) clearTimeout(timer);
+    if (!r || !r.ok) return { ok:false, rows:[] };
+    const j = await r.json();
+    return { ok:true, rows: Array.isArray(j.rows) ? j.rows : [] };
+  } catch(e){ return { ok:false, rows:[] }; }
+}
+function onlineHtml(res, n){
+  if (!res) return "";
+  if (!res.ok) return "<div class='brow gap'><span>НЕТ СВЯЗИ</span></div>";
+  if (!res.rows.length) return "<div class='brow gap'><span>ПОКА НИКОГО — БУДЬ ПЕРВЫМ</span></div>";
+  return res.rows.slice(0, n || 8).map((r, i) => {
+    const cls = "brow" + (r.mine ? " mine" : "") + (i < 3 ? " top" + (i+1) : "");
+    return "<div class='" + cls + "'><span>" + (i+1) + ". " + (r.mine ? "> " : "") + escHtml(cleanName(r.name)) + (r.mine ? " (ВЫ)" : "") +
+           "</span><span>" + (r.score | 0) + "</span></div>";
+  }).join("");
+}
+// Показать онлайн-таблицу дня в элементе id (день 0 — весь поход). Пока грузится — «ЗАГРУЗКА».
+function showOnline(id, day){
+  const el = document.getElementById(id);
+  if (!el) return Promise.resolve(null);
+  if (!onlineUrl()){ el.innerHTML = ""; return Promise.resolve(null); }
+  el.innerHTML = "<div class='brow gap'><span>ЗАГРУЗКА…</span></div>";
+  return onlineTop(day).then(res => { el.innerHTML = onlineHtml(res); return res; });
+}
+// После результата дня: отправить день и весь поход, потом показать таблицу.
+function onlineAfterFinish(dayNo, name, total){
+  if (!onlineUrl()) return;
+  onlineReport(dayNo, name, total).then(() => onlineReport(0, name, campaignSum())).then(() => showOnline("finOnline", dayNo));
+}
+// После переименования: переслать лучшие результаты под новым именем.
+function onlineRename(name){
+  if (!onlineUrl()) return;
+  for (const d in save.best) if (save.best[d] > 0) outboxPush(onlinePayload(+d, name, save.best[d]));
+  outboxPush(onlinePayload(0, name, campaignSum()));
+  onlineFlush();
+}
+
 function totalStars(){
   let n = 0;
   for (const k in save.stars) n += save.stars[k];
@@ -6389,6 +6503,10 @@ function showFinish(L, stars, total){
   g.prevBest = mine ? mine.score : 0;
   addResult(L.day, save.name || "ПУТНИК", total);
   renderBoard(L.day, total, g.prevBest);
+  const online = !!onlineUrl();
+  setHidden(document.getElementById("finOnlineTitle"), !online);
+  setHidden(document.getElementById("finOnline"), !online);
+  if (online) onlineAfterFinish(L.day, save.name || "ПУТНИК", total);
   document.getElementById("finishScreen").classList.remove("hidden");
 }
 
@@ -6546,22 +6664,33 @@ function showDiary(){
   document.getElementById("diaryScreen").classList.remove("hidden");
 }
 
-// Экран рекордов: таблицы всех открытых дней, листаются стрелками.
-let recDay = 0;
+// Экран рекордов: таблицы всех открытых дней, листаются стрелками. Если подключён
+// сервер — кнопка «ВСЕ ИГРОКИ» показывает общую таблицу дня, а на день назад от
+// первого дня — общий зачёт всего похода.
+let recDay = 0, recOnlineMode = false, recTotal = false;
 function showRecords(dayIdx){
   hideAllScreens();
   g.s = "records";
   const last = Math.min(save.day, LEVELS.length-1);
-  recDay = Math.max(0, Math.min(dayIdx == null ? last : dayIdx, last));
+  const online = !!onlineUrl();
+  if (!online){ recOnlineMode = false; recTotal = false; }
+  if (dayIdx === -1 && online && recOnlineMode){ recTotal = true; }
+  else { recTotal = false; recDay = Math.max(0, Math.min(dayIdx == null ? last : dayIdx, last)); }
   const L = LEVELS[recDay];
-  document.getElementById("recTitle").textContent = "ДЕНЬ " + L.day + " · " + RIVERS[L.river].name;
-  document.getElementById("recBoard").innerHTML = boardHtml(L.day);
+  document.getElementById("recTitle").textContent = recTotal ? "ВЕСЬ ПОХОД" : "ДЕНЬ " + L.day + " · " + RIVERS[L.river].name;
+  setHidden(document.getElementById("recModeRow"), !online);
+  document.getElementById("recMode").textContent = recOnlineMode ? "МОЙ ПОХОД" : "ВСЕ ИГРОКИ";
+  setHidden(document.getElementById("recBoard"), recOnlineMode);
+  setHidden(document.getElementById("recOnline"), !recOnlineMode);
   const me = mineRow(L.day);
-  document.getElementById("recRun").innerHTML = me
-    ? "ЛУЧШИЙ: <b>" + me.score + "</b> · МЕСТО " + boardView(L.day).me.rank
-    : "ТЫ ЕЩЁ НЕ ПРОШЁЛ ЭТОТ ДЕНЬ";
-  document.getElementById("recPrev").disabled = recDay <= 0;
-  document.getElementById("recNext").disabled = recDay >= last;
+  document.getElementById("recRun").innerHTML = recTotal ? "СУММА ТВОЕГО ПОХОДА: <b>" + campaignSum() + "</b>"
+    : me ? "ЛУЧШИЙ: <b>" + me.score + "</b> · МЕСТО " + boardView(L.day).me.rank
+         : "ТЫ ЕЩЁ НЕ ПРОШЁЛ ЭТОТ ДЕНЬ";
+  if (!recOnlineMode) document.getElementById("recBoard").innerHTML = boardHtml(L.day);
+  else showOnline("recOnline", recTotal ? 0 : L.day);
+  // «Назад»: с первого дня — на общий зачёт (только онлайн); «вперёд» из общего зачёта — на день 1.
+  document.getElementById("recPrev").disabled = recTotal || (recDay <= 0 && !recOnlineMode);
+  document.getElementById("recNext").disabled = !recTotal && recDay >= last;
   document.getElementById("recordsScreen").classList.remove("hidden");
 }
 
@@ -9452,7 +9581,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
