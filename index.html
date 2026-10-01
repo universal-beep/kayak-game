@@ -1321,6 +1321,53 @@ const SPR = {
     ".kggk..........kggk.",
     ".kggk..........kggk.",
     "..kk............kk.."]},
+  // Мост спереди (мульт «Под мостом»): сплошная каменная арка, настил с перилами сверху; проём — вода и даль.
+  bridge_front:{map:["kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "...I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I...",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+    "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIiiiiiiiiiiiiiiiiiiiiiiiiiiiijIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIiiiiiiiiiikkkkkkkkkkkkkkkkkkkkkkkkiiiiiiiiiijIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiikkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkiiiiiiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIiiiiiiikkkkkggggggggggggggggggggggggggggggkkkkkiiiiiiiIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjiiiiiiikkkggggggggggggggggggggggggggggggggggggggkkkiiiiiiiIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIiiiiikkkkggggggggggggggggggggggggggggggggggggggggggkkkkiiiiiIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiikkk................................................kkkiiiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjiiiiikk....................................................kkiiiiiIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIiiiikkk......................................................kkkiiiiIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIiiiikk..........................................................kkiiiiIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiikk............................................................kkiiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjiiiikk..............................................................kkiiiiIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIiiiikk................................................................kkiiiiIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIiiiikk..................................................................kkiiiiIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiikk....................................................................kkiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIiiikk......................................................................kkiiiIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIiiik........................................................................kiiiIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIiikk........................................................................kkiiIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiik..........................................................................kiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIiik..........................................................................kiiIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiiik..........................................................................kiiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiiik..........................................................................kiiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjiikk..........................................................................kkiijjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjiik............................................................................kiijjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiik............................................................................kiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiik............................................................................kiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiik............................................................................kiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjiik............................................................................kiijjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "gggggggggggggggggggggggggggggggk............................................................................kggggggggggggggggggggggggggggggg",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk............................................................................kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"]},
   // Цапля (Медведица, вместо уток): серая, стоит на одной ноге у берега,
   // белая шея буквой S, чёрный хохол, длинный жёлтый клюв. Два кадра полёта:
   // шея втянута, ноги назад, крыло вверх / вниз. Смотрит вправо — к воде
@@ -3633,38 +3680,24 @@ const CUTS = {
       { spr:"person", var:4, keys:[[0,352,476,1.1,1],[0.399,352,476,1.1,1],[0.4,352,476,1.1,0]] },
       { spr:"person", var:4, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,352,476,1.1,0],[0.4,352,476,1.1,1],[0.52,316,462,1.1,1],[0.545,316,450,1.1,0]] },
     ] },
-  // Первый чистый пролёт моста за день: байдарка ПЛЫВЁТ под мостом — видна река
-  // (water), весь мост ЕДИНЫМ спрайтом (настил+ферма+опоры) проезжает над
-  // головой, опоры стоят в воде и проносятся ЗА лодкой (мост рисуется ДО лодки).
-  // Гребец в байдарке с веслом — тоже один спрайт (kayak_man).
+  // Первый чистый пролёт моста за день: вид ВПЕРЁД по реке — байдарка (сверху-сзади, как
+  // в игре) гребёт к каменной арке и уходит ПОД мост: уменьшается и скрывается в проёме
+  // (мост рисуется ПОСЛЕ лодки, проём прозрачный — за ним вода и даль). По настилу сверху
+  // едут машины поперёк кадра. Арка повторена слева и справа — виадук, края моста не видны.
   bridge: { sky:"day", ground:"#3d6b3a", far:"#2c5530", water:344, caption:"Под мостом",
     actors:[
-      // Облака — небо не пустое.
       { spr:"cloud", keys:[[0,420,86,1.6,0.9],[1,-120,86,1.6,0.9]] },
       { spr:"cloud", keys:[[0,560,150,1.1,0.8],[1,60,150,1.1,0.8]] },
-      // Мост — сплошная лента из семи одинаковых пролётов по 252 px (спрайт bridge: ферма
-      // и по полуопоре на краях, в стыке — целая опора). Лента длиннее кадра с запасом в обе
-      // стороны, поэтому концов моста не видно и настил всегда под машинами. Все пролёты едут
-      // одним ходом; в t=0.5 центр среднего пролёта ровно над лодкой (опоры по краям кадра).
-      // Мост рисуется ДО лодки: опоры проносятся за ней.
-      { spr:"bridge", keys:[[0,-996,356,1,1],[0.12,-686,356,1,1],[0.5,-546,356,1,1],[0.88,-406,356,1,1],[1,-96,356,1,1]] },
-      { spr:"bridge", keys:[[0,-744,356,1,1],[0.12,-434,356,1,1],[0.5,-294,356,1,1],[0.88,-154,356,1,1],[1,156,356,1,1]] },
-      { spr:"bridge", keys:[[0,-492,356,1,1],[0.12,-182,356,1,1],[0.5,-42,356,1,1],[0.88,98,356,1,1],[1,408,356,1,1]] },
-      { spr:"bridge", keys:[[0,-240,356,1,1],[0.12,70,356,1,1],[0.5,210,356,1,1],[0.88,350,356,1,1],[1,660,356,1,1]] },
-      { spr:"bridge", keys:[[0,12,356,1,1],[0.12,322,356,1,1],[0.5,462,356,1,1],[0.88,602,356,1,1],[1,912,356,1,1]] },
-      { spr:"bridge", keys:[[0,264,356,1,1],[0.12,574,356,1,1],[0.5,714,356,1,1],[0.88,854,356,1,1],[1,1164,356,1,1]] },
-      { spr:"bridge", keys:[[0,516,356,1,1],[0.12,826,356,1,1],[0.5,966,356,1,1],[0.88,1106,356,1,1],[1,1416,356,1,1]] },
-      // По настилу (верх на y=212, колёса стоят на нём) едут две машины: одна вправо
-      // до середины мульта, потом, когда она ушла, навстречу вторая. Обе заходят и уходят
-      // за краями кадра — на обрыв не выезжают, настил под ними сплошной.
-      { spr:"car",       keys:[[0.04,-70,212,1,1],[0.58,520,212,1,1]] },
-      { spr:"car_red_r", keys:[[0.6,520,212,1,1],[0.96,-80,212,1,1]] },
-      // Тени моста и опор на воде — смещаются с тем же течением, что и река.
-      { spr:"shadow", keys:[[0,430,376,1,0.38],[1,-380,376,1,0.15]] },
-      { spr:"shadow", keys:[[0,1130,384,1,0.3],[1,320,384,1,0.12]] },
-      // Гребец в жёлтой байдарке (как в игре), вид сбоку; два кадра гребли.
-      { spr:"kayak_man", cycle:{ per:16, spr:["kayak_man","kayak_man_b"] },
-        keys:[[0,210,368,1,1],[0.5,210,370,1,1],[1,210,368,1,1]] }
+      // Гребец: из нижней части кадра к арке; в проёме уже мал, потом тает вдали.
+      { spr:"kayak_center", cycle:{ per:14, spr:["kayak_left","kayak_center","kayak_right","kayak_center"] },
+        keys:[[0,210,730,3.2,1],[0.45,210,520,1.8,1],[0.62,210,420,1.1,1],[0.8,210,394,0.65,1],[0.95,210,376,0.38,0.7],[1,210,372,0.32,0]] },
+      // Арка: три одинаковых спрайта встык (шаг = ширина 420*1.5), средний над рекой.
+      { spr:"bridge_front", keys:[[0,-420,400,1.5,1],[1,-420,400,1.5,1]] },
+      { spr:"bridge_front", keys:[[0,210,400,1.5,1],[1,210,400,1.5,1]] },
+      { spr:"bridge_front", keys:[[0,840,400,1.5,1],[1,840,400,1.5,1]] },
+      // Машины едут по настилу (он на y≈208), колёса на нём; въезжают и уезжают за кадром.
+      { spr:"car",       keys:[[0.04,-90,210,1.2,1],[0.58,540,210,1.2,1]] },
+      { spr:"car_red_r", keys:[[0.6,540,210,1.2,1],[0.96,-100,210,1.2,1]] }
     ] }
 };
 
