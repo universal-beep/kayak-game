@@ -109,7 +109,8 @@ test("гонка не трогает рекорд своего уровня в �
   K.startRace(K.raceLevel(9)); play(K);
   while (K.G.s === "arrive") K.upd();
   assert.equal(K.getCs().best, 123, "рекорд редактора прежний");
-  assert.match(K.panelLeftHtml(), /ГОНКА/);
+  K.startRace(K.raceLevel(9));
+  assert.match(K.panelLeftHtml(), /ГОНКА/, "в заплыве гонки панель подписана");
 });
 
 test("ширина гонки одна для всех рек и умещается в кадр", () => {

@@ -35,26 +35,39 @@ test("цель дня: понятный счёт по каждому виду ц
   assert.equal(K.goalProgress(L("нет", 1), st), "");
 });
 
-test("панели: левая — день, цель, маршрут и справка; правая — таблица, бонусы, управление", () => {
+// Панели — по этапам (Максим, 01.10.2026: «на старте это точно не нужно»).
+// На заставке и в меню у экрана своё содержимое — по бокам только пейзаж.
+// В заплыве — то, чего нет на поле: цель с прогрессом и таблица дня. Справка
+// (маршрут, бонусы, управление) — в паузе.
+test("панели по этапам: заставка и меню — пусто, заплыв — цель и таблица, пауза — справка", () => {
   const { K } = loadGame();
-  K.resetSave(); K.G.day = 4; K.sg(); setupWorld(K, { wy: 5000 }); K.G.s = "playing";
+  K.resetSave(); K.G.day = 4; K.sg(); setupWorld(K, { wy: 5000 });
+  for (const s of ["start", "map", "camp", "finish", "fail", "editor", "records", "customEnd", "raceMenu", "cutscene"]) {
+    K.G.s = s;
+    assert.equal(K.panelLeftHtml() + K.panelRightHtml(), "", "на экране «" + s + "» панелей нет");
+  }
+  K.G.s = "playing";
   const left = K.panelLeftHtml(), right = K.panelRightHtml();
-  assert.ok(left.includes("ДЕНЬ 5") && left.includes("ТВЕРЦА"));
-  assert.ok(left.includes("ЦЕЛЬ ДНЯ") && left.includes("Пройти 4 моста"));
-  assert.ok(left.includes("ПОХОД") && (left.match(/class='rt/g) || []).length === 9, "девять дней маршрута");
-  assert.ok(left.includes("cur"), "текущий день выделен");
-  assert.ok(left.includes("Тверца"), "справка о месте");
-  assert.ok(right.includes("ТАБЛИЦА") && right.includes("БОНУСЫ") && right.includes("УПРАВЛЕНИЕ") && right.includes("геймпад"));
-  assert.equal((right.match(/data-ic=/g) || []).length, 5, "иконки пяти бонусов");
+  assert.ok(left.includes("ДЕНЬ 5") && left.includes("ЦЕЛЬ ДНЯ") && left.includes("Пройти 4 моста"));
+  assert.ok(left.includes("попытки"), "попыток на поле нет — в панели есть");
+  for (const no of ["ЗАПЛЫВ", "ПОХОД", "Тверца."]) assert.ok(!left.includes(no), "в заплыве без «" + no + "»");
+  assert.ok(right.includes("ТАБЛИЦА"));
+  for (const no of ["БОНУСЫ", "УПРАВЛЕНИЕ"]) assert.ok(!right.includes(no), "в заплыве без «" + no + "»");
   K.G.mazai = { n: 10, spawned: 4, got: 3, gone: 0, wait: 0, t: 100, done: false };
   K.G.yacht = true;
   assert.ok(K.panelLeftHtml().includes("МАЗАЙ") && K.panelLeftHtml().includes("ЯХТА"));
+  K.G.s = "paused";
+  const pl = K.panelLeftHtml(), pr = K.panelRightHtml();
+  assert.ok(pl.includes("ПОХОД") && (pl.match(/class='rt/g) || []).length === 9 && pl.includes("cur"), "маршрут в паузе");
+  assert.ok(pr.includes("БОНУСЫ") && pr.includes("УПРАВЛЕНИЕ") && pr.includes("геймпад"));
+  assert.equal((pr.match(/data-ic=/g) || []).length, 5, "иконки пяти бонусов");
 });
 
 test("панели: имя и текст экранируются, свой уровень без маршрута похода", () => {
   const { K } = loadGame();
   K.resetSave(); K.G.day = 0; K.sg();
   K.G.custom = { custom: true, day: 0, river: 0, len: 500, goal: "none", need: 0, goalText: "<b>Дойти</b>", place: "СВОЙ УРОВЕНЬ", items: [] };
+  K.G.s = "playing";
   const left = K.panelLeftHtml();
   assert.ok(left.includes("СВОЙ УРОВЕНЬ") && !left.includes("class='rt"), "маршрута нет");
   assert.ok(!left.includes("<b>Дойти</b>"), "текст экранирован");

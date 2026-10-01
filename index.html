@@ -9899,7 +9899,7 @@ function sideWeather(b, x0, x1){
 }
 
 // ---- Панели ----
-var panelSig = "", panelTick = 0;
+var panelSig = "", panelTick = 0, panelStageWas = null;
 function goalProgress(L, st){
   switch (L.goal){
     case "bonuses":     return st.bonuses + " / " + L.need;
@@ -9913,23 +9913,30 @@ function goalProgress(L, st){
   }
   return "";
 }
+// Панели — по этапам. На заставке и в меню у экрана своё содержимое (а
+// управление уже написано под кнопками) — по бокам только пейзаж. В заплыве —
+// то, чего нет на поле: цель с прогрессом, попытки, таблица дня (в гонке —
+// соперник). Справка — маршрут похода, бонусы, управление — в паузе.
+function panelStage(){
+  if (g.s === "playing" || g.s === "countdown" || g.s === "continue" || g.s === "arrive") return "play";
+  return g.s === "paused" ? "pause" : null;
+}
 function panelLeftHtml(){
-  const L = level(), custom = !!g.custom, inPlay = g.s === "playing" || g.s === "paused" || g.s === "continue";
-  const st = g;
+  const stage = panelStage();
+  if (!stage) return "";
+  const L = level(), custom = !!g.custom, st = g;
   let h = "<div class='sp'><h3>" + (custom ? (g.custom.race ? "ГОНКА" : "СВОЙ УРОВЕНЬ") : "ДЕНЬ " + L.day + " · " + escHtml(river().name)) + "</h3>";
-  h += "<div>" + escHtml(custom ? "Дойти до финиша" : L.place) + "</div>";
-  if (!custom) h += "<div class='dim'>" + escHtml(river().note) + "</div>";
-  h += "</div>";
-  if (inPlay){
+  h += "<div>" + escHtml(custom ? "Дойти до финиша" : L.place) + "</div></div>";
+  if (stage === "play"){
     const pr = Math.max(0, Math.min(1, st.dist/L.len));
     h += "<div class='sp'><h3>ЦЕЛЬ ДНЯ</h3><div>" + escHtml(L.goalText) + "</div>" +
          (custom ? "" : "<div class='gp'>" + goalProgress(L, st) + "</div>") +
          "<div class='bar'><i style='width:" + Math.round(pr*100) + "%'></i></div>" +
-         "<div class='dim'>до финиша " + Math.max(0, Math.round(L.len - st.dist)) + " м</div></div>";
-    h += "<div class='sp'><h3>ЗАПЛЫВ</h3><div>очки " + (st.sc + st.bsc) + "</div><div>сердца " + st.hp + " · попытки " + st.lives + "</div>" +
+         "<div class='dim'>до финиша " + Math.max(0, Math.round(L.len - st.dist)) + " м · попытки " + st.lives + "</div>" +
          (st.combo > 1 ? "<div class='gp'>комбо x" + st.combo + "</div>" : "") +
          (st.mazai && !st.mazai.done ? "<div class='gp'>МАЗАЙ: зайцы " + st.mazai.got + "/" + st.mazai.n + "</div>" : "") +
          (st.yacht ? "<div class='gp'>ЯХТА!</div>" : "") + "</div>";
+    return h;
   }
   if (!custom){
     h += "<div class='sp'><h3>ПОХОД</h3>";
@@ -9939,17 +9946,28 @@ function panelLeftHtml(){
            (open ? "★".repeat(stars) + "<u>" + "★".repeat(3 - stars) + "</u>" : "—") + "</span></div>";
     });
     h += "<div class='dim'>звёзд " + totalStars() + "/27 · рюкзак " + save.wallet + "</div></div>";
+    h += "<div class='sp dim'>" + escHtml(river().note) + "</div>";
     if (DIARY[L.day]) h += "<div class='sp dim'>" + DIARY[L.day] + "</div>";
   }
   return h;
 }
 function panelRightHtml(){
-  const L = level(), custom = !!g.custom;
+  const stage = panelStage();
+  if (!stage) return "";
+  const L = level(), custom = !!g.custom, R = raceOf();
   let h = "";
-  if (!custom){
-    h += "<div class='sp'><h3>ДЕНЬ " + L.day + " · ТАБЛИЦА</h3>" + boardHtml(L.day) +
-         (onlineUrl() ? "<div class='dim'>все игроки — на экране «Рекорды»</div>" : "") + "</div>";
-  } else h += "<div class='sp'><h3>РЕКОРД УРОВНЯ</h3><div class='gp'>" + (cs.best || 0) + "</div></div>";
+  if (stage === "play"){
+    if (R){
+      const rival = R.net ? (R.net.rival.name || "ДРУГ") : R.ghost ? (R.ghost.name || "ПРИЗРАК") : null;
+      h += "<div class='sp'><h3>ГОНКА</h3>" + (rival ? "<div>соперник: " + escHtml(rival) + "</div>" +
+           (R.ghost ? "<div class='gp'>его время " + raceTime(R.ghost.frames) + "</div>" : "") :
+           "<div>на время — после финиша вызови друга</div>") + "</div>";
+    } else if (!custom){
+      h += "<div class='sp'><h3>ДЕНЬ " + L.day + " · ТАБЛИЦА</h3>" + boardHtml(L.day) +
+           (onlineUrl() ? "<div class='dim'>все игроки — на экране «Рекорды»</div>" : "") + "</div>";
+    } else h += "<div class='sp'><h3>РЕКОРД УРОВНЯ</h3><div class='gp'>" + (cs.best || 0) + "</div></div>";
+    return h;
+  }
   h += "<div class='sp'><h3>БОНУСЫ</h3>" +
        [["bread","БАТОН — гребок сильнее на 8 с"],["whisky","ВИСКИ — неуязвим, очки x2, 6 с"],["medkit","АПТЕЧКА — сердце или щит"],
         ["axe","ТОПОР — двойной тап: бросить"],["sun","СОЛНЦЕ — очки и комбо"]]
@@ -9978,10 +9996,13 @@ function updPanels(force){
   const sig = [g.s, g.day, g.hp, g.lives, Math.floor(g.dist/5), g.sc + g.bsc, g.combo > 1, g.bonuses, g.passed, g.parries, g.bridges,
                g.mazai ? g.mazai.got : -1, g.yacht, save.day, save.wallet, !!g.custom].join("|");
   if (!force && sig === panelSig) return;
-  const first = panelSig === "" || R.innerHTML === "";
-  panelSig = sig;
+  const stage = panelStage(), first = panelSig === "" || R.innerHTML === "" || stage !== panelStageWas;
+  panelSig = sig; panelStageWas = stage;
   L.innerHTML = panelLeftHtml();
+  // Правая в заплыве меняется редко (таблица) — перерисовываем при смене этапа.
   if (first || force || g.s !== "playing"){ R.innerHTML = panelRightHtml(); drawPanelIcons(); }
+  // Пустая панель не рисует рамку поверх пейзажа.
+  for (const el of [L, R]) if (el.classList) el.classList[el.innerHTML ? "remove" : "add"]("hidden");
 }
 rs();                                         // раскладка по боковым полосам — теперь, когда всё объявлено
 function simPlan(dtMs, acc){
@@ -10747,7 +10768,7 @@ function showRaceInvite(id){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
