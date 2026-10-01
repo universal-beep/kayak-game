@@ -16,7 +16,7 @@ function makeCtx() {
     save() {}, restore() {},
     fillRect() {}, clearRect() {}, strokeRect() {}, fillText() {},
     beginPath() {}, arc() {}, ellipse() {}, moveTo() {}, lineTo() {}, closePath() {}, quadraticCurveTo() {},
-    fill() {}, stroke() {}, scale() {}, translate() {}, rotate() {},
+    fill() {}, stroke() {}, scale() {}, translate() {}, rotate() {}, setTransform() {},
     drawImage(img) {
       if (!img) throw new Error("drawImage(img=undefined)");
       if (img.width === undefined && img.canvas === undefined) throw new Error("drawImage: нет width");

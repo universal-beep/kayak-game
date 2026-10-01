@@ -59,3 +59,21 @@ test("рисуется на всех стадиях цикла рыбалки и
   e.away = 1; e.fl = 30; e.fly = { w0: e.wy, w1: e.wy + 500, s0: -1, s1: 1 };
   assert.doesNotThrow(() => K.drwBev(e));
 });
+
+test("цапля: три момента наклона и питья нарисованы и в одном ряду с основным спрайтом", () => {
+  const { K } = loadGame();
+  for (const n of ["heron", "heron_b1", "heron_b2", "heron_b3", "heron_b1_l", "heron_b3_l"])
+    assert.ok(K.SPR[n] && K.SPR[n].map, "нет спрайта " + n);
+  assert.equal(K.SPR.heron_b1.map.length, K.SPR.heron_b3.map.length);
+  assert.ok(K.SPR.heron_b2.map[0].length > K.SPR.heron.map[0].length, "кадр наклона шире — клюв вынесен вперёд");
+});
+
+test("в разные кадры цикла цапля рисуется разными спрайтами: стоит, наклон, тянется, пьёт", () => {
+  const { K, ctx } = loadGame();
+  const e = { type: "heron", side: -1, wy: 5060, off: 30, phase: 0, mode: "swim" };
+  K.G.scroll = 4700; K.G.bev = [e];
+  const drawn = new Set();
+  ctx.drawImage = img => { drawn.add(img); };
+  for (let f = 0; f < K.HERON_CYCLE; f += 2) { K.G.frame = f; K.drwBev(e); }
+  for (const n of ["heron", "heron_b1", "heron_b2", "heron_b3"]) assert.ok(drawn.has(K.SPR[n].img), n + " нарисован в цикле");
+});

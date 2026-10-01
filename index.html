@@ -20,6 +20,18 @@
 * { margin:0;padding:0;box-sizing:border-box; }
 html,body { width:100%;height:100%;background:#1a1a2e;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none; }
 canvas { display:block;margin:0 auto; }
+#bgCanvas { position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:0;margin:0;image-rendering:pixelated; }
+#game { position:relative;z-index:1; }
+#ui { z-index:2; }
+.side { position:fixed;top:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:8px;padding:12px 10px;overflow:hidden;pointer-events:none;font-family:"Press Start 2P",monospace;font-size:8px;line-height:1.8;color:#cfe8f5; }
+.side .sp { background:rgba(8,16,26,0.80);border:2px solid #2c5f86;border-radius:6px;padding:9px 10px; }
+.side h3 { font-size:9px;color:#4fc3f7;font-weight:normal;margin-bottom:5px;letter-spacing:1px; }
+.side .dim { color:#8aa0ad; } .side .gp { color:#7fd67f;font-size:9px; }
+.side .bar { height:7px;background:rgba(255,255,255,0.12);margin:6px 0 3px; } .side .bar i { display:block;height:100%;background:#7fd67f; }
+.side .rt { display:flex;justify-content:space-between;padding:1px 3px; } .side .rt.cur { background:rgba(79,195,247,0.22);color:#fff; } .side .rt.off { color:#52636e; }
+.side .rt u { text-decoration:none;color:#33424d; } .side .rt span:last-child { font-family:sans-serif;font-size:10px;color:#ffd54f; }
+.side .bn { display:flex;align-items:center;gap:7px;margin:3px 0; } .side .bn canvas { flex:none;margin:0;image-rendering:pixelated; }
+.side .brow { padding:2px 3px;line-height:1.7; } .side .board { width:auto;max-width:none; }
 #ui { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none; }
 #mapScreen,#finishScreen,#failScreen,#diaryScreen,#campScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 .maph { font-family:"Press Start 2P",monospace;font-size:16px;color:#4fc3f7;margin-bottom:10px;letter-spacing:3px; }
@@ -60,6 +72,7 @@ canvas { display:block;margin:0 auto; }
 .edpal button { width:44px;height:44px;padding:0;background:#12202e;border:2px solid #2c3b47;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#ff5252; }
 .edpal button.bn { border-color:#6b5a1f; }
 .edpal button.on { border-color:#ffd54f;background:#2a3a1a; }
+.gpf { outline:3px solid #ffd54f;outline-offset:2px;box-shadow:0 0 0 5px rgba(255,213,79,0.25); }
 .recnav { display:flex;align-items:center;gap:10px;margin-bottom:6px; }
 .recnav .place { margin:0;min-width:200px; }
 .finrun { font-family:"Press Start 2P",monospace;font-size:8px;line-height:2;color:#ddd;text-align:center;margin:6px 0; }
@@ -118,6 +131,7 @@ canvas { display:block;margin:0 auto; }
       <p><span class="key">← →</span> руль &nbsp; <span class="key">↑ ↓</span> вперёд и назад</p>
       <p><span class="key">пробел</span> удар веслом &nbsp; <span class="key">Esc</span> пауза &nbsp; <span class="key">M</span> музыка</p>
       <p><span class="key">тач</span> — веди пальцем, двойной тап — удар</p>
+      <p><span class="key">геймпад</span> стик руль · A гребок · B удар · Start пауза</p>
     </div>
   </div>
 </div>
@@ -178,6 +192,8 @@ canvas { display:block;margin:0 auto; }
     <div class="finrun" id="finRun"></div>
     <div class="boardtitle">Таблица дня · соперники из похода</div>
     <div class="board" id="finBoard"></div>
+    <div class="boardtitle" id="finOnlineTitle">Все игроки · онлайн</div>
+    <div class="board" id="finOnline"></div>
     <div class="maprow">
       <button class="btn small" id="nextBtn">ДАЛЬШЕ</button>
       <button class="btn small ghost" id="againBtn">ЗАНОВО</button>
@@ -237,7 +253,9 @@ canvas { display:block;margin:0 auto; }
       <button class="btn small ghost" id="recNext">&gt;</button>
     </div>
     <div class="finrun" id="recRun"></div>
+    <div class="maprow" id="recModeRow"><button class="btn small ghost" id="recMode">ВСЕ ИГРОКИ</button></div>
     <div class="board" id="recBoard"></div>
+    <div class="board" id="recOnline"></div>
     <div class="maprow"><button class="btn small" id="recBack">НАЗАД</button></div>
   </div>
   <div id="diaryScreen" class="hidden">
@@ -259,13 +277,16 @@ canvas { display:block;margin:0 auto; }
   <div><b>ДВОЙНОЙ ТАП</b> — УДАР ВЕСЛОМ</div>
 </div>
 <div id="pauseBtn" class="hidden">II</div>
+<canvas id="bgCanvas"></canvas>
 <canvas id="game"></canvas>
+<aside id="panelL" class="side hidden"></aside>
+<aside id="panelR" class="side hidden"></aside>
 <script>
-const c=document.getElementById("game"),cx=c.getContext("2d");
+const c=document.getElementById("game"); let cx=c.getContext("2d"); const gameCx=cx;
 cx.imageSmoothingEnabled=false;
 const W=420,H=720;c.width=W;c.height=H;
 let cutFull=false;   // канвас на весь экран, пока идёт катсцена
-function rs(){if(cutFull){c.width=innerWidth;c.height=innerHeight;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px";return;}const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.width=W;c.height=H;c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
+function rs(){if(cutFull){c.width=innerWidth;c.height=innerHeight;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px";if(typeof layoutSides==="function")layoutSides(innerWidth,innerHeight,true);return;}const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.width=W;c.height=H;c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";if(typeof layoutSides==="function")layoutSides(Math.floor(W*s),Math.floor(H*s),false);}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
 const g={weeds:[],waves:[],s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,vestUsed:false,bridgeCinema:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
@@ -1119,20 +1140,19 @@ const SPR = {
     "..krrrkkrrrk..",
     "..krrrkkrrrk..",
     "..kRrrkkrrRk.."]},
-  hare_isle:{map:["............knknk.....",
-    "............knknnk....",
-    "............kHkHnk....",
-    "............knnnk.....",
-    "......kkkkkknnKnkk....",
-    ".....knnnnnnnnneeKk...",
-    "...kknnnnnnnnnneeek...",
-    "..kwwwnnnnnnnnnnkk....",
-    "..kwwweeeeeenSSSSSkk..",
-    ".kSwwneeeeoondddSSSSk.",
-    "kSSddddnnnoodddddddSSk",
-    "kSddddddddddddddddddSk",
-    ".kkddddddddddddddddkk.",
-    "..fkkkSSSSSSSSSSkkk..."]},
+  hare:{map:["..........knnknk..",
+    "..........knnknk..",
+    "..........kHnkHk..",
+    "..........knnnnk..",
+    "......kkkkknnKnk..",
+    "....kknnnnnnnneKk.",
+    "...knnnnnnnnnnnek.",
+    "..kwnnnnnnnnnnnk..",
+    ".kwwwnnnnnnnnkk...",
+    ".kwwwnnnnnnnnk....",
+    ".kwwweeeeeennk....",
+    "..kkooonnooook....",
+    "...koookkkkkk....."]},
   yacht:{map:["......kiiZwwZiik......",
     ".....kWWZwwwwZWWk.....",
     ".....kiZwwggwwZik.....",
@@ -1171,6 +1191,183 @@ const SPR = {
     ".kWZLLLLLLrrLLLLLLZWk.",
     "..kiZLLLLLrrrLLLLZik..",
     "..kWWZLLLLrrLLLLZWWk.."]},
+  // Цапля ловит рыбу: три момента (наклон, тянется к воде, клюв в воде) — шире стоячей на 6 клеток вправо.
+  heron_b1:{map:["............................",
+    "............................",
+    "............................",
+    "..............kkkk..........",
+    "............kkwwKwk.........",
+    "...........kwwwwKwwkk.......",
+    "...........kwwkkkKwwwk......",
+    "....kkkkkkkwwwk.kKwuwk......",
+    "...kWWWWWWWwwwk..kKwykkk....",
+    "..kWWWWWWWWwwk....kkyyyykk..",
+    ".kGGGGGGGGwwwk......kyyyyyk.",
+    ".kGjjjjjjGwwwk.......kkkkk..",
+    "kgggjjjjjGwwwk..............",
+    "kgggggggggwwwk..............",
+    ".kkkgggggggkk...............",
+    "....kkkkMMMk................",
+    ".......kMkk.................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    "......kMMMk.................",
+    ".......kkk..................",
+    "............................",
+    "............................",
+    "............................",
+    "............................"]},
+  heron_b2:{map:["............................",
+    "............................",
+    "............................",
+    "............................",
+    "............................",
+    "............................",
+    "............kkkkkkk.........",
+    "....kkkkkkkkwwwwwwwkk.......",
+    "...kWWWWWWWwwwwwwwwwwk......",
+    "..kWWWWWWWWwwkkkkkkwwwk.....",
+    ".kGGGGGGGGwwwk.....kKwk.....",
+    ".kGjjjjjjGwwwk.....kKwwk....",
+    "kgggjjjjjGwwwk.....kKwwk....",
+    "kgggggggggwwwk......kKwwk...",
+    ".kkkgggggggkk.......kKuwk...",
+    "....kkkkMMMk........kwyyk...",
+    ".......kMkk..........kkyyk..",
+    ".......kMk............kyyk..",
+    ".......kMk.............kyyk.",
+    ".......kMk..............kyk.",
+    ".......kMk...............k..",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    "......kMMMk.................",
+    ".......kkk..................",
+    "............................",
+    "............................",
+    "............................",
+    "............................"]},
+  heron_b3:{map:["............................",
+    "............................",
+    "............................",
+    "............................",
+    "............................",
+    "............................",
+    "............k...............",
+    "....kkkkkkkkwkkkk...........",
+    "...kWWWWWWWwwwwwwkk.........",
+    "..kWWWWWWWWwwwwwwwwkk.......",
+    ".kGGGGGGGGwwwkkkkwwwwk......",
+    ".kGjjjjjjGwwwk...kkwwwk.....",
+    "kgggjjjjjGwwwk.....kwwwk....",
+    "kgggggggggwwwk......kwwk....",
+    ".kkkgggggggkk........kwwk...",
+    "....kkkkMMMk.........kwwk...",
+    ".......kMkk...........kwwk..",
+    ".......kMk............kKwk..",
+    ".......kMk............kKwk..",
+    ".......kMk............kKwk..",
+    ".......kMk............kKwwk.",
+    ".......kMk............kKuwk.",
+    ".......kMk............kwyyk.",
+    ".......kMk.............kyyk.",
+    "......kMMMk............kyyk.",
+    ".......kkk..............kyyk",
+    "........................kyk.",
+    ".........................k..",
+    "......................ffffff",
+    "....................ff......"]},
+  // Перрон: фонарь и скамейка (финал).
+  lamp:{map:["..kkk..",
+    ".kgggk.",
+    "kyuuuyk",
+    "kyeeeyk",
+    "kyeeeyk",
+    "kyuuuyk",
+    ".kkgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    ".kggggk",
+    ".kggggk"]},
+  bench:{map:[".kkkkkkkkkkkkkkkkkk.",
+    "kMMMMMMMMMMMMMMMMMMk",
+    "kDDDDDDDDDDDDDDDDDDk",
+    "kDDDDDDDDDDDDDDDDDDk",
+    "khhhhhhhhhhhhhhhhhhk",
+    "kDDDDDDDDDDDDDDDDDDk",
+    ".kggkkkkkkkkkkkkggk.",
+    ".kggk..........kggk.",
+    ".kggk..........kggk.",
+    "..kk............kk.."]},
+  // Мост спереди (мульт «Под мостом»): сплошная каменная арка, настил с перилами сверху; проём — вода и даль.
+  bridge_front:{map:["kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "...I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I......I...",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+    "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIiiiiiiiiiiiiiiiiiiiiiiiiiiiijIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIiiiiiiiiiikkkkkkkkkkkkkkkkkkkkkkkkiiiiiiiiiijIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiikkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkiiiiiiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIiiiiiiikkkkkggggggggggggggggggggggggggggggkkkkkiiiiiiiIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjiiiiiiikkkggggggggggggggggggggggggggggggggggggggkkkiiiiiiiIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIiiiiikkkkggggggggggggggggggggggggggggggggggggggggggkkkkiiiiiIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiikkk................................................kkkiiiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjiiiiikk....................................................kkiiiiiIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIiiiikkk......................................................kkkiiiiIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIiiiikk..........................................................kkiiiiIIIjIIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiikk............................................................kkiiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjiiiikk..............................................................kkiiiiIIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIIiiiikk................................................................kkiiiiIIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIIiiiikk..................................................................kkiiiiIIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiikk....................................................................kkiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIiiikk......................................................................kkiiiIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIiiik........................................................................kiiiIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjIiikk........................................................................kkiiIIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiik..........................................................................kiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIIiik..........................................................................kiiIIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiiik..........................................................................kiiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiiik..........................................................................kiiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjiikk..........................................................................kkiijjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjiik............................................................................kiijjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiik............................................................................kiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiik............................................................................kiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jIIIIIIIjIIIIIIIjIIIIIIIjIIIIiik............................................................................kiiIjIIIIIIIjIIIIIIIjIIIIIIIjIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjiik............................................................................kiijjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "IIIIjIIIIIIIjIIIIIIIjIIIIIIIjiik............................................................................kiiIIIIIjIIIIIIIjIIIIIIIjIIIIIII",
+    "gggggggggggggggggggggggggggggggk............................................................................kggggggggggggggggggggggggggggggg",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk............................................................................kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"]},
   // Цапля (Медведица, вместо уток): серая, стоит на одной ноге у берега,
   // белая шея буквой S, чёрный хохол, длинный жёлтый клюв. Два кадра полёта:
   // шея втянута, ноги назад, крыло вверх / вниз. Смотрит вправо — к воде
@@ -2030,20 +2227,46 @@ const SPR = {
     ".....kKKKKKKKKKk.........................kKKKKKKKKKk.............kKKKKKKKKKk.........................kKKKKKKKKKk.............kKKKKKKKKKk.........................kKKKKKKKKKk.............kKKKKKKKKKk.........................kKKKKKKKKKk........",
     "......kKKkkKKkk...........................kKKkkKKkk...............kKKkkKKkk...........................kKKkkKKkk...............kKKkkKKkk...........................kKKkkKKkk...............kKKkkKKkk...........................kKKkkKKkk.........",
     "......kKKkkKKk............................kKKkkKKk................kKKkkKKk............................kKKkkKKk................kKKkkKKk............................kKKkkKKk................kKKkkKKk............................kKKkkKKk.........."]},
-  station:{map:[
-    "......kkkkkkkkkkkkkkkk......",
-    ".....kGGGGGGGGGGGGGGGGk.....",
-    "....kGGGGGGGGGGGGGGGGGGk....",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkk",
-    "kWWWWWWWWWWWWWWWWWWWWWWWWWWk",
-    "kWWkkkkWWWWkkkkWWWWkkkkWWWWk",
-    "kWWkzzkWWWWkzzkWWWWkzzkWWWWk",
-    "kWWkkkkWWWWkkkkWWWWkkkkWWWWk",
-    "kWWWWWWWWWWWWWWWWWWWWWWWWWWk",
-    "kWWWWWWWWkkkkkkWWWWWWWWWWWWk",
-    "kWWWWWWWWkOOOOkWWWWWWWWWWWWk",
-    "kWWWWWWWWkOOOOkWWWWWWWWWWWWk",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkk"]},
+  station:{map:["..............................kVVNNNNNNVVk..............................",
+    "..............................kVVNNNNNNVVk..............................",
+    "..............................kswwwwwwwwsk..............................",
+    "..............................ksweekeeewsk..............................",
+    "..............................ksweekeeewsk..............................",
+    "..............................ksweekkkewsk..............................",
+    "..............................ksweeeeeewsk..............................",
+    "..............................ksweeeeeewsk..............................",
+    ".............................kwswwwwwwwwswk.............................",
+    "....................kkkkkkkkkwwsssssssssswwkkkkkkkkk....................",
+    "...................kSSSSSSSSwwwwwwwwwwwwwwwwSSSSSSSSk...................",
+    "...................kSSSSwwwwwwwwwwwwwwwwwwwwwwwwSSSSk...................",
+    "...................kssssNNNNNNNNNNNNNNNNNNNNNNNNssssk...................",
+    "...................kssssVVwwwVwwVVwwwVwwVVwVVVVVssssk...................",
+    "...................kssssVVVwVVwVwVwVVVwVwVwVVVVVssssk...................",
+    "kkkkkkkkkkkkkkkkkkkkssssVVVwVVwwVVwwVVwwVVwwVVVVsssskkkkkkkkkkkkkkkkkkkk",
+    "NNNNNNNNNNNNNNNNNNNNssssVVVwVVwVwVwVVVwVVVwVwVVVssssNNNNNNNNNNNNNNNNNNNN",
+    "VVVVVVVVVVVVVVVVVVVVssssVVVwVVwwVVwwwVwVVVwwVVVVssssVVVVVVVVVVVVVVVVVVVV",
+    "VVVVVVVVVVVVVVVVVVVVssssVVVVVVVVVVVVVVVVVVVVVVVVssssVVVVVVVVVVVVVVVVVVVV",
+    "VVVVVVVVVVVVVVVVVVVVssssNNNNNNNNNNNNNNNNNNNNNNNNssssVVVVVVVVVVVVVVVVVVVV",
+    "SSSSSSSSSSSSSSSSSSSSsswWsssswWssssssssssssswWsssswWsSSSSSSSSSSSSSSSSSSSS",
+    "SSSSSSSSSSSSSSSSSSSSsswWsssswWssssssssssssswWsssswWsSSSSSSSSSSSSSSSSSSSS",
+    "sssssssssssssssssssssswWsssswWssssssssssssswWsssswWsssssssssssssssssssss",
+    "sssssssssssssssssssssswWsssswWssssssssssssswWsssswWsssssssssssssssssssss",
+    "sssssssssssssssssssssswWsssswWssssssssssssswWsssswWsssssssssssssssssssss",
+    "sssswZZwssswZZwssssssswWsssswWswwwwwwwwwwsswWsssswWssssswZZwssswZZwsssss",
+    "sssszzzzssszzzzssssssswWsssswWssDDDDDDDDssswWsssswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszZZzssszZZzssssssswWzzsswWssDOODDOODssswWzzsswWssssszZZzssszZZzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssssssssssssssssssssswWsssswWssDOODDOODssswWsssswWsssssssssssssssssssss",
+    "sssssssssssssssssssssswWsssswWssDOODDOODssswWsssswWsssssssssssssssssssss",
+    "jjjjjjjjjjjjjjjjjjjjsswWsssswWssDOODDOODssswWsssswWsjjjjjjjjjjjjjjjjjjjj",
+    "GGGGGGGGGGGGGGGGGGGGssssssssWWWWWWWWWWWWWWWWssssssssGGGGGGGGGGGGGGGGGGGG",
+    "GGGGGGGGGGGGGGGGGGGGssssssGGGGGGGGGGGGGGGGGGGGssssssGGGGGGGGGGGGGGGGGGGG",
+    "GGGGGGGGGGGGGGGGGGGGssssjjjjjjjjjjjjjjjjjjjjjjjjssssGGGGGGGGGGGGGGGGGGGG"]},
   fish:{map:["..kkkkkk..k.",
     ".kjjjGjjkkGk",
     "kWKWWWWWWGGk",
@@ -2098,18 +2321,18 @@ const SPR = {
     "..kZZZZZZk..","..kZZZZZZk..","...kZZkZZ...","...kZZkZZ...","...kZZkZZ...",
     ".kOOkkkkOOk.",".kkkkkkkkkk."],noOutline:true},
   // Чайка-силуэт, два кадра маха (вверх/вниз) — цикл `cycle` в катсценах.
-  bird0:{map:["kk........kk",
-    ".kKk....kKk.",
-    "..kKk..kKk..",
-    "...kKkkKk...",
-    "....kKKk....",
+  bird0:{map:["k..........k",
+    "kk........kk",
+    ".kk..kk..kk.",
+    "..kkkkkkkk..",
+    "....kkkk....",
     ".....kk.....",
     "............"],noOutline:true},
   bird1:{map:["............",
-    ".kk......kk.",
-    "kKKkkkkkkKKk",
-    "kKKKKKKKKKKk",
-    ".kkkkKKkkkk.",
+    "............",
+    "kkk......kkk",
+    "..kkk..kkk..",
+    "....kkkk....",
     ".....kk.....",
     "............"],noOutline:true},
   // Летящие утки (два кадра маха) для разлёта у берега: светлое брюшко,
@@ -2183,62 +2406,62 @@ const SPR = {
   // Мост — ЕДИНЫЙ рисунок всей конструкции (вместо кучи разрозненных
   // pier+deck+truss-актёров): настил сверху, под ним ферма-решётка, по краям
   // две опоры, уходящие в воду. Проезжает над лодкой как одно целое.
-  bridge:{map:["..............................................................................................................",
-    "..............................................................................................................",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
-    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
-    "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
-    "kkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkk",
-    "..I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I..",
-    "kkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkk",
-    "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
-    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
-    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-    "IIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIII",
-    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-    "IjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkg",
-    "jjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kgg",
-    "jjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kgg",
-    "jjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggk",
-    "jjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggk.",
-    "jjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk..",
-    "jjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk..",
-    "jjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk...",
-    "jjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk....",
-    "jjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk.....",
-    "jjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk.....",
-    "jjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkk",
-    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-    "gggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggg",
-    "kkkkIIIIIIIIIIIIIIIIIIkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkIIIIIIIIIIIIIIIIIIkkkk",
-    "...kIIIIIIIIIIIIIIIIIIk................................................................kIIIIIIIIIIIIIIIIIIk...",
-    "...kIIIIIIIIIIIIIIIIIIk................................................................kIIIIIIIIIIIIIIIIIIk...",
-    "...kjjjjjjjjjjjjjjjjjjk................................................................kjjjjjjjjjjjjjjjjjjk...",
-    "....kkWGgGGGGgGGGjjjkk..................................................................kkWGgGGGGgGGGjjjkk....",
-    ".....kWWgGGGGgGGGgjjk....................................................................kWWgGGGGgGGGgjjk.....",
-    ".....kWGgggggggggjjjk....................................................................kWGgggggggggjjjk.....",
-    ".....kWWGGGgGGGGggjjk....................................................................kWWGGGgGGGGggjjk.....",
-    ".....kWGGGGgGGGGgjjjk....................................................................kWGGGGgGGGGgjjjk.....",
-    ".....kWWggggggggggjjk....................................................................kWWggggggggggjjk.....",
-    ".....kWGgGGGGgGGGjjjk....................................................................kWGgGGGGgGGGjjjk.....",
-    ".....kWWgGGGGgGGGgjjk....................................................................kWWgGGGGgGGGgjjk.....",
-    ".....kWGgggggggggjjjk....................................................................kWGgggggggggjjjk.....",
-    ".....kWWGGGgGGGGggjjk....................................................................kWWGGGgGGGGggjjk.....",
-    ".....kWGGGGgGGGGgjjjk....................................................................kWGGGGgGGGGgjjjk.....",
-    ".....kWWggggggggggjjk....................................................................kWWggggggggggjjk.....",
-    ".....kWGgNGGGgNGGjjNk....................................................................kWGgGNGGgGNGjjjk.....",
-    ".....kWWgGNGGgGNGgjjk....................................................................kNWgGGNGgGGNgjjk.....",
-    "....kkNGgggNggggNjjjkk..................................................................kkWNggggNggggNjjkk....",
-    "...kWWGNGgGGNGgGGNGgjjk................................................................kWWGGNgGGGNgGGGNgjjk...",
-    "...kWGGGNgGGGNgGGGNjjjk................................................................kNGGGGNGGGGNGGGGNjjk...",
-    "...kNWgggNggggNggggNjjk................................................................kWNggggNggggNggggNjk...",
-    "...kWNgGGGNgGGGNgGGjNjk................................................................kWGNGGGGNGGGGNGGjjNk...",
-    "...kWWNGGGGNGGGGNGGgjNk................................................................kWWgNGGGgNGGGgNGgjjk...",
-    "...kWGgNggggNggggNgjjjk................................................................kWGggNggggNggggNjjjk...",
-    "...kWWGGNgGGGNgGGGNgjjk................................................................kNWGGGNGGGGNGGGGNjjk...",
-    "...kNGGGGNGGGGNGGGGNjjk................................................................kWNGGGgNGGGgNGGGjNjk...",
-    "...kWNggggNggggNggggNjk................................................................kWWNggggNggggNgggjNk..."]},
+  bridge:{map:["....................................................................................",
+    "....................................................................................",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+    "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "kkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkk",
+    "..I.....I.....I.....I.....I.....I.....I.....I.....I.....I.....I.....I.....I.....I...",
+    "kkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkk",
+    "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIiIIIIIIIIIIIIIiIIIIIIIIIIIIIiIIIIIIIIIIIIIiIIIIIIIIIIIIIiIIIIIIIIIIIIIiIIIIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IjggkkkkkkkkkkIjkkkkkkkkkkkggjggkkkkkkkkkkIjkkkkkkkkkkkggjggkkkkkkkkkkIjkkkkkkkkkkkg",
+    "jjkggk.......kjjk........kggjjkggk.......kjjk........kggjjkggk.......kjjk........kgg",
+    "jjkkggk......kjjk.......kggkjjkkggk......kjjk.......kggkjjkkggk......kjjk.......kggk",
+    "jjk.kggk.....kjjk......kggkkjjk.kggk.....kjjk......kggkkjjk.kggk.....kjjk......kggk.",
+    "jjk..kggk....kjjk.....kggk.kjjk..kggk....kjjk.....kggk.kjjk..kggk....kjjk.....kggk..",
+    "jjk...kggk...kjjk....kggk..kjjk...kggk...kjjk....kggk..kjjk...kggk...kjjk....kggk...",
+    "jjk....kggk..kjjk...kggk...kjjk....kggk..kjjk...kggk...kjjk....kggk..kjjk...kggk....",
+    "jjk.....kggk.kjjk..kggk....kjjk.....kggk.kjjk..kggk....kjjk.....kggk.kjjk..kggk.....",
+    "jjk......kggkkjjk.kggk.....kjjk......kggkkjjk.kggk.....kjjk......kggkkjjk.kggk......",
+    "jjk.......kggkjjkkggk......kjjk.......kggkjjkkggk......kjjk.......kggkjjkkggk.......",
+    "jjk........kggjjkggk.......kjjk........kggjjkggk.......kjjk........kggjjkggk........",
+    "jjkkkkkkkkkkkggjggkkkkkkkkkkjjkkkkkkkkkkkggjggkkkkkkkkkkjjkkkkkkkkkkkggjggkkkkkkkkkk",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "gggWgggggggggggggWgggggggggggggWgggggggggggggWgggggggggggggWgggggggggggggWgggggggggg",
+    "IIIIIIIkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkIIIIIII",
+    "IIIIIIIk....................................................................kIIIIIII",
+    "IIIIIIIk....................................................................kIIIIIII",
+    "jjjjjjjk....................................................................kjjjjjjj",
+    "GGgGGgjk....................................................................kWGgGGGG",
+    "GGgGGjjk....................................................................kWWgGGGG",
+    "ggggggjk....................................................................kWGggggg",
+    "gGGGGjjk....................................................................kWWGGGgG",
+    "gGGGGgjk....................................................................kWGGGGgG",
+    "gggggjjk....................................................................kWWggggg",
+    "GGgGGgjk....................................................................kWGgGGGG",
+    "GGgGGjjk....................................................................kWWgGGGG",
+    "ggggggjk....................................................................kWGggggg",
+    "gGGGGjjk....................................................................kWWGGGgG",
+    "gGGGGgjk....................................................................kWGGGGgG",
+    "gggggjjk....................................................................kWWggggg",
+    "GGgGNgjk....................................................................kWGNGGGG",
+    "NGgGGNjk....................................................................kWWgNGGG",
+    "gNggggNk....................................................................kWGggNgg",
+    "gGNGGjjk....................................................................kNWGGGNG",
+    "gGGNGgjk....................................................................kWNGGGgN",
+    "ggggNjjk....................................................................kWWNgggg",
+    "NGgGGNjk....................................................................kWGgNGGG",
+    "GNgGGjNk....................................................................kWWgGNGG",
+    "ggNgggjk....................................................................kNGgggNg",
+    "gGGNGjjk....................................................................kWNGGGgN",
+    "gGGGNgjk....................................................................kWGNGGgG",
+    "NggggNjk....................................................................kWWgNggg"]},
   bush:{map:["...kkkk...","..kvvvvk..",".kvvvvvvk.","kvvvVvvvvk","kvvVvvvvVk",
     ".kvvvvvvk.","..kVVVVk..","...kkkk..."]},
   tree:{map:["......kk..........",
@@ -2566,7 +2789,7 @@ SPR.kayak_left_rain  = { map: shearMap(SPR.kayak_center_rain.map, -1) };
 SPR.kayak_right_rain = { map: shearMap(SPR.kayak_center_rain.map,  1) };
 for (const n of ["fisher", "fisher_rain", "fisher_stand", "fisher_stand_rain", "fisher_kid", "fisher_car", "fisher_bike", "heron", "heron_fly0", "heron_fly1", "cow", "cow_b", "cow_water", "shepherd",
                  "bull", "calf", "shepherd_old", "shepherd_girl", "walkway", "rowboat", "banya",
-                 "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf", "fish", "bear_wave", "bear_wave_b", "dog_lie", "dog_run", "dog_run_b", "dog_jump", "dog_swim"])
+                 "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf", "fish", "heron_b1", "heron_b2", "heron_b3", "bear_wave", "bear_wave_b", "dog_lie", "dog_run", "dog_run_b", "dog_jump", "dog_swim"])
   SPR[n + "_l"] = { map: SPR[n].map.map(r => [...r].reverse().join("")), variants: SPR[n].variants };
 SPR.fisher_l_rain = SPR.fisher_rain_l; delete SPR.fisher_rain_l;
 SPR.fisher_stand_l_rain = SPR.fisher_stand_rain_l; delete SPR.fisher_stand_rain_l;
@@ -3418,52 +3641,63 @@ const CUTS = {
   drive1: driveCountry(),
   drive2: driveHighway(),
   drive3: driveDirt(),
-  finale: { sky:"evening", ground:"#3a3f45", caption:"Вокзал в Твери. Домой, в Москву",
+  finale: { sky:"evening", ground:"#3a3f45", len:480,
+    caption:"Вокзал в Твери. Домой, в Москву",
+    captions:[[0.66, "Спасибо за поход! До новых сплавов"]],
     actors:[
-      // Вокзал — ближе и больше: scl=2 (26×13 арт → 52×26 арт, ~156×78 экран), стоит на перроне
-      // (низ = y 292 + 26*2 = 344). Находится ЗА путями (поезд проходит перед ним).
-      { spr:"station", keys:[[0,210,320,2,1],[1,210,320,2,1]] },
-      // Деревья вокруг вокзала — фон (y<320, ниже перрона, без тени), чтобы не пусто.
-      // Стоят ЗА путями, как и вокзал, поезд проходит перед ними.
-      { spr:"ctree", keys:[[0,58,300,1,1],[1,58,300,1,1]] },
-      { spr:"ctree", keys:[[0,382,302,1.15,1],[1,382,302,1.15,1]] },
-      { spr:"ctree", keys:[[0,34,296,0.8,1],[1,34,296,0.8,1]] },
-      // Поезд: в t=0 далеко за кадром слева (перрон пуст — «секунда пустоты»), подъезжает к 0.45
-      // и ОСТАНАВЛИВАЕТСЯ на center=484 (0.45..0.6): вагон 3 = [268..340], вагон 4 = [340..412] —
-      // у места человека оказывается стык 3-4 вагона. Низ поезда y=372 — колёса на рельсах
-      // (ж/д пути в evening-блоке), ниже перрона (люди на 344). В 0.6 отправляется вправо (center→840).
-      { spr:"train",   keys:[[0,-760,372,1,1],[0.45,484,372,1,1],[0.6,484,372,1,1],[1,840,372,1,1]] },
-      // Пассажиры на перроне ПЕРЕД вагонами (перрон — полоса y 384…428 у нижнего края: стоят ногами на нём, на y=410;
-      // поезд — позади, за перроном, на пути y=372). В начале (секунда пустоты) поезда
-      // нет, пассажиры видны у вокзала. В 0.6 при отправлении ВСЕ садятся и исчезают (al→0).
-      // Одежда разная (var), рост почти одинаковый — герой (var 0, scl=1) лишь на ~6-8% крупнее.
-      { spr:"person",  keys:[[0,340,410,1,1],[0.6,340,410,1,1],[0.63,340,410,1,0],[1,340,410,1,0]] },
-      { spr:"person", var:1, keys:[[0,150,410,0.94,1],[0.6,150,410,0.94,1],[0.63,150,410,0.94,0],[1,150,410,0.94,0]] },
-      { spr:"person", var:2, keys:[[0,245,410,0.92,1],[0.6,245,410,0.92,1],[0.63,245,410,0.92,0],[1,245,410,0.92,0]] },
-      { spr:"person", var:3, keys:[[0,395,410,0.95,1],[0.6,395,410,0.95,1],[0.63,395,410,0.95,0],[1,395,410,0.95,0]] }
+      // Вокзал (72×40 арт, ×1.2 = 259 px): башня с часами, вывеска «ТВЕРЬ», колонны и арочные
+      // окна; стоит на площади, низ — y=336 (горизонт города).
+      { spr:"station", keys:[[0,210,336,1.2,1],[1,210,336,1.2,1]] },
+      { spr:"ctree", keys:[[0,52,334,1.05,1],[1,52,334,1.05,1]] },
+      { spr:"ctree", keys:[[0,30,330,0.8,1],[1,30,330,0.8,1]] },
+      { spr:"ctree", keys:[[0,392,336,1.15,1],[1,392,336,1.15,1]] },
+      // Птицы в закатном небе (взмах крыльев — два кадра) и облачко.
+      { spr:"bird0", cycle:{ per:14, spr:["bird0","bird1"] }, keys:[[0,470,190,0.9,1],[1,-60,150,0.9,1]] },
+      { spr:"bird0", cycle:{ per:17, spr:["bird0","bird1"] }, keys:[[0.1,500,214,0.7,1],[1,-30,176,0.7,1]] },
+      { spr:"bird0", cycle:{ per:15, spr:["bird0","bird1"] }, keys:[[0.25,520,160,0.6,1],[1,40,128,0.6,1]] },
+      // Электричка стоит на пути (колёса на рельсах y=420, за перроном). В t=0 путь пуст,
+      // подъезжает к 0.36 и останавливается на center=484: двери вагонов на x=136, 277, 316 (пассажиры
+      // идут именно к ним); в 0.66 отправляется вправо.
+      { spr:"train", keys:[[0.08,-760,420,1,1],[0.36,484,420,1,1],[0.66,484,420,1,1],[1,980,420,1,1]] },
+      // Фонари вдоль перрона и скамейки ближе к зрителю.
+      { spr:"lamp", keys:[[0,70,468,1,1],[1,70,468,1,1]] },
+      { spr:"lamp", keys:[[0,215,468,1,1],[1,215,468,1,1]] },
+      { spr:"lamp", keys:[[0,360,468,1,1],[1,360,468,1,1]] },
+      { spr:"bench", keys:[[0,120,528,1.3,1],[1,120,528,1.3,1]] },
+      { spr:"bench", keys:[[0,305,528,1.3,1],[1,305,528,1.3,1]] },
+      // Пассажиры (вся компания) стоят у края перрона; в 0.40 идут к дверям (ходьба — два кадра),
+      // у двери (чуть выше по кадру) садятся и исчезают. Герой в красной куртке — второй слева.
+      { spr:"person", var:0, keys:[[0,100,470,1.18,1],[0.399,100,470,1.18,1],[0.4,100,470,1.18,0]] },
+      { spr:"person", var:0, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,100,470,1.18,0],[0.4,100,470,1.18,1],[0.52,136,456,1.18,1],[0.545,136,444,1.18,0]] },
+      { spr:"person", var:2, keys:[[0,150,478,1.12,1],[0.399,150,478,1.12,1],[0.4,150,478,1.12,0]] },
+      { spr:"person", var:2, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,150,478,1.12,0],[0.4,150,478,1.12,1],[0.52,136,464,1.12,1],[0.545,136,452,1.12,0]] },
+      { spr:"girl", keys:[[0,205,472,1.1,1],[0.399,205,472,1.1,1],[0.4,205,472,1.1,0]] },
+      { spr:"girl", cycle:{ per:10, spr:["girl","girl_w1"] }, keys:[[0.399,205,472,1.1,0],[0.4,205,472,1.1,1],[0.52,277,458,1.1,1],[0.545,277,446,1.1,0]] },
+      { spr:"person", var:1, keys:[[0,250,480,1.12,1],[0.399,250,480,1.12,1],[0.4,250,480,1.12,0]] },
+      { spr:"person", var:1, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,250,480,1.12,0],[0.4,250,480,1.12,1],[0.52,277,466,1.12,1],[0.545,277,454,1.12,0]] },
+      { spr:"person", var:3, keys:[[0,300,468,1.14,1],[0.399,300,468,1.14,1],[0.4,300,468,1.14,0]] },
+      { spr:"person", var:3, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,300,468,1.14,0],[0.4,300,468,1.14,1],[0.52,316,454,1.14,1],[0.545,316,442,1.14,0]] },
+      { spr:"person", var:4, keys:[[0,352,476,1.1,1],[0.399,352,476,1.1,1],[0.4,352,476,1.1,0]] },
+      { spr:"person", var:4, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,352,476,1.1,0],[0.4,352,476,1.1,1],[0.52,316,462,1.1,1],[0.545,316,450,1.1,0]] },
     ] },
-  // Первый чистый пролёт моста за день: байдарка ПЛЫВЁТ под мостом — видна река
-  // (water), весь мост ЕДИНЫМ спрайтом (настил+ферма+опоры) проезжает над
-  // головой, опоры стоят в воде и проносятся ЗА лодкой (мост рисуется ДО лодки).
-  // Гребец в байдарке с веслом — тоже один спрайт (kayak_man).
+  // Первый чистый пролёт моста за день: вид ВПЕРЁД по реке — байдарка (сверху-сзади, как
+  // в игре) гребёт к каменной арке и уходит ПОД мост: уменьшается и скрывается в проёме
+  // (мост рисуется ПОСЛЕ лодки, проём прозрачный — за ним вода и даль). По настилу сверху
+  // едут машины поперёк кадра. Арка повторена слева и справа — виадук, края моста не видны.
   bridge: { sky:"day", ground:"#3d6b3a", far:"#2c5530", water:344, caption:"Под мостом",
     actors:[
-      // Облака — небо не пустое.
       { spr:"cloud", keys:[[0,420,86,1.6,0.9],[1,-120,86,1.6,0.9]] },
       { spr:"cloud", keys:[[0,560,150,1.1,0.8],[1,60,150,1.1,0.8]] },
-      // Мост одним объектом (bridge: ферма на каменных опорах 330×168 px): низ пояса
-      // над головой гребца, опоры стоят в воде, мост проезжает через кадр; в t=0.5
-      // пролёт ровно над лодкой. Мост рисуется ДО лодки.
-      { spr:"bridge", keys:[[0,-240,356,1,1],[0.12,70,356,1,1],[0.5,210,356,1,1],[0.88,350,356,1,1],[1,660,356,1,1]] },
-      // По мосту едут машины (низ колёс на настиле, y=212): едут вдоль моста.
-      { spr:"car",       keys:[[0.12,-60,212,1,0],[0.18,-30,212,1,1],[0.46,160,212,1,1],[0.52,205,212,1,0]] },
-      { spr:"car_red_r", keys:[[0.5,335,212,1,0],[0.55,330,212,1,1],[0.85,295,212,1,1],[0.88,285,212,1,0]] },
-      // Тени моста и опор на воде — смещаются с тем же течением, что и река.
-      { spr:"shadow", keys:[[0,430,376,1,0.38],[1,-380,376,1,0.15]] },
-      { spr:"shadow", keys:[[0,1130,384,1,0.3],[1,320,384,1,0.12]] },
-      // Гребец в жёлтой байдарке (как в игре), вид сбоку; два кадра гребли.
-      { spr:"kayak_man", cycle:{ per:16, spr:["kayak_man","kayak_man_b"] },
-        keys:[[0,210,368,1,1],[0.5,210,370,1,1],[1,210,368,1,1]] }
+      // Гребец: из нижней части кадра к арке; в проёме уже мал, потом тает вдали.
+      { spr:"kayak_center", cycle:{ per:14, spr:["kayak_left","kayak_center","kayak_right","kayak_center"] },
+        keys:[[0,210,730,3.2,1],[0.45,210,520,1.8,1],[0.62,210,420,1.1,1],[0.8,210,394,0.65,1],[0.95,210,376,0.38,0.7],[1,210,372,0.32,0]] },
+      // Арка: три одинаковых спрайта встык (шаг = ширина 420*1.5), средний над рекой.
+      { spr:"bridge_front", keys:[[0,-420,400,1.5,1],[1,-420,400,1.5,1]] },
+      { spr:"bridge_front", keys:[[0,210,400,1.5,1],[1,210,400,1.5,1]] },
+      { spr:"bridge_front", keys:[[0,840,400,1.5,1],[1,840,400,1.5,1]] },
+      // Машины едут по настилу (он на y≈208), колёса на нём; въезжают и уезжают за кадром.
+      { spr:"car",       keys:[[0.04,-90,210,1.2,1],[0.58,540,210,1.2,1]] },
+      { spr:"car_red_r", keys:[[0.6,540,210,1.2,1],[0.96,-100,210,1.2,1]] }
     ] }
 };
 
@@ -3993,6 +4227,81 @@ function cutFade(sc, t){
 // Небо на весь экран, земля прижата к низу, актёры — по сцене, подпись — по
 // центру нижней полосы. Разные пропорции окна не ломают композицию: ширина
 // раскрывается за край канваса (деревья проезжают через весь экран).
+// Вокзал в сумерках (финал): закат с солнцем и облаками, силуэт города с огнями, площадь,
+// путь с электричкой, перрон с фонарями (тёплый свет), ближние пути. Всё в арт-координатах
+// 420×720; вокзал, поезд, люди, фонари, скамейки и птицы — актёры поверх.
+const STATION = { hz:336, trackY:420, platTop:430, platBot:540, near:[575, 615, 655] };
+function drwRails(y, wd, rs, s, yf, cw){
+  const yy = yf(y);
+  cx.fillStyle = "#1c1f23"; cx.fillRect(0, yy - wd*s/2, cw, wd*s);                       // балласт
+  cx.fillStyle = "#2b2d31";
+  for (let tx = 6*s; tx < cw; tx += 18*s) cx.fillRect(tx, yy - wd*s/2 + 1*s, 4*s, wd*s - 2*s);   // шпалы
+  cx.fillStyle = "#aab0b6";
+  cx.fillRect(0, yy - wd*s/2 - 1*s, cw, rs*s); cx.fillRect(0, yy + wd*s/2, cw, rs*s);    // рельсы
+}
+function drwStationBg(sc, s, xf, yf, cw, ch){
+  const hz = STATION.hz, fr = g.frame;
+  // Небо закатом: от тёмно-синего вверху до жёлтого у горизонта.
+  const sk = cx.createLinearGradient(0, yf(0), 0, yf(hz));
+  sk.addColorStop(0, "#1d1b4a"); sk.addColorStop(0.42, "#6f3a7c"); sk.addColorStop(0.72, "#e2735a"); sk.addColorStop(1, "#ffc980");
+  cx.fillStyle = sk; cx.fillRect(0, 0, cw, yf(hz));
+  // Звёзды в тёмной части.
+  cx.fillStyle = "rgba(255,255,255,0.75)";
+  for (let i = 0; i < 40; i++){ const x = (i*97 + 31) % 420, y = (i*53 + 11) % 130; if ((fr + i*7) % 80 < 62) cx.fillRect(xf(x), yf(y), 2*s, 2*s); }
+  // Солнце садится за город: диск и тёплые кольца.
+  const sx = xf(322), sy = yf(312);
+  for (const [r, col] of [[96, "rgba(255,200,120,0.14)"], [70, "rgba(255,190,110,0.22)"], [46, "rgba(255,214,140,0.38)"], [30, "#ffe9a8"]]){
+    cx.fillStyle = col; cx.beginPath(); cx.arc(sx, sy, r*s, Math.PI, 0); cx.fill();
+  }
+  // Облака: розовые полосы, неспешно плывут.
+  for (let i = 0; i < 6; i++){
+    const w = (90 + (i*37)%70)*s, y = yf(70 + i*30 + (i%2)*12), x = (((i*131 + fr*0.12*(0.6 + i*0.15)) % (420 + 160)) - 80)*s + (cw - 420*s)/2;
+    cx.fillStyle = "rgba(255," + (170 + i*8) + "," + (150 + i*6) + "," + (0.30 - i*0.02) + ")";
+    cx.beginPath(); cx.ellipse(x, y, w/2, 6*s, 0, 0, Math.PI*2); cx.fill();
+    cx.beginPath(); cx.ellipse(x + w*0.18, y - 5*s, w*0.28, 5*s, 0, 0, Math.PI*2); cx.fill();
+  }
+  // Город: силуэты домов с жёлтыми окнами и тёмная зелень.
+  const zBase = hz - 6;
+  cx.fillStyle = "#23321f";
+  cx.beginPath(); cx.moveTo(0, yf(zBase));
+  for (let i = 0; i <= 42; i++) cx.lineTo(xf(i*10), yf(zBase - 8 - ((i*13)%7)));
+  cx.lineTo(cw, yf(zBase)); cx.lineTo(cw, yf(hz)); cx.lineTo(0, yf(hz)); cx.closePath(); cx.fill();
+  for (let i = 0; i < 42; i++){
+    const h = 12 + ((i*37) % 22), wt = 11 + ((i*53) % 9), x0 = i*10;
+    cx.fillStyle = "#241f2e"; cx.fillRect(xf(x0), yf(zBase - h), wt*s, h*s);
+    cx.fillStyle = "rgba(255,214,120,0.6)";
+    for (let wy = zBase - h + 3; wy < zBase - 2; wy += 4) for (let wx = x0 + 2; wx < x0 + wt - 2; wx += 3)
+      if ((wx*7 + wy*13 + i) % 5 === 0) cx.fillRect(xf(wx), yf(wy), 2*s, 2*s);
+  }
+  // Привокзальная площадь и низкий заборчик.
+  cx.fillStyle = "#3a3f45"; cx.fillRect(0, yf(hz), cw, (STATION.trackY - hz - 20)*s);
+  cx.fillStyle = "#4d535a"; cx.fillRect(0, yf(hz + 10), cw, 2*s);
+  for (let x = 0; x < 440; x += 14){ cx.fillStyle = "#2b2f34"; cx.fillRect(xf(x), yf(hz + 12), 2*s, 10*s); }
+  // Путь с электричкой.
+  cx.fillStyle = "#2a2e33"; cx.fillRect(0, yf(STATION.trackY - 22), cw, 56*s);
+  drwRails(STATION.trackY - 2, 22, 2.2, s, yf, cw);
+  // Перрон: плитка со швами, жёлтая линия у края путей, скруглённый край и тень вниз.
+  const pt = yf(STATION.platTop), pb = yf(STATION.platBot);
+  cx.fillStyle = "#b9bcc4"; cx.fillRect(0, pt, cw, pb - pt);
+  cx.fillStyle = "#c9ccd3"; cx.fillRect(0, pt, cw, 6*s);
+  cx.fillStyle = "#a2a6af";
+  for (let p = 0; p < 460; p += 22) cx.fillRect(xf(p), pt + 6*s, 2*s, pb - pt - 6*s);
+  for (let y = STATION.platTop + 38; y < STATION.platBot; y += 38) cx.fillRect(0, yf(y), cw, 2*s);
+  cx.fillStyle = "#e0b83a"; cx.fillRect(0, pt + 3*s, cw, 4*s);
+  cx.fillStyle = "#7a7e86"; cx.fillRect(0, pb, cw, 5*s);
+  cx.fillStyle = "#2b2f34"; cx.fillRect(0, pb + 5*s, cw, 9*s);
+  // Ближние пути и тёмная трава внизу.
+  cx.fillStyle = "#1f2a1f"; cx.fillRect(0, pb + 14*s, cw, ch - pb);
+  for (const y of STATION.near) drwRails(y, 22, 2.2, s, yf, cw);
+  // Тёплый свет от фонарей на перроне (подслой — сами фонари рисуются актёрами).
+  for (const lx of [70, 215, 360]){
+    const gx = xf(lx), gy2 = yf(STATION.platTop + 6), rr = 118*s;
+    const gd = cx.createRadialGradient(gx, gy2, 0, gx, gy2, rr);
+    gd.addColorStop(0, "rgba(255,200,110,0.42)"); gd.addColorStop(1, "rgba(255,200,110,0)");
+    cx.fillStyle = gd; cx.fillRect(gx - rr, gy2 - rr, rr*2, rr*2);
+  }
+}
+
 function drwCut(){
   const sc = CUTS[g.cut.name];
   const cw = c.width, ch = c.height;
@@ -4123,68 +4432,7 @@ function drwCut(){
     cx.fillRect(xf(sm.x)-rad, yf(sm.y)-rad, rad*2, rad*2);
     cx.restore();
   }
-  if (sc.sky === "evening"){                 // перрон
-    // Город за вокзалом: зелень (тёмные кроны) + силуэты зданий с жёлтыми окнами.
-    // Вдалеке, выше перрона; вокзал и поезд рисуются позже поверх нижней части.
-    const zBase = 262;                       // арт-основание застройки (line горизонта города)
-    // кромка зелени — волнистый силуэт холмов/деревьев позади зданий
-    cx.fillStyle = "#23321f";
-    cx.beginPath(); cx.moveTo(0, yf(zBase));
-    for (let i = 0; i <= 42; i++){ const xx = i*10; cx.lineTo(xf(xx), yf(zBase - 8 - ((i*13)%7))); }
-    cx.lineTo(cw, yf(zBase)); cx.lineTo(cw, ch); cx.lineTo(0, ch); cx.closePath(); cx.fill();
-    // здания: детерминированный ряд (хеш-константы), верхняя часть будет видна над вокзалом
-    for (let i = 0; i < 42; i++){
-      const h = 12 + ((i*37) % 20);          // высота 12..31 арт
-      const wt = 11 + ((i*53) % 9);          // ширина 11..19 арт
-      const x0 = i*10;
-      cx.fillStyle = "#241f2e";
-      cx.fillRect(xf(x0), yf(zBase - h), wt*s, h*s);
-      // светящиеся окна (жёлтые) — редкие, детерминированные
-      cx.fillStyle = "rgba(255,214,120,0.55)";
-      for (let wy = zBase - h + 3; wy < zBase - 2; wy += 4)
-        for (let wx = x0 + 2; wx < x0 + wt - 2; wx += 3)
-          if ((wx*7 + wy*13 + i) % 5 === 0) cx.fillRect(xf(wx), yf(wy), 2*s, 2*s);
-    }
-    cx.fillStyle = "#5a5f66"; cx.fillRect(0, gy + 24*s, cw, 10*s);
-    // Тротуар-плитка перед вокзалом: светлая дорожка, по которой гуляют пассажиры,
-    // со швами между плитами. Ложится поверх платформы, вокзал рисуется позже (актёр)
-    // поверх его верхней границы.
-    const twY0 = 344, twY1 = 360;            // арт-границы тротуара (под ногами, y=344)
-    cx.fillStyle = "#c7cad1"; cx.fillRect(xf(118), yf(twY0), (344-118)*s, (twY1-twY0)*s);
-    cx.fillStyle = "#a9adb6";                // швы между плитами (через шаг, детерминированно)
-    for (let p = 118; p < 344; p += 16)
-      cx.fillRect(xf(p), yf(twY0+1), 2*s, (twY1-twY0-2)*s);
-    cx.fillStyle = "#8f939b"; cx.fillRect(xf(118), yf(twY0), (344-118)*s, 1.5*s);   // кромка у здания
-    cx.fillStyle = "#6f737a"; cx.fillRect(xf(118), yf(twY1-1), (344-118)*s, 1*s);     // кромка у перрона
-    cx.fillStyle = "#2b2f34"; cx.fillRect(0, gy + 34*s, cw, 8*s);
-
-    // Ж/д пути в нижней пустой зоне: 6 рядов путей (шпалы + рельсы), с зазором между колеями.
-    // Балластный слой, светлые рельсы по краям, тёмные шпалы-бруски через шаг.
-    // Между нижними путями (1-я y=412 и 2-я y=464) — полоса зелени с отступом.
-    cx.fillStyle = "#234a26";
-    cx.fillRect(0, yf(412) + 13*s, cw, (464 - 412 - 26)*s); // трава между 412 и 464
-    for (const rw of [ { y: 528, w: 26, rs: 2.6 }, { y: 496, w: 24, rs: 2.4 },
-                       { y: 464, w: 22, rs: 2.2 }, { y: 412, w: 20, rs: 2.0 },
-                       { y: 388, w: 18, rs: 1.8 }, { y: 372, w: 16, rs: 1.6 } ]){
-      const yy = yf(rw.y), wd = rw.w * s;
-      cx.fillStyle = "#1c1f23"; cx.fillRect(0, yy - wd/2, cw, wd);       // балласт
-      cx.fillStyle = "#2b2d31";                                           // шпалы
-      for (let tx = 6*s; tx < cw; tx += 18*s){
-        cx.fillRect(tx, yy - wd/2 + 1*s, 4*s, wd - 2*s);
-      }
-      cx.fillStyle = "#aab0b6";
-      cx.fillRect(0, yy - wd/2 - 1*s, cw, rw.rs*s);                       // верхний рельс
-      cx.fillRect(0, yy + wd/2, cw, rw.rs*s);                             // нижний рельс
-    }
-    // Перрон у нижнего края: светлая плитка, жёлтая линия безопасности вдоль края путей, тень.
-    // Люди стоят на нём ногами (y≈410), поезд — позади на пути y=372.
-    cx.fillStyle = "#4a4f57"; cx.fillRect(0, yf(381), cw, 4*s);
-    cx.fillStyle = "#b9bcc4"; cx.fillRect(0, yf(385), cw, 44*s);
-    cx.fillStyle = "#e0b83a"; cx.fillRect(0, yf(386), cw, 3*s);
-    cx.fillStyle = "#a2a6af";
-    for (let p = 0; p < 460; p += 22) cx.fillRect(xf(p), yf(390), 2*s, 39*s);
-    cx.fillStyle = "#7a7e86"; cx.fillRect(0, yf(428), cw, 3*s);
-  }
+  if (sc.sky === "evening") drwStationBg(sc, s, xf, yf, cw, ch);
   for (const a of sc.actors){
     const st = cutState(a, g.cut.t);
     const spr = SPR[cutWear(sc, st.spr)];
@@ -4235,7 +4483,9 @@ function drwCut(){
   cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(0, capY, cw, capH);
   cx.fillStyle = "#fff"; cx.font = Math.max(9, Math.round(9*s)) + "px " + F;
   cx.textAlign = "center";
-  cx.fillText(sc.caption, cw/2, capY + Math.max(16, Math.round(22*s)));
+  let cap = sc.caption;
+  if (sc.captions) for (const [ct, tx] of sc.captions) if (g.cut.t >= ct*(g.cut.len || CUT_LEN)) cap = tx;       // подписи по времени (доли длины)
+  cx.fillText(cap, cw/2, capY + Math.max(16, Math.round(22*s)));
   cx.textAlign = "left";
   // Плавное затемнение в финале сцены (только если задан fadeOut) — поверх всего,
   // включая подпись, чтобы переход к следующей сцене был мягким чёрным кадром.
@@ -4555,8 +4805,8 @@ const STAM_MAX = 100, STAM_DRAIN = 0.55, STAM_REGEN = 0.30;
 
 function rowInput(){
   let f = 0;
-  if (keys["ArrowUp"]   || keys["w"] || keys["W"] || keys["ц"] || keys["Ц"] || g.btnFwd)  f += 1;
-  if (keys["ArrowDown"] || keys["s"] || keys["S"] || keys["ы"] || keys["Ы"] || g.btnBack) f -= 1;
+  if (keys["ArrowUp"]   || keys["w"] || keys["W"] || keys["ц"] || keys["Ц"] || keys["z"] || keys["Z"] || keys["я"] || keys["Я"] || g.btnFwd || gpState.fwd)  f += 1;
+  if (keys["ArrowDown"] || keys["s"] || keys["S"] || keys["ы"] || keys["Ы"] || keys["c"] || keys["C"] || keys["с"] || keys["С"] || g.btnBack || gpState.back) f -= 1;
   // Мобильная версия без кнопок: скорость задаётся вертикальной зоной экрана
   // (палец вверху = вперёд, внизу = табань, середина = по инерции).
   if (g.mSpeed !== null && g.mSpeed !== undefined) f += g.mSpeed;
@@ -4697,7 +4947,7 @@ function tauntVoice(){
 function throwAxe(){
   let tgt = null, best = Infinity;
   for (const o of g.obs){
-    if (o.cow || o.tied || o.flipT > 0) continue;
+    if (o.cow || o.tied || o.flipT > 0 || o.sinkT > 0) continue;
     if (!["log", "branch", "snag", "kayaker", "rock", "boat", "barge"].includes(o.type)) continue;
     const d = o.wy - g.pwy, lat = Math.abs(o.t - g.t)*widthAt(o.wy)/2;
     if (d < -20 || d > AXE_RANGE || lat > 110) continue;
@@ -4939,6 +5189,7 @@ addEventListener("keydown",e=>{
   // только одиночные нажатия.
   if(e.repeat&&(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь"||
      e.key=="Escape"||e.key=="p"||e.key=="P"||e.key=="з"||e.key=="З"||e.key==" "))return;
+  if(g.s!=="playing"&&g.s!=="cutscene"&&menuKey(e))return;        // стрелки, Enter, Esc в меню
   keys[e.key]=true;
   if(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь")toggleMusic();
   if(g.s=="cutscene"){ e.preventDefault(); endCut(); return; }
@@ -4947,7 +5198,7 @@ addEventListener("keydown",e=>{
   if(e.key=="p"||e.key=="P"||e.key=="з"||e.key=="З"){downloadShot();}
   // Во время игры пробел и стрелка вверх — удар веслом; на экранах — старт.
   if(g.s=="playing"){
-    if(e.key==" "){e.preventDefault();paddleStrike();}
+    if(e.key==" "||e.key=="x"||e.key=="X"||e.key=="ч"||e.key=="Ч"){e.preventDefault();paddleStrike();}
     if(e.key=="ArrowUp"||e.key=="ArrowDown")e.preventDefault();
   } else if(e.key==" "||e.key=="Enter"){
     if(g.s=="finish"){
@@ -4963,6 +5214,132 @@ addEventListener("keydown",e=>{
 addEventListener("keyup",e=>{keys[e.key]=false;});
 // Потеря фокуса (Alt+Tab, другое окно) — клавиши не должны «залипать».
 addEventListener("blur",()=>{for(const k in keys)keys[k]=false;});
+/* ===== Геймпад, пульт эмулятора и меню с клавиатуры ===== */
+// Меню листается стрелками / крестовиной / стиком, OK — Enter, пробел, Z или кнопка A,
+// «назад» — Esc, Backspace, X или кнопка B. В заплыве: стик или крестовина — руль,
+// A (или Z, правый триггер, стик вверх) — гребок вперёд, X-кнопка (или C, стик вниз) —
+// табанить, B / правый бампер (или X на клавиатуре) — удар, Start — пауза, Select — музыка.
+const GP_DEAD = 0.28, GP_REPEAT = 18;
+const MENU_SCREENS = ["startScreen","mapScreen","campScreen","finishScreen","failScreen","diaryScreen","recordsScreen",
+                      "editScreen","customEnd","pauseScreen","continueScreen","endScreen"];
+// Кнопка «назад» на экранах, где она есть.
+const MENU_BACK = { pauseScreen:"resumeBtn", diaryScreen:"diaryBack", recordsScreen:"recBack", editScreen:"edBack",
+                    customEnd:"ceMenu", endScreen:"endMapBtn", failScreen:"toMapBtn" };
+let menuIdx = 0, menuActive = false;
+// Разбор геймпада со стандартной раскладкой (Xbox/PlayStation/пульт эмулятора в режиме gamepad).
+function gpRead(pad){
+  const ax = (pad && pad.axes) || [];
+  const b = i => { const x = pad && pad.buttons && pad.buttons[i]; return !!x && (x.pressed === true || x.value > 0.5); };
+  const dz = v => Math.abs(v) < GP_DEAD ? 0 : (v - Math.sign(v)*GP_DEAD)/(1 - GP_DEAD);
+  const lx = dz(ax[0] || 0), ly = ax[1] || 0;
+  const btn = []; for (let i = 0; i < 16; i++) btn.push(b(i));
+  const up = b(12) || ly < -0.6, down = b(13) || ly > 0.6, left = b(14) || (ax[0] || 0) < -0.6, right = b(15) || (ax[0] || 0) > 0.6;
+  return { btn, steer: b(14) ? -1 : b(15) ? 1 : lx,
+           fwd: b(0) || b(7) || up, back: b(2) || b(6) || down,
+           navPrev: up || left, navNext: down || right };
+}
+// Что делает клавиша в меню: сдвиг фокуса, OK или «назад» (чистая функция — её держит проба).
+function menuKeyAction(key){
+  if (key === "ArrowUp" || key === "ArrowLeft") return { move: -1 };
+  if (key === "ArrowDown" || key === "ArrowRight") return { move: 1 };
+  if (key === "Enter" || key === " " || key === "z" || key === "Z" || key === "я" || key === "Я") return { ok: true };
+  if (key === "Escape" || key === "Backspace" || key === "x" || key === "X" || key === "ч" || key === "Ч") return { back: true };
+  return null;
+}
+function menuStep(n, idx, dir){ return n ? ((idx + dir) % n + n) % n : 0; }
+function menuButtons(){
+  const out = [];
+  if (typeof document === "undefined") return out;
+  for (const id of MENU_SCREENS){
+    const el = document.getElementById(id);
+    if (!el || !el.classList || el.classList.contains("hidden") || !el.querySelectorAll) continue;
+    for (const bt of el.querySelectorAll("button")){
+      if (bt.disabled || (bt.classList && bt.classList.contains("hidden"))) continue;
+      const row = bt.parentElement;
+      if (row && row.classList && row.classList.contains("hidden")) continue;
+      out.push(bt);
+    }
+  }
+  return out;
+}
+function menuPaint(list, idx){
+  list.forEach((bt, i) => { if (bt.classList) bt.classList[i === idx ? "add" : "remove"]("gpf"); });
+  const cur = list[idx];
+  if (cur && cur.scrollIntoView) cur.scrollIntoView({ block:"nearest" });
+}
+function menuMove(dir){
+  const list = menuButtons();
+  if (!list.length) return false;
+  menuIdx = menuActive ? menuStep(list.length, menuIdx, dir) : 0;
+  menuActive = true;
+  menuPaint(list, menuIdx);
+  return true;
+}
+function menuOk(){
+  const list = menuButtons();
+  if (!list.length) return false;
+  if (!menuActive){ menuActive = true; menuIdx = 0; menuPaint(list, 0); return true; }
+  const cur = list[Math.min(menuIdx, list.length - 1)];
+  if (cur && cur.click) cur.click();
+  menuActive = false;                                // экран сменится — фокус начнётся заново
+  return true;
+}
+function menuBack(){
+  for (const id of MENU_SCREENS){
+    const el = document.getElementById(id);
+    if (!el || !el.classList || el.classList.contains("hidden") || !MENU_BACK[id]) continue;
+    const bt = document.getElementById(MENU_BACK[id]);
+    if (bt && bt.click){ bt.click(); return true; }
+  }
+  return false;
+}
+// Клавиша в меню. true — обработана (дальше игра её не трогает).
+function menuKey(e){
+  const a = menuKeyAction(e.key);
+  if (!a) return false;
+  if (a.move){ if (menuMove(a.move)){ e.preventDefault(); return true; } return false; }
+  if (a.ok){
+    // Пока фокус не трогали, Enter и пробел работают как раньше («дальше», старт).
+    if (!menuActive) return false;
+    if (menuOk()){ e.preventDefault(); return true; }
+    return false;
+  }
+  if (a.back && menuBack()){ e.preventDefault(); return true; }
+  return false;
+}
+const gpState = { steer:0, fwd:false, back:false };
+let gpPrev = null, gpSeen = false, gpHold = 0;
+function pollGamepad(){
+  gpState.steer = 0; gpState.fwd = false; gpState.back = false;
+  if (typeof navigator === "undefined" || !navigator.getGamepads) return;
+  let pad = null;
+  for (const p of navigator.getGamepads() || []) if (p && p.connected){ pad = p; break; }
+  if (!pad){ gpPrev = null; return; }
+  const s = gpRead(pad);
+  if (!gpSeen){ gpSeen = true; if (typeof campToast === "function") campToast("ГЕЙМПАД ПОДКЛЮЧЁН"); }
+  const edge = k => s.btn[k] && !(gpPrev && gpPrev.btn[k]);
+  if (g.s === "playing"){
+    gpState.steer = s.steer; gpState.fwd = s.fwd; gpState.back = s.back;
+    if (edge(1) || edge(5)) paddleStrike();
+    if (edge(9)) togglePause();
+  } else if (g.s === "cutscene"){
+    if (edge(0) || edge(1) || edge(2) || edge(3) || edge(9)) endCut();
+  } else {
+    // Меню (и пауза): крестовина или стик листают с автоповтором, A — OK, B — назад, Start — OK / снять паузу.
+    if (g.s === "paused" && edge(9)){ togglePause(); }
+    else {
+      const dir = s.navPrev ? -1 : s.navNext ? 1 : 0;
+      if (dir && (!(gpPrev && (gpPrev.navPrev || gpPrev.navNext)) || ++gpHold % GP_REPEAT === 0)) menuMove(dir);
+      if (!dir) gpHold = 0;
+      if (edge(0)){ if (g.s === "start" && !menuActive) hs(); else menuOk(); }
+      else if (edge(9)){ if (g.s === "start") hs(); else menuOk(); }
+      if (edge(1)) menuBack();
+      if (edge(2) && g.s === "finish"){ recordFinish(); nextDay(); }
+    }
+  }
+  if (edge(8)) toggleMusic();
+  gpPrev = s;
+}
 // Решает, можно ли считать прикосновение коротким тапом (а не ведением).
 // Отдельная функция, чтобы тап был тестируемым, а не зашитым в обработчик.
 function isStrikeTap(ms, dx, dy){
@@ -5069,6 +5446,7 @@ document.getElementById("saveNameBtn").addEventListener("click",()=>{
   const L = level(), total = g.pendingScore || 0;
   addResult(L.day, save.name, total);
   renderBoard(L.day, total, g.prevBest);
+  onlineRename(save.name);
   campToast("ИМЯ: " + save.name);
 });
 document.getElementById("nextBtn").addEventListener("click",()=>{
@@ -5085,8 +5463,9 @@ document.getElementById("helpBtn").addEventListener("click",showHelp);
 document.getElementById("diaryBack").addEventListener("click",showMap);
 document.getElementById("recordsBtn").addEventListener("click",()=>showRecords());
 document.getElementById("startBoardBtn").addEventListener("click",()=>{ startMusic(); showRecords(); });
-document.getElementById("recPrev").addEventListener("click",()=>showRecords(recDay-1));
-document.getElementById("recNext").addEventListener("click",()=>showRecords(recDay+1));
+document.getElementById("recPrev").addEventListener("click",()=>showRecords(recOnlineMode && !recTotal && recDay === 0 ? -1 : recDay-1));
+document.getElementById("recMode").addEventListener("click",()=>{ recOnlineMode = !recOnlineMode; showRecords(recTotal ? -1 : recDay); });
+document.getElementById("recNext").addEventListener("click",()=>showRecords(recTotal ? 0 : recDay+1));
 document.getElementById("recBack").addEventListener("click",showMap);
 document.getElementById("endMapBtn").addEventListener("click",showMap);
 document.getElementById("campBtn").addEventListener("click",showCamp);
@@ -5157,7 +5536,24 @@ function hsh(n){
   return (n >>> 0) / 4294967296;
 }
 
-function drwBg(){
+// Боковые зоны десктопа: шаг рядов вглубь и доля пустых мест, набор декора по рекам
+// (Волга — пляжи и берёзки, Медведица — ёлки и валуны, Тверца — деревня, Осуга — глухая тайга).
+const DEEP_DX = 58, DEEP_SKIP = [0.55, 0.35, 0.6, 0.25];
+const DEEP_SETS = [
+  ["sbirch","sbush","sbush","tree","sbirch","umbrella","tent2","banya","boulder","sbush"],
+  ["sfir","sfir","sfir","sbirch","sfir","sbush","boulder","mossy","sfir","pebbles"],
+  ["sbirch","tree","house","sbush","sbirch","tree","house","sbush","banya","sbirch"],
+  ["sfir","sfir","sfir","sfir","sbush","boulder","sfir","mossy","slab","sfir"]
+];
+function deepDecor(){
+  const r = Math.min(level().river, DEEP_SETS.length - 1);
+  // День 6 — Торжок: церкви чаще (в наборе Тверцы она одна из десяти).
+  return level().day === 6 && r === 2 ? DEEP_SETS[2].concat(["church", "church"]) : DEEP_SETS[r];
+}
+function drwBg(x0, x1){
+  // x0..x1 — какую часть по ширине закрасить: игровое поле 0…W или шире (боковые зоны десктопа).
+  const wide = x0 !== undefined;
+  if (!wide){ x0 = 0; x1 = W; }
   // Даль смазывается туманом: чем выше на экране (дальше по реке), тем сильнее
   // трава и вода светлеют к цвету неба. Так возникает мягкий горизонт без рамки,
   // и сцена читается как «плыву вперёд», а не «мотор вверх».
@@ -5181,8 +5577,8 @@ function drwBg(){
     const edge  = mixHex("#0d47a1", "#d8e9f5", fog);
 
     cx.fillStyle = grass;
-    cx.fillRect(0, y, Math.max(0, L), BAND);
-    cx.fillRect(Math.min(W, R), y, W - R, BAND);
+    cx.fillRect(x0, y, Math.max(0, L - x0), BAND);
+    cx.fillRect(Math.min(x1, R), y, x1 - R, BAND);
 
     cx.fillStyle = sand;
     cx.fillRect(L - 6, y, 6, BAND);
@@ -5231,8 +5627,8 @@ function drwBg(){
     const osugaDense = level().river === 3 && hsh(Math.floor(wy/900)*37 + 3) < 0.5;
     if (osugaDense){
       cx.fillStyle = "rgba(8,36,18,0.22)";
-      if (L > 3) cx.fillRect(0, y, L - 3, BAND);
-      if (R < W - 3) cx.fillRect(R + 3, y, W - R - 3, BAND);
+      if (L > x0 + 3) cx.fillRect(x0, y, L - 3 - x0, BAND);
+      if (R < x1 - 3) cx.fillRect(R + 3, y, x1 - R - 3, BAND);
     }
 
     // Береговой декор: кусты, деревья, камыш. Живут на травяных полосах,
@@ -5291,6 +5687,18 @@ function drwBg(){
           place("sfir", s2 > 0.5 ? 1 : -1, 30 + Math.floor(s1*30));
         }
       }
+      // Боковые зоны десктопа (wide): лес/деревня уходят вглубь за край поля, у каждой реки свой набор.
+      if (wide && vwx % 3 === 1) for (const side of [-1, 1]){
+        const reach = side < 0 ? -x0 : x1 - W;
+        for (let r = 0; r*DEEP_DX < reach + 20; r++){
+          const h = hsh(vwx*41 + r*13 + side*7), h2 = hsh(vwx*23 + r*29 + side*5);
+          if (h < DEEP_SKIP[level().river]) continue;
+          const list = deepDecor(), name = list[Math.floor(h2*list.length) % list.length], sz = spriteSize(name);
+          const x = side < 0 ? -(r*DEEP_DX) - 8 - h*14 : W + r*DEEP_DX + 8 + h*14;
+          if (x + sz.w/2 > L - 12 && x - sz.w/2 < R + 12) continue;       // не на воде
+          drawSprite(name, x, foot - sz.h/2);
+        }
+      }
       if (s1 > 0.30 && s1 < 0.44 && (wy % 22) < BAND){
         cx.fillStyle = "#4d6b35";
         cx.fillRect(L - 4 + (s2 > 0.5 ? 1 : 0), y - 6, 1, 8);
@@ -5301,7 +5709,7 @@ function drwBg(){
 }
 // Соответствие внутренних типов препятствий именам спрайтов.
 const OB_SPRITE = { boat:"boat", log:"log", shallows:"shallows", kayaker:"rower", snag:"snag", branch:"branch", barge:"barge" };
-const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun", mazai:"badge", hare:"hare_isle" };
+const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun", mazai:"badge", hare:"hare" };
 
 // Искра, где встретились вёсла при парировании.
 function drwClash(){
@@ -5373,8 +5781,11 @@ function drwOb(o){
   let name = o.sprite || OB_SPRITE[o.type] || "boulder";
   if (o.type === "kayaker"){ const fr = fightFrame(o); if (fr) name = fr; }
   const sz = spriteSize(name);
+  const sinking = o.sinkT > 0;
+  if (sinking){ cx.save(); cx.globalAlpha = Math.max(0.05, o.sinkT/SINK_FRAMES); }
   drawShadow(x, y + sz.h/2 - 3, sz.w);
-  drawSprite(name, x, y, o.variant);
+  drawSprite(name, x, y + (sinking ? (SINK_FRAMES - o.sinkT)*0.15 : 0), o.variant);
+  if (sinking) cx.restore();
   if (o.type === "kayaker"){
     // Агрессивный соперник помечен красным вымпелом СРАЗУ, ещё до сближения:
     // спокойный гребёт с веслом в руках, злой издалека виднеется с флажком.
@@ -5433,6 +5844,16 @@ function drwBn(b){
   const x = screenXOf(b.t, b.wy);
   const y = screenYOf(b.wy) + Math.sin(g.frame*0.08)*3;
   if (y < -70 || y > H + 70) return;
+  if (b.type === "hare"){
+    // Песок под зайцем — та же отмель, что у мели; заяц сидит сверху.
+    const sand = SPR.shallows && SPR.shallows.img;
+    if (sand){
+      const w = sand.width*HARE_SAND, h = sand.height*HARE_SAND;
+      cx.drawImage(sand, Math.round(x - w/2), Math.round(y - h/2 + 6), Math.round(w), Math.round(h));
+    }
+    drawSprite("hare", x + 3, y - 7 + Math.abs(Math.sin(g.frame*0.07 + b.wy))*2);
+    return;
+  }
   const name = BN_SPRITE[b.type] || "bread";
   const sz = spriteSize(name);
   drawShadow(x, y + sz.h/2, sz.w);
@@ -5525,19 +5946,28 @@ function drwBev(e){
     }
     cx.fillStyle = "rgba(255,255,255,0.28)";
     cx.fillRect(bx - 12, by + 36, 24, 2); cx.fillRect(bx - 7, by + 40, 14, 2);
-    // Ловит рыбу: стоит, потом бросок клювом вперёд-вниз (плеск), держит рыбку, глотает.
-    const cyc = (g.frame + Math.floor(ph*300)) % HERON_CYCLE, dirW = e.side < 0 ? 1 : -1;
-    let ang = 0, catchFish = false;
-    if (cyc >= 300 && cyc < 330) ang = Math.sin((cyc - 300)/30*Math.PI)*0.62;
-    if (cyc >= 316 && cyc < 400) catchFish = !(e.lucky === false);
-    if (cyc === 314) spPt(bx + dirW*30, by + 38, "#dff0fa", 8);
-    cx.save();
-    cx.translate(bx, by + 36); cx.rotate(ang*dirW); cx.translate(-bx, -(by + 36));
-    drawSprite("heron" + L, bx, by);
-    cx.restore();
-    if (catchFish && cyc < 380){
-      const hop = cyc < 330 ? 0 : Math.sin((cyc - 330)/8)*2;
-      drawSprite("fish" + L, bx + dirW*(28 - Math.max(0, cyc - 340)*0.2), by - 22 + hop + (cyc < 330 ? (330 - cyc)*0.8 : 0));
+    // Цикл рыбалки (HERON_CYCLE кадров): стоит → наклоняется (heron_b1) → тянется к воде (b2) →
+    // клюв в воде, круги (b3) → выпрямляется; иногда держит рыбку и глотает.
+    const t0 = g.frame + Math.floor(ph*300), cyc = t0 % HERON_CYCLE, dirW = e.side < 0 ? 1 : -1;
+    const lucky = hsh(Math.floor(t0/HERON_CYCLE)*7 + Math.round(ph*100)) < 0.55;
+    let nm = "heron";
+    if (cyc >= 250 && cyc < 262) nm = "heron_b1";
+    else if (cyc >= 262 && cyc < 274) nm = "heron_b2";
+    else if (cyc >= 274 && cyc < 330) nm = "heron_b3";
+    else if (cyc >= 330 && cyc < 342) nm = "heron_b2";
+    else if (cyc >= 342 && cyc < 354) nm = "heron_b1";
+    const bent = nm !== "heron";
+    // Кадры наклона шире на 6 клеток в сторону клюва и на 2 выше стоячего.
+    drawSprite(nm + L, bx + (bent ? dirW*9 : 0), by + (bent ? 4 : 0));
+    if (nm === "heron_b3"){
+      const k = (cyc - 274)/56, rx = bx + dirW*42, ry = by + 41;
+      cx.strokeStyle = "rgba(223,240,250," + (0.8 - k*0.5) + ")"; cx.lineWidth = 2;
+      for (let i = 0; i < 2; i++){ const r = 5 + ((cyc*0.35 + i*7) % 14); cx.beginPath(); cx.ellipse(rx, ry, r, r*0.4, 0, 0, Math.PI*2); cx.stroke(); }
+      if (cyc === 280) spPt(rx, ry, "#dff0fa", 8);
+    }
+    if (lucky && cyc >= 354 && cyc < 436){
+      const w = (cyc - 354);
+      drawSprite("fish" + L, bx + dirW*(36 - Math.min(10, w*0.25)), by - 24 + (w < 30 ? Math.sin(w*0.5)*3 : w*0.35));   // трепыхается, потом глотает
     }
     return;
   }
@@ -5997,7 +6427,7 @@ const SAVE_KEY = "kayak_campaign";
 // ломало бы чужой прогресс.
 const SAVE_VERSION = 1;
 const SAVE_DEFAULT = { v:SAVE_VERSION, day:0, stars:{}, wallet:0, gear:[], diary:[], failPaid:[],
-                       best:{}, name:"", board:{}, music:true, seen:{} };
+                       best:{}, name:"", board:{}, music:true, seen:{}, pid:"" };
 let save = loadSave();
 musicOn = save.music !== false;
 
@@ -6158,6 +6588,114 @@ function renderBoard(dayNo, run, prevBest){
   sum.innerHTML = "ЭТОТ ЗАХОД: <b>" + r.run + "</b><br>ЛУЧШИЙ: <b>" + r.best + "</b> · МЕСТО " + r.rank + " ИЗ " + r.total +
     (r.record ? "<br><span class='rec'>" + (r.first ? "ПЕРВЫЙ РЕЗУЛЬТАТ ДНЯ" : "НОВЫЙ РЕКОРД!") + "</span>" : "");
 }
+/* ===== Общая онлайн-таблица ===== */
+// Игра по-прежнему одним файлом и работает без сети. Если задан адрес сервера
+// (Cloudflare Worker из server/README.md) — результаты уходят на него, а на
+// экранах «Дошли» и «Рекорды» показываются все игроки. Результат, который не
+// ушёл (нет сети), лежит в очереди (localStorage) и уходит при следующем случае.
+const ONLINE_DEFAULT_URL = "";                // адрес Worker; пусто — онлайн выключен
+const OUTBOX_KEY = "kayak_outbox", ONLINE_URL_KEY = "kayak_board_url";
+function onlineUrl(){
+  try {
+    const q = new URLSearchParams(location.search).get("board");       // ?board=https://… — запомнить адрес
+    if (q){ localStorage.setItem(ONLINE_URL_KEY, q); return q; }
+    return localStorage.getItem(ONLINE_URL_KEY) || ONLINE_DEFAULT_URL;
+  } catch(e){ return ONLINE_DEFAULT_URL; }
+}
+// Анонимный постоянный номер игрока: по нему сервер хранит одну строку на день и
+// помечает «твою» строку. Имя можно менять — номер тот же.
+function playerId(){
+  if (!/^[0-9a-f]{16,32}$/.test(save.pid || "")){
+    let id = "";
+    for (let i = 0; i < 4; i++) id += Math.floor(Math.random()*0x100000000).toString(16).padStart(8, "0");
+    save.pid = id; commitSave();
+  }
+  return save.pid;
+}
+// Спрятать/показать элемент (classList.toggle с флагом нет в мок-DOM пробы).
+function setHidden(el, hide){ el.classList[hide ? "add" : "remove"]("hidden"); }
+// Адрес сервера: из настроек пробы (deps.url) или из браузера.
+function onlineBase(deps){ return (deps && deps.url) || onlineUrl(); }
+function onlineStore(){ try { return localStorage; } catch(e){ return null; } }
+function outboxLoad(store){
+  try { const v = JSON.parse((store || onlineStore()).getItem(OUTBOX_KEY)); return Array.isArray(v) ? v : []; } catch(e){ return []; }
+}
+function outboxSave(list, store){ try { (store || onlineStore()).setItem(OUTBOX_KEY, JSON.stringify(list.slice(-40))); } catch(e){} }
+// В очереди одна запись на день: лучший счёт, последнее имя.
+function outboxPush(item, store){
+  const l = outboxLoad(store), i = l.findIndex(x => x.day === item.day);
+  if (i >= 0){ item.score = Math.max(item.score, l[i].score); l.splice(i, 1); }
+  l.push(item); outboxSave(l, store);
+  return l;
+}
+function onlinePayload(day, name, score){
+  return { pid: playerId(), day, name: cleanName(name) || "ПУТНИК", score: Math.max(0, Math.floor(score)) };
+}
+// Отправить очередь. Не дошло из-за сети или перегрузки (429, 5xx) — остаётся; отклонено сервером (4xx) — выбрасывается.
+async function onlineFlush(deps){
+  const url = onlineBase(deps), f = (deps && deps.fetch) || (typeof fetch === "function" ? fetch : null);
+  if (!url || !f) return { sent: 0, left: outboxLoad(deps && deps.store).length };
+  const store = deps && deps.store, keep = [];
+  let sent = 0;
+  for (const it of outboxLoad(store)){
+    try {
+      const r = await f(url, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(it) });
+      if (r && r.ok) sent++;
+      else if (!r || r.status === 429 || r.status >= 500) keep.push(it);
+    } catch(e){ keep.push(it); }
+  }
+  outboxSave(keep, store);
+  return { sent, left: keep.length };
+}
+function onlineReport(day, name, score, deps){
+  if (!onlineBase(deps)) return Promise.resolve(null);
+  outboxPush(onlinePayload(day, name, score), deps && deps.store);
+  return onlineFlush(deps);
+}
+async function onlineTop(day, deps){
+  const url = onlineBase(deps), f = (deps && deps.fetch) || (typeof fetch === "function" ? fetch : null);
+  if (!url || !f) return null;
+  try {
+    const ctl = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = ctl && typeof setTimeout === "function" ? setTimeout(() => ctl.abort(), 6000) : null;
+    const r = await f(url + (url.indexOf("?") < 0 ? "?" : "&") + "day=" + day + "&pid=" + playerId(), ctl ? { signal: ctl.signal } : undefined);
+    if (timer) clearTimeout(timer);
+    if (!r || !r.ok) return { ok:false, rows:[] };
+    const j = await r.json();
+    return { ok:true, rows: Array.isArray(j.rows) ? j.rows : [] };
+  } catch(e){ return { ok:false, rows:[] }; }
+}
+function onlineHtml(res, n){
+  if (!res) return "";
+  if (!res.ok) return "<div class='brow gap'><span>НЕТ СВЯЗИ</span></div>";
+  if (!res.rows.length) return "<div class='brow gap'><span>ПОКА НИКОГО — БУДЬ ПЕРВЫМ</span></div>";
+  return res.rows.slice(0, n || 8).map((r, i) => {
+    const cls = "brow" + (r.mine ? " mine" : "") + (i < 3 ? " top" + (i+1) : "");
+    return "<div class='" + cls + "'><span>" + (i+1) + ". " + (r.mine ? "> " : "") + escHtml(cleanName(r.name)) + (r.mine ? " (ВЫ)" : "") +
+           "</span><span>" + (r.score | 0) + "</span></div>";
+  }).join("");
+}
+// Показать онлайн-таблицу дня в элементе id (день 0 — весь поход). Пока грузится — «ЗАГРУЗКА».
+function showOnline(id, day){
+  const el = document.getElementById(id);
+  if (!el) return Promise.resolve(null);
+  if (!onlineUrl()){ el.innerHTML = ""; return Promise.resolve(null); }
+  el.innerHTML = "<div class='brow gap'><span>ЗАГРУЗКА…</span></div>";
+  return onlineTop(day).then(res => { el.innerHTML = onlineHtml(res); return res; });
+}
+// После результата дня: отправить день и весь поход, потом показать таблицу.
+function onlineAfterFinish(dayNo, name, total){
+  if (!onlineUrl()) return;
+  onlineReport(dayNo, name, total).then(() => onlineReport(0, name, campaignSum())).then(() => showOnline("finOnline", dayNo));
+}
+// После переименования: переслать лучшие результаты под новым именем.
+function onlineRename(name){
+  if (!onlineUrl()) return;
+  for (const d in save.best) if (save.best[d] > 0) outboxPush(onlinePayload(+d, name, save.best[d]));
+  outboxPush(onlinePayload(0, name, campaignSum()));
+  onlineFlush();
+}
+
 function totalStars(){
   let n = 0;
   for (const k in save.stars) n += save.stars[k];
@@ -6389,6 +6927,10 @@ function showFinish(L, stars, total){
   g.prevBest = mine ? mine.score : 0;
   addResult(L.day, save.name || "ПУТНИК", total);
   renderBoard(L.day, total, g.prevBest);
+  const online = !!onlineUrl();
+  setHidden(document.getElementById("finOnlineTitle"), !online);
+  setHidden(document.getElementById("finOnline"), !online);
+  if (online) onlineAfterFinish(L.day, save.name || "ПУТНИК", total);
   document.getElementById("finishScreen").classList.remove("hidden");
 }
 
@@ -6546,22 +7088,33 @@ function showDiary(){
   document.getElementById("diaryScreen").classList.remove("hidden");
 }
 
-// Экран рекордов: таблицы всех открытых дней, листаются стрелками.
-let recDay = 0;
+// Экран рекордов: таблицы всех открытых дней, листаются стрелками. Если подключён
+// сервер — кнопка «ВСЕ ИГРОКИ» показывает общую таблицу дня, а на день назад от
+// первого дня — общий зачёт всего похода.
+let recDay = 0, recOnlineMode = false, recTotal = false;
 function showRecords(dayIdx){
   hideAllScreens();
   g.s = "records";
   const last = Math.min(save.day, LEVELS.length-1);
-  recDay = Math.max(0, Math.min(dayIdx == null ? last : dayIdx, last));
+  const online = !!onlineUrl();
+  if (!online){ recOnlineMode = false; recTotal = false; }
+  if (dayIdx === -1 && online && recOnlineMode){ recTotal = true; }
+  else { recTotal = false; recDay = Math.max(0, Math.min(dayIdx == null ? last : dayIdx, last)); }
   const L = LEVELS[recDay];
-  document.getElementById("recTitle").textContent = "ДЕНЬ " + L.day + " · " + RIVERS[L.river].name;
-  document.getElementById("recBoard").innerHTML = boardHtml(L.day);
+  document.getElementById("recTitle").textContent = recTotal ? "ВЕСЬ ПОХОД" : "ДЕНЬ " + L.day + " · " + RIVERS[L.river].name;
+  setHidden(document.getElementById("recModeRow"), !online);
+  document.getElementById("recMode").textContent = recOnlineMode ? "МОЙ ПОХОД" : "ВСЕ ИГРОКИ";
+  setHidden(document.getElementById("recBoard"), recOnlineMode);
+  setHidden(document.getElementById("recOnline"), !recOnlineMode);
   const me = mineRow(L.day);
-  document.getElementById("recRun").innerHTML = me
-    ? "ЛУЧШИЙ: <b>" + me.score + "</b> · МЕСТО " + boardView(L.day).me.rank
-    : "ТЫ ЕЩЁ НЕ ПРОШЁЛ ЭТОТ ДЕНЬ";
-  document.getElementById("recPrev").disabled = recDay <= 0;
-  document.getElementById("recNext").disabled = recDay >= last;
+  document.getElementById("recRun").innerHTML = recTotal ? "СУММА ТВОЕГО ПОХОДА: <b>" + campaignSum() + "</b>"
+    : me ? "ЛУЧШИЙ: <b>" + me.score + "</b> · МЕСТО " + boardView(L.day).me.rank
+         : "ТЫ ЕЩЁ НЕ ПРОШЁЛ ЭТОТ ДЕНЬ";
+  if (!recOnlineMode) document.getElementById("recBoard").innerHTML = boardHtml(L.day);
+  else showOnline("recOnline", recTotal ? 0 : L.day);
+  // «Назад»: с первого дня — на общий зачёт (только онлайн); «вперёд» из общего зачёта — на день 1.
+  document.getElementById("recPrev").disabled = recTotal || (recDay <= 0 && !recOnlineMode);
+  document.getElementById("recNext").disabled = !recTotal && recDay >= last;
   document.getElementById("recordsScreen").classList.remove("hidden");
 }
 
@@ -6923,7 +7476,7 @@ function separate(o){
 
 // Проход для байдарки: камень не ставится, если поперёк реки не останется
 // щели хотя бы PASS_GAP px (корпус 33 px + запас на руль).
-const PASS_GAP = 70;
+const PASS_GAP = 70, PASS_LOOK = 900;      // PASS_LOOK: до скольки px вниз по реке подвижные считаются «придут сюда»
 function leavesPassage(t, wy, visHalf, visHalfY){
   const vy = visHalfY || visHalf;
   // Проверяются все строки по высоте нового камня: соседи чуть выше или ниже
@@ -6934,6 +7487,14 @@ function leavesPassage(t, wy, visHalf, visHalfY){
     for (const o of g.obs){
       if (o.type === "barge" || o.type === "boat") continue;
       if (Math.abs(o.wy - y) > (o.visHalfY || 24)) continue;
+      const x = screenXOf(o.t, o.wy), h = o.visHalf || 24;
+      iv.push([x - h, x + h]);
+    }
+    // Бревна, ветки и соперники ниже по реке (дальше от верхней кромки) придут к этому месту, потому
+    // что камень стоит, а они плывут; их нынешнее положение по ширине тоже занимает щель.
+    for (const o of g.obs){
+      if (!(o.type === "log" || o.type === "branch" || (o.type === "kayaker" && !(o.flipT > 0)))) continue;
+      if (o.wy > wy || wy - o.wy > PASS_LOOK) continue;
       const x = screenXOf(o.t, o.wy), h = o.visHalf || 24;
       iv.push([x - h, x + h]);
     }
@@ -7491,6 +8052,8 @@ function chkCl(){
 // надо собрать. Собрал не меньше 80% — зайцы дарят яхту (g.yacht): до конца
 // уровня она идёт на 15% быстрее и не боится ни камней, ни брёвен, ни соперников;
 // только баржа её по-прежнему давит. Меньше — очки за каждого зайца.
+// Заяц сидит на песчаной отмели — той же, что мель (SPR.shallows), только поменьше.
+const HARE_HALF_X = 40, HARE_HALF_Y = 18, HARE_SAND = 0.8;
 const MAZAI_FRAMES = 1800, MAZAI_NEED = 0.8, MAZAI_GAP = 165, YACHT_SPEED = 1.15;
 function mazaiBadgeDue(){
   const L = level();
@@ -7514,11 +8077,11 @@ function startMazai(){
   explain("mazai", "ЗНАЧОК МАЗАЯ: 30 секунд ты дедушка Мазай. Плыви к зайцам на песчаных островках и подбирай их. Собрал 8 из 10 — зайцы подарят яхту до конца дня");
 }
 function spHare(){
-  const wy = spawnWy(), vn = BN_SPRITE.hare, visHalf = spriteSize(vn).w/2;
+  const wy = spawnWy(), visHalf = HARE_HALF_X;
   for (let a = 0; a < 14; a++){
     const t = (Math.random()*2 - 1)*0.72;
     if (inIsland(t, wy) || !spaceFree(t, wy, visHalf)) continue;
-    g.bns.push({ t, wy, type:"hare", visHalf, visHalfY: spriteSize(vn).h/2 });
+    g.bns.push({ t, wy, type:"hare", visHalf, visHalfY: HARE_HALF_Y });
     return true;
   }
   return false;
@@ -7574,7 +8137,7 @@ function drwMazaiHud(){
 // не пройти без потери сердца. Раньше проход проверялся только при появлении.
 // Теперь пока предмет в поле зрения, щель вокруг него не меньше PASS_MIN:
 // иначе он сдвигается в лучшее место, а если такого нет и его не видно — убирается.
-const PASS_MIN = 58, PASS_AHEAD = 170;
+const PASS_MIN = 58, PASS_AHEAD = 170, SINK_FRAMES = 50;
 // ahead — на сколько px вверх по реке заглядываем: неподвижное нагоняет подвижное сверху.
 function gapFor(o, t, ahead){
   const vy = o.visHalfY || 24, vx = o.visHalf || 24;
@@ -7583,7 +8146,7 @@ function gapFor(o, t, ahead){
     const c = centerAt(y), hw = widthAt(y)/2, x0 = screenXOf(t, o.wy);
     const iv = [[x0 - vx, x0 + vx]];
     for (const q of g.obs){
-      if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0) continue;   // перевёрнутая лодка тонет и не мешает
+      if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0 || q.sinkT > 0) continue;   // перевёрнутая лодка и тонущее бревно не мешают
       if (Math.abs(q.wy - y) > (q.visHalfY || 24)) continue;
       const x = screenXOf(q.t, q.wy), h = q.visHalf || 24;
       iv.push([x - h, x + h]);
@@ -7601,7 +8164,7 @@ function gapFor(o, t, ahead){
 function overlapsAny(o, t){
   const x0 = screenXOf(t, o.wy);
   for (const q of g.obs){
-    if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0) continue;
+    if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0 || q.sinkT > 0) continue;
     if (Math.abs(q.wy - o.wy) > (q.visHalfY || 24) + (o.visHalfY || 24)) continue;
     if (Math.abs(screenXOf(q.t, q.wy) - x0) < ((q.visHalf || 24) + (o.visHalf || 24))*0.85) return true;
   }
@@ -7631,11 +8194,11 @@ function keepPassage(){
       else { o.t += Math.max(-0.03, Math.min(0.03, best - o.t)); o.vt = 0; }
     } else if (sy < -40){
       g.obs.splice(g.obs.indexOf(o), 1);                // щели нет и его не видно — убираем
-    } else if (mobile && sy < g.py - 100){
-      // Щели нет, а предмет уже в кадре, но ещё далеко от лодки: тонет у всех на глазах.
-      spPt(screenXOf(o.t, o.wy), sy, "#cfe8f5", 22);
+    } else if (mobile && sy < g.py - 160){
+      // Щели нет, предмет в кадре, но далеко от лодки: бревно медленно тонет, а гребец
+      // просто переворачивается (как после любого опрокидывания) — без вспышек и звука.
       if (o.type === "kayaker"){ o.flipT = FLIP_FRAMES; o.aggro = false; o.swingT = -1; }
-      else g.obs.splice(g.obs.indexOf(o), 1);
+      else if (!o.sinkT) o.sinkT = SINK_FRAMES;
     }
   }
 }
@@ -7732,7 +8295,7 @@ function spFighter(){
 // (замах DOG_TELL кадров, его видно) и прыгает. Отвернул от берега или ушёл
 // вперёд — промах: собака плюхается в воду и плывёт назад, а ты получаешь
 // очки. Попала — минус сердце. Прыжок один: потом сидит у берега.
-const HERON_HOPS = 2, HERON_FLY = 95, HERON_CYCLE = 420;
+const HERON_HOPS = 2, HERON_FLY = 95, HERON_CYCLE = 480;
 const DOG_SEE = 260, DOG_NEAR = 95, DOG_TELL = 32, DOG_LEAP = 16, DOG_SWIM = 70, DOG_ALERT = 22;
 const DOG_KINDS = { fisher_kid:1, fisher_car:1 };
 function mkDog(e){ return { state:"lie", age:0, wy:e.wy - 54, off:e.off + 30, k:0 }; }
@@ -8172,7 +8735,7 @@ function sceneAt(s){
       g.mazaiPlaced = true;
       g.bns.push({ t:0, wy:g.pwy + 150, type:"mazai", visHalf:spriteSize("badge").w/2, visHalfY:spriteSize("badge").h/2 });
       startMazai(); g.mazai.spawned = g.mazai.n - 2;
-      for (const [t, dy] of [[-0.5, 260], [0.45, 380]]) g.bns.push({ t, wy:g.pwy + dy, type:"hare", visHalf:spriteSize("hare_isle").w/2, visHalfY:spriteSize("hare_isle").h/2 });
+      for (const [t, dy] of [[-0.5, 260], [0.45, 380]]) g.bns.push({ t, wy:g.pwy + dy, type:"hare", visHalf:HARE_HALF_X, visHalfY:HARE_HALF_Y });
     }
   } else if (s === "bearswim" || s === "bearwave"){
     const sd = DEBUG_SCENES[s].side;
@@ -8272,6 +8835,7 @@ function hideAllScreens(){
   document.getElementById("pauseScreen").classList.add("hidden");
   document.getElementById("pauseBtn").classList.add("hidden");
   showMobileHint(false);   // подсказка про тапы — только в самом заплыве
+  menuActive = false;      // фокус меню начинается заново на каждом экране
 }
 
 function sg(){
@@ -8691,6 +9255,7 @@ function upd(){
   let input = 0;
   if (keys["ArrowLeft"] || keys["a"] || keys["A"] || keys["ф"] || keys["Ф"]) input = -1;
   if (keys["ArrowRight"] || keys["d"] || keys["D"] || keys["в"] || keys["В"]) input = 1;
+  if (!input && gpState.steer) input = gpState.steer;     // геймпад: стик даёт плавный руль
   if (mt !== null){
     const px = screenXOf(g.t, g.pwy);
     if (Math.abs(mt - px) > 4) input = Math.sign(mt - px);
@@ -8718,6 +9283,7 @@ function upd(){
     // Бревно плывёт по течению, но медленнее байдарок — мы его нагоняем.
     // Камни и мель неподвижны, поэтому их wy не меняется вовсе.
     // Баржа идёт своим ходом, медленнее течения — мы её нагоняем.
+    if (o.sinkT > 0){ if (--o.sinkT <= 0){ g.obs.splice(i,1); continue; } }
     if(o.type=="barge") bargeStep(o, g.sp*sm*DRIFT_SPEED.barge);
     if(o.type=="boat") boatStep(o);
     stepShove(o);
@@ -9019,16 +9585,20 @@ function drawOrderOf(obs){
 // Заставка: рассвет над рекой, силуэты ёлок, байдарка покачивается на воде.
 // Рисуется, пока игра в состоянии «start»; кнопки — поверх, в DOM.
 let titleT = 0;
-function drwTitle(){
+function drwTitle(x0, x1){
+  // x0..x1 — ширина сцены: поле 0…W или шире (боковые зоны десктопа). Узор тот же, за краями повторяется.
+  const wide = x0 !== undefined;
+  if (!wide){ x0 = 0; x1 = W; } else titleT--;            // кадр считает только основной вызов
   titleT++;
   const hz = 330;                                         // линия горизонта
   const sky = cx.createLinearGradient(0, 0, 0, hz);
   sky.addColorStop(0, "#2b3a78"); sky.addColorStop(0.55, "#e0789a"); sky.addColorStop(1, "#ffc77a");
-  cx.fillStyle = sky; cx.fillRect(0, 0, W, hz);
+  cx.fillStyle = sky; cx.fillRect(x0, 0, x1 - x0, hz);
+  const m0 = Math.floor(x0/W), m1 = Math.floor((x1 - 1)/W);   // плитки шириной W, что захватывает сцена
   // Звёзды гаснут к горизонту.
   cx.fillStyle = "rgba(255,255,255,0.8)";
-  for (let i = 0; i < 26; i++){
-    const x = (i*97 + 13) % W, y = (i*53 + 7) % 150;
+  for (let m = m0; m <= m1; m++) for (let i = 0; i < 26; i++){
+    const x = (i*97 + 13) % W + m*W, y = (i*53 + 7) % 150;
     if ((titleT + i*11) % 90 < 70) cx.fillRect(x, y, 2, 2);
   }
   // Солнце: диск и кольца.
@@ -9038,33 +9608,34 @@ function drwTitle(){
   }
   // Два гребня дальних холмов.
   const ridge = (col, base, amp, f, ph) => {
-    cx.fillStyle = col; cx.beginPath(); cx.moveTo(0, hz);
-    for (let x = 0; x <= W; x += 14) cx.lineTo(x, base - amp*Math.sin(x*f + ph) - amp*0.5*Math.sin(x*f*2.3 + ph));
-    cx.lineTo(W, hz); cx.closePath(); cx.fill();
+    cx.fillStyle = col; cx.beginPath(); cx.moveTo(x0, hz);
+    for (let x = x0; x <= x1 + 14; x += 14) cx.lineTo(x, base - amp*Math.sin(x*f + ph) - amp*0.5*Math.sin(x*f*2.3 + ph));
+    cx.lineTo(x1 + 14, hz); cx.closePath(); cx.fill();
   };
   ridge("#6a4f86", hz - 26, 12, 0.012, 1.0);
   ridge("#3d3a6b", hz - 8,  10, 0.018, 2.4);
   // Ёлки на дальнем берегу.
-  for (let i = 0; i < 15; i++){
-    const nm = i % 4 === 3 ? "sbirch" : "sfir";
+  for (let i = Math.floor(x0/29) - 1; i*29 < x1 + 29; i++){
+    const nm = ((i % 4) + 4) % 4 === 3 ? "sbirch" : "sfir";
     const sz = spriteSize(nm);
-    if (sz) drawSprite(nm, 14 + i*29 + (i%2)*7, hz - sz.h/2 + 6);
+    if (sz) drawSprite(nm, 14 + i*29 + (((i % 2) + 2) % 2)*7, hz - sz.h/2 + 6);
   }
   // Вода.
   const wat = cx.createLinearGradient(0, hz, 0, H);
   wat.addColorStop(0, "#f2a77a"); wat.addColorStop(0.18, "#3f77b8"); wat.addColorStop(1, "#0d3f7a");
-  cx.fillStyle = wat; cx.fillRect(0, hz, W, H - hz);
+  cx.fillStyle = wat; cx.fillRect(x0, hz, x1 - x0, H - hz);
   // Солнечная дорожка и рябь: пиксельные полоски плывут к зрителю.
-  for (let i = 0; i < 34; i++){
+  for (let m = m0; m <= m1; m++) for (let i = 0; i < 34; i++){
     const k = ((i*0.137 + titleT*0.0016) % 1);
     const y = hz + 4 + k*k*(H - hz - 10);
-    const w = 10 + k*70, x = (i*79 % W);
+    const w = 10 + k*70, x = (i*79 % W) + m*W;
     cx.fillStyle = "rgba(255,240,190," + (0.55 - k*0.35) + ")";
     if (Math.abs(x - 300) < 110 + k*60) cx.fillRect(x - w/2, y, w, 2 + k*2);
     cx.fillStyle = "rgba(200,230,255," + (0.22 + k*0.18) + ")";
-    cx.fillRect((i*131 + titleT*0.6*(0.3 + k)) % (W + 80) - 40, y + 3, 14 + k*34, 2);
+    cx.fillRect((i*131 + titleT*0.6*(0.3 + k)) % (W + 80) - 40 + m*W, y + 3, 14 + k*34, 2);
   }
-    // Байдарка с гребцом (kayak_man, две фазы гребка): качается и чуть дрейфует.
+  if (wide) return;
+  // Байдарка с гребцом (kayak_man, две фазы гребка): качается и чуть дрейфует.
   const bob = Math.sin(titleT*0.05)*3, kx = 150 + Math.sin(titleT*0.012)*10, ky = 396 + bob;
   cx.fillStyle = "rgba(0,0,0,0.25)";
   cx.beginPath(); cx.ellipse(kx, ky + 42, 78, 7, 0, 0, Math.PI*2); cx.fill();
@@ -9117,6 +9688,179 @@ function rndr(){
 // Чистая функция (состояние аккумулятора acc передаётся/возвращается) — её
 // держат тесты. Аккумулятор копит доли кадра: на 30fps экрана одним тиком
 // в 33.3мс отыгрывается ровно 2 шага симуляции.
+/* ===== Десктоп: берега по бокам и боковые панели ===== */
+// На широком экране игра (420×720) остаётся по центру, а по бокам берега продолжаются
+// на всю ширину окна (та же трава и деревья реки, едут вместе с течением), поверх
+// них — две панели: слева ход похода (день, цель и её счёт, маршрут по девяти
+// дням, справка о месте), справа таблица дня, бонусы и управление. На узком экране
+// (телефон) панелей нет, всё как раньше.
+var PANEL_MAX = 380;
+var PANEL_MIN_SIDE = 200;                    // уже — панелей нет (var: rs() вызывается раньше этого места)
+// Раскладка: размер поля в CSS-пикселях и ширина боковой полосы с каждой стороны.
+function sideLayout(innerW, innerH, gw, gh){
+  const s = Math.min(innerW/gw, innerH/gh);
+  const cssW = Math.floor(gw*s), cssH = Math.floor(gh*s);
+  const side = Math.max(0, Math.floor((innerW - cssW)/2));
+  return { s, cssW, cssH, side, panels: side >= PANEL_MIN_SIDE };
+}
+var sideW = 0, sideScale = 1, panelsOn = false;
+function layoutSides(cssW, cssH, full){
+  if (typeof document === "undefined") return;
+  const lay = full ? { side:0, panels:false, s:1 } : sideLayout(innerWidth, innerHeight, W, H);
+  sideW = lay.side; sideScale = lay.s; panelsOn = lay.panels;
+  const bg = document.getElementById("bgCanvas"), ui = document.getElementById("ui");
+  if (bg){ bg.width = innerWidth; bg.height = innerHeight; }
+  if (ui && ui.style){ ui.style.left = sideW + "px"; ui.style.right = sideW + "px"; }
+  for (const [id, left] of [["panelL", true], ["panelR", false]]){
+    const el = document.getElementById(id);
+    if (!el || !el.style) continue;
+    // Панель прижата к полю, ширина не больше PANEL_MAX; остальное — лес.
+    const pw = Math.max(0, Math.min(PANEL_MAX, sideW - 24));
+    el.style.width = pw + "px";
+    el.style[left ? "left" : "right"] = Math.max(0, sideW - pw - 12) + "px";
+    if (el.classList) el.classList[panelsOn ? "remove" : "add"]("hidden");
+  }
+  panelSig = "";                              // размеры поменялись — перерисовать панели
+}
+// Боковые зоны десктопа — продолжение картины уровня: тот же drwBg (трава с туманом к горизонту,
+// берега, деревья, привязанные к течению) на отдельном канвасе позади поля, только шире; на
+// старте и в меню — продолжение закатной сцены заставки. Сверху — погода уровня.
+function drwSides(){
+  if (typeof document === "undefined" || sideW < 8 || g.s === "cutscene") return;
+  const bg = document.getElementById("bgCanvas");
+  if (!bg || !bg.getContext) return;
+  const b = bg.getContext("2d"), k = sideScale, IW = innerWidth, IH = innerHeight;
+  const river = RIVERS[Math.min(level().river, RIVERS.length - 1)] || RIVERS[0];
+  const grass = g.rGrass || river.grass;
+  b.setTransform(1, 0, 0, 1, 0, 0);
+  b.imageSmoothingEnabled = false;
+  b.fillStyle = grass;
+  b.fillRect(0, 0, IW, IH);
+  // Поле в окне: левый край и высота (канвас по центру); боковая зона в «игровых» пикселях.
+  const ox = sideW, oy = Math.max(0, Math.floor((IH - H*k)/2));
+  const ext = ox/k + 4, extR = (IW - ox - Math.floor(W*k))/k + 4;
+  b.setTransform(k, 0, 0, k, ox, oy);
+  cx = b;
+  try {
+    if (g.s === "start") drwTitle(-ext, W + extR);
+    else {
+      drwBg(-ext, W + extR);
+      sideWeather(b, -ext, W + extR);
+    }
+  } finally { cx = gameCx; }
+  b.setTransform(1, 0, 0, 1, 0, 0);
+  // В меню (не заплыв) — лёгкая вуаль, чтобы панели читались; в заплыве почти нет.
+  const veil = g.s === "playing" ? 0 : (g.s === "start" ? 0 : 0.22);
+  if (veil){ b.fillStyle = "rgba(4,10,20," + veil + ")"; b.fillRect(0, 0, IW, IH); }
+}
+// Дождь, дымка уровня по бокам — теми же формулами, что и на поле, но на всю ширину.
+function sideWeather(b, x0, x1){
+  const L = level(), r = L.rain || 0, wd = x1 - x0;
+  if (r){
+    b.fillStyle = "rgba(20,32,48," + (0.16*r).toFixed(2) + ")"; b.fillRect(x0, 0, wd, H);
+    b.strokeStyle = "rgba(200,225,255," + (0.35*r).toFixed(2) + ")"; b.lineWidth = 1;
+    const n = Math.round(70*r*wd/W);
+    for (let i = 0; i < n; i++){
+      const x = x0 + (i*137 + g.frame*7) % wd, y = (i*211 + g.frame*23) % H;
+      b.beginPath(); b.moveTo(x, y); b.lineTo(x - 3, y + 12); b.stroke();
+    }
+  }
+  const f = L.fog || 0;
+  if (f){
+    const gr = b.createLinearGradient(0, 0, 0, H*0.55);
+    gr.addColorStop(0, "rgba(218,226,231," + f.toFixed(2) + ")");
+    gr.addColorStop(0.5, "rgba(218,226,231," + (f*0.42).toFixed(2) + ")");
+    gr.addColorStop(1, "rgba(218,226,231,0)");
+    b.fillStyle = gr; b.fillRect(x0, 0, wd, H*0.55);
+  }
+}
+
+// ---- Панели ----
+var panelSig = "", panelTick = 0;
+function goalProgress(L, st){
+  switch (L.goal){
+    case "bonuses":     return st.bonuses + " / " + L.need;
+    case "passed":      return st.passed + " / " + L.need;
+    case "shallowsmax": return "мелей: " + st.shallowsHit + " (можно " + L.need + ")";
+    case "parries":     return st.parries + " / " + L.need;
+    case "bridges":     return st.bridges + " / " + L.need;
+    case "hearts":      return "сердец: " + st.hp;
+    case "cleanrapids": return st.cleanRapids + " / " + L.need;
+    case "combo":       return "лучшее комбо " + st.maxCombo + " / " + L.need;
+  }
+  return "";
+}
+function panelLeftHtml(){
+  const L = level(), custom = !!g.custom, inPlay = g.s === "playing" || g.s === "paused" || g.s === "continue";
+  const st = g;
+  let h = "<div class='sp'><h3>" + (custom ? "СВОЙ УРОВЕНЬ" : "ДЕНЬ " + L.day + " · " + escHtml(river().name)) + "</h3>";
+  h += "<div>" + escHtml(custom ? "Дойти до финиша" : L.place) + "</div>";
+  if (!custom) h += "<div class='dim'>" + escHtml(river().note) + "</div>";
+  h += "</div>";
+  if (inPlay){
+    const pr = Math.max(0, Math.min(1, st.dist/L.len));
+    h += "<div class='sp'><h3>ЦЕЛЬ ДНЯ</h3><div>" + escHtml(L.goalText) + "</div>" +
+         (custom ? "" : "<div class='gp'>" + goalProgress(L, st) + "</div>") +
+         "<div class='bar'><i style='width:" + Math.round(pr*100) + "%'></i></div>" +
+         "<div class='dim'>до финиша " + Math.max(0, Math.round(L.len - st.dist)) + " м</div></div>";
+    h += "<div class='sp'><h3>ЗАПЛЫВ</h3><div>очки " + (st.sc + st.bsc) + "</div><div>сердца " + st.hp + " · попытки " + st.lives + "</div>" +
+         (st.combo > 1 ? "<div class='gp'>комбо x" + st.combo + "</div>" : "") +
+         (st.mazai && !st.mazai.done ? "<div class='gp'>МАЗАЙ: зайцы " + st.mazai.got + "/" + st.mazai.n + "</div>" : "") +
+         (st.yacht ? "<div class='gp'>ЯХТА!</div>" : "") + "</div>";
+  }
+  if (!custom){
+    h += "<div class='sp'><h3>ПОХОД</h3>";
+    LEVELS.forEach((D, i) => {
+      const open = i <= save.day, cur = D.day === L.day, stars = starsOf(D.day);
+      h += "<div class='rt" + (cur ? " cur" : "") + (open ? "" : " off") + "'><span>" + D.day + " " + escHtml(RIVERS[D.river].name) + "</span><span>" +
+           (open ? "★".repeat(stars) + "<u>" + "★".repeat(3 - stars) + "</u>" : "—") + "</span></div>";
+    });
+    h += "<div class='dim'>звёзд " + totalStars() + "/27 · рюкзак " + save.wallet + "</div></div>";
+    if (DIARY[L.day]) h += "<div class='sp dim'>" + DIARY[L.day] + "</div>";
+  }
+  return h;
+}
+function panelRightHtml(){
+  const L = level(), custom = !!g.custom;
+  let h = "";
+  if (!custom){
+    h += "<div class='sp'><h3>ДЕНЬ " + L.day + " · ТАБЛИЦА</h3>" + boardHtml(L.day) +
+         (onlineUrl() ? "<div class='dim'>все игроки — на экране «Рекорды»</div>" : "") + "</div>";
+  } else h += "<div class='sp'><h3>РЕКОРД УРОВНЯ</h3><div class='gp'>" + (cs.best || 0) + "</div></div>";
+  h += "<div class='sp'><h3>БОНУСЫ</h3>" +
+       [["bread","БАТОН — гребок сильнее на 8 с"],["whisky","ВИСКИ — неуязвим, очки x2, 6 с"],["medkit","АПТЕЧКА — сердце или щит"],
+        ["axe","ТОПОР — двойной тап: бросить"],["sun","СОЛНЦЕ — очки и комбо"]]
+        .map(([n, t]) => "<div class='bn'><canvas data-ic='" + n + "' width='24' height='24'></canvas><span>" + t + "</span></div>").join("") + "</div>";
+  h += "<div class='sp'><h3>УПРАВЛЕНИЕ</h3><div>← → руль · ↑ гребок · ↓ табанить</div><div>пробел / X удар · Esc пауза · M музыка</div>" +
+       "<div>геймпад: стик руль · A гребок · B удар · Start пауза</div></div>";
+  return h;
+}
+function drawPanelIcons(){
+  if (typeof document === "undefined" || !document.querySelectorAll) return;
+  for (const cv of document.querySelectorAll("canvas[data-ic]")){
+    const nm = BN_SPRITE[cv.getAttribute ? cv.getAttribute("data-ic") : ""];
+    const sp = nm && SPR[nm];
+    if (!sp || !sp.img || !cv.getContext) continue;
+    const c2 = cv.getContext("2d");
+    c2.imageSmoothingEnabled = false;
+    const sc = Math.min(1, 22/Math.max(sp.img.width, sp.img.height));
+    c2.clearRect(0, 0, 24, 24);
+    c2.drawImage(sp.img, Math.round((24 - sp.img.width*sc)/2), Math.round((24 - sp.img.height*sc)/2), Math.round(sp.img.width*sc), Math.round(sp.img.height*sc));
+  }
+}
+function updPanels(force){
+  if (!panelsOn || typeof document === "undefined") return;
+  const L = document.getElementById("panelL"), R = document.getElementById("panelR");
+  if (!L || !R) return;
+  const sig = [g.s, g.day, g.hp, g.lives, Math.floor(g.dist/5), g.sc + g.bsc, g.combo > 1, g.bonuses, g.passed, g.parries, g.bridges,
+               g.mazai ? g.mazai.got : -1, g.yacht, save.day, save.wallet, !!g.custom].join("|");
+  if (!force && sig === panelSig) return;
+  const first = panelSig === "" || R.innerHTML === "";
+  panelSig = sig;
+  L.innerHTML = panelLeftHtml();
+  if (first || force || g.s !== "playing"){ R.innerHTML = panelRightHtml(); drawPanelIcons(); }
+}
+rs();                                         // раскладка по боковым полосам — теперь, когда всё объявлено
 function simPlan(dtMs, acc){
   const STEP = 1000 / 60;
   const total = acc + (dtMs > 0 ? dtMs : 0);
@@ -9139,13 +9883,16 @@ function lp(t){
   if (_lpLast === 0) _lpLast = now;
   let dt = now - _lpLast;
   _lpLast = now;
-  if (g.s === "paused"){ _lpAcc = 0; rndr(); requestAnimationFrame(lp); return; }
+  pollGamepad();
+  if (g.s === "paused"){ _lpAcc = 0; rndr(); drwSides(); if (++panelTick % 12 === 0) updPanels(); requestAnimationFrame(lp); return; }
   const plan = simPlan(dt, _lpAcc);
   _lpAcc = plan.acc;
   let n = plan.steps;
   if (n > 4) n = 4;            // защита от спирали смерти на слабых устройствах
   while (n-- > 0) upd();
   rndr();
+  drwSides();
+  if (++panelTick % 12 === 0) updPanels();
   requestAnimationFrame(lp);
 }
 
@@ -9448,11 +10195,11 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fogWarn, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, DEEP_SETS, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fogWarn, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();

@@ -73,7 +73,7 @@ const RULES = {
   dog_run: "Бежит вдоль берега за лодкой, присаживается (замах, виден) и прыгает. Отвернул от берега — промах, очки; попала — минус сердце.",
   dog_jump: "Прыжок на лодку. После него собака плюхается в воду (dog_swim), плывёт назад и сидит у берега: прыжок один.",
   badge: "Значок Мазая (день 5): лежит на реке; подбор — 30 секунд Мазая, нужно собрать зайцев с песчаных островков.",
-  hare_isle: "Заяц на песчаном островке: собрать лодкой. 8 из 10 — зайцы дарят яхту до конца дня.",
+  hare: "Заяц на песчаной отмели (песок — как у мели): собрать лодкой. 8 из 10 — зайцы дарят яхту до конца дня.",
   yacht: "Яхта-подарок: на 15% быстрее, камни, брёвна, соперники и катера ей не страшны; баржа давит.",
   bear_swim: "Медведь в погоне (день 8): выныривает позади лодки и плывёт следом; догоняет, пока не гребёшь вперёд.",
   bear_wave: "Не догнал — вылезает на берег и машет лапой вслед; на правом берегу — отражённая копия.",
@@ -99,11 +99,11 @@ function uniqueOf(L, R) {
   if (L.river === 0) u.push(["Пляж", ["sunbather", "sunbather_f", "towel", "umbrella", "swimmer0", "swimmer1"]],
                             ["Компания с гитарой", ["guitarist", "note"]],
                             ["Рыбаки у машины и велосипеда", ["fisher_car", "fisher_bike"]]);
-  if (L.river === 1) u.push(["Цапля", ["heron", "heron_fly0"]], ["Велосипедисты", ["cyclist0", "cyclist1"]], ["Медведь", ["bear"]]);
+  if (L.river === 1) u.push(["Цапля", ["heron", "heron_b1", "heron_b2", "heron_b3", "heron_fly0"]], ["Велосипедисты", ["cyclist0", "cyclist1"]], ["Медведь", ["bear"]]);
   if (L.river === 2) u.push(["Лоси", ["moose", "moosecow", "moosecalf"]], ["Деревни", ["house"]]);
   if (L.river === 3) u.push(["Стадо с пастухом", ["cow", "bull", "calf", "cow_water", "shepherd", "shepherd_old", "shepherd_girl"]], ["Медведь", ["bear"]]);
   if (L.day >= 2 && L.river !== 2) u.push(["Собака рыбака", ["dog_lie", "dog_run", "dog_jump", "dog_swim"]]);
-  if (L.mazai) u.push(["Мазай и зайцы", ["badge", "hare_isle", "yacht"]]);
+  if (L.mazai) u.push(["Мазай и зайцы", ["badge", "hare", "yacht"]]);
   if (L.bearChase) u.push(["Погоня медведя", ["bear_swim", "bear_wave"]]);
   if (L.rain) u.push(["Дождевики", ["person_rain", "kayak_center_rain"]]);
   if (L.barges) u.push(["Баржи", ["barge"]]);
