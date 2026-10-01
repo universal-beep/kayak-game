@@ -858,17 +858,22 @@ const SPR = {
     variants:[{},{z:"N",p:"v",x:"V"},{r:"K",z:"g",p:"j",x:"g"},{z:"K",p:"R",x:"k"}]},
   // Перевёрнутая лодка после парирования. Замах и удар — не кадры, а
   // анимация весла (paddlePose): корпус общий с rower.
-  rower_flip:{map:[
-    // Перевёрнутая байдарка: киль вверх, гребец в воде, пена.
-    rep(".",7)+"kkkkkkk"+rep(".",7), rep(".",6)+"k"+rep("p",7)+"k"+rep(".",6),
-    rep(".",6)+"k"+rep("p",7)+"k"+rep(".",6), rep(".",4)+"k"+rep("p",11)+"k"+rep(".",4),
-    rep(".",2)+"k"+rep("p",15)+"k"+rep(".",2), rep(".",2)+"k"+rep("z",15)+"k"+rep(".",2),
-    rep(".",2)+"k"+rep("z",2)+rep("w",11)+rep("z",2)+"k"+rep(".",2),
-    rep(".",3)+"k"+rep("p",13)+"k"+rep(".",3), rep(".",4)+"k"+rep("p",11)+"k"+rep(".",4),
-    rep(".",5)+"k"+rep("p",9)+"k"+rep(".",5), rep(".",7)+"kkkkkkk"+rep(".",7),
-    rep(".",7)+"kkttkk"+rep(".",8), rep(".",6)+"krrrrkk"+rep(".",8),
-    rep(".",3)+"ww"+rep("y",9)+"ww"+rep(".",5), rep(".",2)+"ww"+rep("y",13)+"ww"+rep(".",2),
-    rep(".",3)+"ww"+rep("y",11)+"ww"+rep(".",3)],
+  rower_flip:{map:[".....................",
+    ".....................",
+    "..............kkkk...",
+    ".............kpxppk..",
+    ".............ktptpk..",
+    ".............kppppk..",
+    "..............krrk...",
+    ".....kkkkkkkkkkrrk...",
+    "...kkyyyyyyyyyyyykk..",
+    "f.kyyyyyyyyyyyyyyyykf",
+    "fkDqqqqqqqqqqqqqqqDyk",
+    "fkYYYYYYYYYYYYYYYYYYk",
+    "..kYYYYYYYYYYYYYYYYk.",
+    "...kkyyyyyyyyyyyykk..",
+    ".ffffkkkkkkkkkkkkfff.",
+    ".ff.ff.ff.ff.ff.ff.f."],
     // Вариант 3 (AGGRO_VARIANT) — только у злых: чёрная куртка на
     // тёмно-красной байдарке с чёрной полосой, видно издалека.
     variants:[{},{z:"N",p:"v",x:"V"},{r:"K",z:"g",p:"j",x:"g"},{z:"K",p:"R",x:"k"}]},
@@ -1933,26 +1938,28 @@ const SPR = {
   // лобовым окном кабины WW, едет ПЕРВЫМ справа) следуют 9 серых вагонов с окнами. Высота 18 —
   // выше человека (person 16). Ширина 240 — паровоз + 9 вагонов (длиннее кадра: виден паровоз
   // и первые вагоны, остальные уходят за левый край — реалистичный длинный состав).
-  train:{map:[
-    "................................................................................................................................................................................................................................................",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
-    "................................................................................................................................................................................................................................................",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkYYYYYYYYYYYYYYYYYYYYYYk",
-    "kWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkrrrrrwwrrrrrrrrrrrrrrrk",
-    "kwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkwwGGGGGGGGGGGGGGGGGGwwkkrrrrrrwwrrrrrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrwwrrrrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrwwrrrrrrrrrrrrk",
-    "kWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkWGGGGGGGGGGGGGGGGGGGGWkkrrrrrrrrrwwrrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrrrwwrrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrrrrwwrrrrrrrrrk",
-    "kGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkGGGGGGGGGGGGGGGGGGGGGGkkrrrrrrrrrrrrrrrrrrrrrrk",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
-    "kkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkkKKKKKKKKKKKKKKKKKKKKkkkKKKKKKKKKKKKKKKKKKKKKKk",
-    ".kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk..kkzzzzzzzzzzzzzzzzzzkk.",
-    ".kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk..kkkkkkkkkkkkkkkkkkkkkk.",
-    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
-    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
-  ]},
+  train:{map:["......kkkkkk..............kkkkkk..................................kkkkkk...........kKKKKKKKKKKKKKk............................kkkkkk..............kkkkkk..................................kkkkkk..............kkkkkk............................",
+    ".kkkkkggggggkkkkkkkkkkkkkkggggggkkkkkkkkkkkkkkkkkkkkkkkkk....kkkkkggggggkkkkkkkkkkkkkkgggKKgkkkkkkkkkkkkkkkkkkkkkkkkk....kkkkkggggggkkkkkkkkkkkkkkggggggkkkkkkkkkkkkkkkkkkkkkkkkk....kkkkkggggggkkkkkkkkkkkkkkggggggkkkkkkkkkkkkkkkkkkkkkkkkk...",
+    "kggggggggggggggggggggggggggggggggggggggggggggggggggggggggk..kggggggggggggggggggggggggggggggggggggggggggggggggggggggggk..kggggggggggggggggggggggggggggggggggggggggggggggggggggggggk..kggggggggggggggggggggggggggggggggggggggggggggggggggggggggk..",
+    "kggggggggggggggggggggggggggggggggggggggggggggggggggggggggk..kggggggggggggggggggggggggggggggggggggggggggggggggggggggggk..kggggggggggggggggggggggggggggggggggggggggggggggggggggggggk..kggggggggggggggggggggggggggggggggggggggggggggggggggggggggkkk",
+    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiikkiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiikkiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiikkiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiWWWWWWWWWWWW",
+    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiikkiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiikkiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiikkiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiWWWWWWWWWWWW",
+    "WWWgggzzzzzzzzWWWWzzzzzzzzzWWWWzzzzzzzzzWWWWzzzzzzgggWWWWWkkWWWgggzzzzzzzzWWWWzzzzzzzzzWWWWzzzzzzzzzWWWWzzzzzzgggWWWWWkkWWWgggzzzzzzzzWWWWzzzzzzzzzWWWWzzzzzzzzzWWWWzzzzzzgggWWWWWkkWWWgggzzzzzzzzWWWWzzzzzzzzzWWWWzzzzzzzzzWWWWzzzzWWZZZZZZZZZW",
+    "WWWgggfffZZZZZWWWWZfffZZZZZWWWWZfffZZZZZWWWWZfffZZgggWWWWWkkWWWgggfffZZZZZWWWWZfffZZZZZWWWWZfffZZZZZWWWWZfffZZgggWWWWWkkWWWgggfffZZZZZWWWWZfffZZZZZWWWWZfffZZZZZWWWWZfffZZgggWWWWWkkWWWgggfffZZZZZWWWWZfffZZZZZWWWWZfffZZZZZWWWWZfffWWZZZZZZZZZW",
+    "WWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZgggWWWWWkkWWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZgggWWWWWkkWWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZgggWWWWWkkWWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZWWZZZZZZZZZW",
+    "WWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZgggWWWWWkkWWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZgggWWWWWkkWWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZgggWWWWWkkWWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZWWZZZZZZZZZW",
+    "WWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZgggWWWWWkkWWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZgggWWWWWkkWWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZgggWWWWWkkWWWgggZZZZZZZZWWWWZZZZZZZZZWWWWZZZZZZZZZWWWWZZZZWWZZZZZZZZZW",
+    "WWWgggWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWgggWWWWWkkWWWgggWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWgggWWWWWkkWWWgggWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWgggWWWWWkkWWWgggWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWuu",
+    "GGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgggGGGGGkkGGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgggGGGGGkkGGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgggGGGGGkkGGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWrruu",
+    "GGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgggGGGGGkkGGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgggGGGGGkkGGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgggGGGGGkkGGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWrrrr",
+    "rrrgggrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrgggrrrrrkkrrrgggrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrgggrrrrrkkrrrgggrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrgggrrrrrkkrrrgggrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrWWWWWWWWrrrr",
+    "rrrgggrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrgggrrrrrkkrrrgggrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrgggrrrrrkkrrrgggrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrgggrrrrrkkrrrgggrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrWWWWWWWWrrrr",
+    "GGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgggGGGGGkkGGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgggGGGGGkkGGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgggGGGGGkkGGGgggGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWrrrr",
+    "GjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjGkkGjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjGkkGjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjGkkGjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjWWWWWWWWrrrr",
+    "kkkkkkKKKKKKKKKkkkkkkkkkkkkkkkkkkkkkkkkkkkKKKKKKKKKkkkkkkk..kkkkkkKKKKKKKKKkkkkkkkkkkkkkkkkkkkkkkkkkkkKKKKKKKKKkkkkkkk..kkkkkkKKKKKKKKKkkkkkkkkkkkkkkkkkkkkkkkkkkkKKKKKKKKKkkkkkkk..kkkkkkKKKKKKKKKkkkkkkkkkkkkkkkkkkkkkkkkkkkKKKKKKKKKkkkkkkkkk",
+    ".....kKKKKKKKKKk.........................kKKKKKKKKKk.............kKKKKKKKKKk.........................kKKKKKKKKKk.............kKKKKKKKKKk.........................kKKKKKKKKKk.............kKKKKKKKKKk.........................kKKKKKKKKKk........",
+    "......kKKkkKKkk...........................kKKkkKKkk...............kKKkkKKkk...........................kKKkkKKkk...............kKKkkKKkk...........................kKKkkKKkk...............kKKkkKKkk...........................kKKkkKKkk.........",
+    "......kKKkkKKk............................kKKkkKKk................kKKkkKKk............................kKKkkKKk................kKKkkKKk............................kKKkkKKk................kKKkkKKk............................kKKkkKKk.........."]},
   station:{map:[
     "......kkkkkkkkkkkkkkkk......",
     ".....kGGGGGGGGGGGGGGGGk.....",
@@ -2021,10 +2028,20 @@ const SPR = {
     "..kZZZZZZk..","..kZZZZZZk..","...kZZkZZ...","...kZZkZZ...","...kZZkZZ...",
     ".kOOkkkkOOk.",".kkkkkkkkkk."],noOutline:true},
   // Чайка-силуэт, два кадра маха (вверх/вниз) — цикл `cycle` в катсценах.
-  bird0:{map:["....kkkk....",".kkKKKKKKkk.","kKKKKKKKKKKk",".kkKKKKKKkk.",
-    "....kkkk....","...kk..kk...","..kk....kk.."],noOutline:true},
-  bird1:{map:["...kk...kk..","..kKKk.kKKk.",".kKKKKkKKKKk",".kKKKKKKKKk.",
-    "kkKKKKKKKKkk","..kkkkkkkk..","...kk...kk.."],noOutline:true},
+  bird0:{map:["kk........kk",
+    ".kKk....kKk.",
+    "..kKk..kKk..",
+    "...kKkkKk...",
+    "....kKKk....",
+    ".....kk.....",
+    "............"],noOutline:true},
+  bird1:{map:["............",
+    ".kk......kk.",
+    "kKKkkkkkkKKk",
+    "kKKKKKKKKKKk",
+    ".kkkkKKkkkk.",
+    ".....kk.....",
+    "............"],noOutline:true},
   // Летящие утки (два кадра маха) для разлёта у берега: светлое брюшко,
   // оранжевый клюв справа. Не чёрные силуэты — чайки-силуэты остались
   // только в катсценах (bird0/bird1).
@@ -2096,42 +2113,62 @@ const SPR = {
   // Мост — ЕДИНЫЙ рисунок всей конструкции (вместо кучи разрозненных
   // pier+deck+truss-актёров): настил сверху, под ним ферма-решётка, по краям
   // две опоры, уходящие в воду. Проезжает над лодкой как одно целое.
-  bridge:{map:[
-    "k"+rep("G",108)+"k",
-    "k"+rep("g",108)+"k",
-    "k"+rep("Gg",54)+"k",
-    "k"+rep("gG",54)+"k",
-    "k"+rep("Gg",54)+"k",
-    "k"+rep("gG",54)+"k",
-    "k"+rep("Gg",54)+"k",
-    "k"+rep("g",108)+"k",
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",8)+"k"+rep("g",8)+"k"+rep(".",92),
-    rep(".",92)+"k"+rep("g",8)+"k"+rep(".",8),
-    rep(".",6)+"kkkkkkkkkkkkkk"+rep(".",90),
-    rep(".",90)+"kkkkkkkkkkkkkk"+rep(".",6)
-  ]},
+  bridge:{map:["..............................................................................................................",
+    "..............................................................................................................",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+    "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "kkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkk",
+    "..I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I..",
+    "kkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkk",
+    "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkg",
+    "jjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kgg",
+    "jjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kgg",
+    "jjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggk",
+    "jjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggk.",
+    "jjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk..",
+    "jjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk..",
+    "jjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk...",
+    "jjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk....",
+    "jjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk.....",
+    "jjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk.....",
+    "jjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkk",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "gggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggg",
+    "kkkkIIIIIIIIIIIIIIIIIIkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkIIIIIIIIIIIIIIIIIIkkkk",
+    "...kIIIIIIIIIIIIIIIIIIk................................................................kIIIIIIIIIIIIIIIIIIk...",
+    "...kIIIIIIIIIIIIIIIIIIk................................................................kIIIIIIIIIIIIIIIIIIk...",
+    "...kjjjjjjjjjjjjjjjjjjk................................................................kjjjjjjjjjjjjjjjjjjk...",
+    "....kkWGgGGGGgGGGjjjkk..................................................................kkWGgGGGGgGGGjjjkk....",
+    ".....kWWgGGGGgGGGgjjk....................................................................kWWgGGGGgGGGgjjk.....",
+    ".....kWGgggggggggjjjk....................................................................kWGgggggggggjjjk.....",
+    ".....kWWGGGgGGGGggjjk....................................................................kWWGGGgGGGGggjjk.....",
+    ".....kWGGGGgGGGGgjjjk....................................................................kWGGGGgGGGGgjjjk.....",
+    ".....kWWggggggggggjjk....................................................................kWWggggggggggjjk.....",
+    ".....kWGgGGGGgGGGjjjk....................................................................kWGgGGGGgGGGjjjk.....",
+    ".....kWWgGGGGgGGGgjjk....................................................................kWWgGGGGgGGGgjjk.....",
+    ".....kWGgggggggggjjjk....................................................................kWGgggggggggjjjk.....",
+    ".....kWWGGGgGGGGggjjk....................................................................kWWGGGgGGGGggjjk.....",
+    ".....kWGGGGgGGGGgjjjk....................................................................kWGGGGgGGGGgjjjk.....",
+    ".....kWWggggggggggjjk....................................................................kWWggggggggggjjk.....",
+    ".....kWGgNGGGgNGGjjNk....................................................................kWGgGNGGgGNGjjjk.....",
+    ".....kWWgGNGGgGNGgjjk....................................................................kNWgGGNGgGGNgjjk.....",
+    "....kkNGgggNggggNjjjkk..................................................................kkWNggggNggggNjjkk....",
+    "...kWWGNGgGGNGgGGNGgjjk................................................................kWWGGNgGGGNgGGGNgjjk...",
+    "...kWGGGNgGGGNgGGGNjjjk................................................................kNGGGGNGGGGNGGGGNjjk...",
+    "...kNWgggNggggNggggNjjk................................................................kWNggggNggggNggggNjk...",
+    "...kWNgGGGNgGGGNgGGjNjk................................................................kWGNGGGGNGGGGNGGjjNk...",
+    "...kWWNGGGGNGGGGNGGgjNk................................................................kWWgNGGGgNGGGgNGgjjk...",
+    "...kWGgNggggNggggNgjjjk................................................................kWGggNggggNggggNjjjk...",
+    "...kWWGGNgGGGNgGGGNgjjk................................................................kNWGGGNGGGGNGGGGNjjk...",
+    "...kNGGGGNGGGGNGGGGNjjk................................................................kWNGGGgNGGGgNGGGjNjk...",
+    "...kWNggggNggggNggggNjk................................................................kWWNggggNggggNgggjNk..."]},
   bush:{map:["...kkkk...","..kvvvvk..",".kvvvvvvk.","kvvvVvvvvk","kvvVvvvvVk",
     ".kvvvvvvk.","..kVVVVk..","...kkkk..."]},
   tree:{map:["......kk..........",
@@ -2161,19 +2198,14 @@ const SPR = {
   // тёмный кокпит в середине. Это альтернатива kayak_center (вид сверху):
   // в сценах, где движение боковое — вниз по реке или на прицепе — лодка
   // должна выглядеть как лодка, а не как линза сверху.
-  kayak_side:{map:[
-    rep(".",9)+"kk"+rep(".",11)+"kk"+rep(".",12),
-    rep(".",6)+"kk"+rep("O",14)+"kk"+rep(".",12),
-    rep(".",4)+"kk"+rep("O",20)+"kk"+rep(".",8),
-    rep(".",2)+"kk"+rep("O",24)+"kk"+rep(".",6),
-    rep(".",1)+"k"+rep("O",32)+"k"+rep(".",1),
-    rep(".",1)+"k"+rep("K",32)+"k"+rep(".",1),
-    rep(".",1)+"k"+rep("O",32)+"k"+rep(".",1),
-    rep(".",2)+"kk"+rep("O",26)+"kk"+rep(".",4),
-    rep(".",5)+"kk"+rep("O",20)+"kk"+rep(".",7),
-    rep(".",8)+"kkk"+rep("O",11)+"kkk"+rep(".",11),
-    rep(".",14)+"kkkk"+rep(".",18)
-  ]},
+  kayak_side:{map:["..............kkkkkkkkkkk...........",
+    "............kkggggggggggkk..........",
+    "......kkkkkkkkKKKKKKKKKKKkkkkkkk....",
+    "...kkkuuuuuuuutnKKKKKuuuuuuuuuuukk..",
+    ".kkuuuYYYYYYYnYYYYYYYYYYYYYYYYYYYuk.",
+    "kqqqqDDDDDYYnnYYYYYYYYYYYYDDDDDDDDqk",
+    ".kkkkqqqqqnnDDDDDDDDDDDDDDqqqqqqkkk.",
+    ".....kkkkknqqqqqqqqqqqqqqqkkkkkk...."]},
   // Гребец в профиль: сидит, голова и торс, весло поперёк на уровне рук,
   // руки и лопасти (Y) — как у байдарочника с двухлопастным веслом.
   person_sit:{map:[
@@ -3323,36 +3355,40 @@ const CUTS = {
       { spr:"ctree", keys:[[0,58,300,1,1],[1,58,300,1,1]] },
       { spr:"ctree", keys:[[0,382,302,1.15,1],[1,382,302,1.15,1]] },
       { spr:"ctree", keys:[[0,34,296,0.8,1],[1,34,296,0.8,1]] },
-      // Пассажиры на перроне (x на 344) ЗА вагонами (порядок: person до train — поезд спереди,
-      // толпа позади; пока поезд в кадре — люди за вагонами). В начале (секунда пустоты) поезда
-      // нет, пассажиры видны у вокзала. В 0.6 при отправлении ВСЕ садятся и исчезают (al→0).
-      // Одежда разная (var), рост почти одинаковый — герой (var 0, scl=1) лишь на ~6-8% крупнее.
-      { spr:"person",  keys:[[0,340,344,1,1],[0.6,340,344,1,1],[0.63,340,344,1,0],[1,340,344,1,0]] },
-      { spr:"person", var:1, keys:[[0,150,344,0.94,1],[0.6,150,344,0.94,1],[0.63,150,344,0.94,0],[1,150,344,0.94,0]] },
-      { spr:"person", var:2, keys:[[0,245,344,0.92,1],[0.6,245,344,0.92,1],[0.63,245,344,0.92,0],[1,245,344,0.92,0]] },
-      { spr:"person", var:3, keys:[[0,395,344,0.95,1],[0.6,395,344,0.95,1],[0.63,395,344,0.95,0],[1,395,344,0.95,0]] },
       // Поезд: в t=0 далеко за кадром слева (перрон пуст — «секунда пустоты»), подъезжает к 0.45
       // и ОСТАНАВЛИВАЕТСЯ на center=484 (0.45..0.6): вагон 3 = [268..340], вагон 4 = [340..412] —
       // у места человека оказывается стык 3-4 вагона. Низ поезда y=372 — колёса на рельсах
       // (ж/д пути в evening-блоке), ниже перрона (люди на 344). В 0.6 отправляется вправо (center→840).
-      { spr:"train",   keys:[[0,-760,372,1,1],[0.45,484,372,1,1],[0.6,484,372,1,1],[1,840,372,1,1]] }
+      { spr:"train",   keys:[[0,-760,372,1,1],[0.45,484,372,1,1],[0.6,484,372,1,1],[1,840,372,1,1]] },
+      // Пассажиры на перроне ПЕРЕД вагонами (перрон — полоса y 384…428 у нижнего края: стоят ногами на нём, на y=410;
+      // поезд — позади, за перроном, на пути y=372). В начале (секунда пустоты) поезда
+      // нет, пассажиры видны у вокзала. В 0.6 при отправлении ВСЕ садятся и исчезают (al→0).
+      // Одежда разная (var), рост почти одинаковый — герой (var 0, scl=1) лишь на ~6-8% крупнее.
+      { spr:"person",  keys:[[0,340,410,1,1],[0.6,340,410,1,1],[0.63,340,410,1,0],[1,340,410,1,0]] },
+      { spr:"person", var:1, keys:[[0,150,410,0.94,1],[0.6,150,410,0.94,1],[0.63,150,410,0.94,0],[1,150,410,0.94,0]] },
+      { spr:"person", var:2, keys:[[0,245,410,0.92,1],[0.6,245,410,0.92,1],[0.63,245,410,0.92,0],[1,245,410,0.92,0]] },
+      { spr:"person", var:3, keys:[[0,395,410,0.95,1],[0.6,395,410,0.95,1],[0.63,395,410,0.95,0],[1,395,410,0.95,0]] }
     ] },
   // Первый чистый пролёт моста за день: байдарка ПЛЫВЁТ под мостом — видна река
   // (water), весь мост ЕДИНЫМ спрайтом (настил+ферма+опоры) проезжает над
   // головой, опоры стоят в воде и проносятся ЗА лодкой (мост рисуется ДО лодки).
   // Гребец в байдарке с веслом — тоже один спрайт (kayak_man).
-  bridge: { sky:"day", ground:"#3d6b3a", water:344, caption:"Под мостом",
+  bridge: { sky:"day", ground:"#3d6b3a", far:"#2c5530", water:344, caption:"Под мостом",
     actors:[
-      // Мост одним объектом: настил и ферма сверху (y 254..278), опоры вниз в
-      // воду (низ 356 — под линией воды 344). Проезжает через весь кадр; в t=0.5
-      // пролёт ровно над лодкой (опоры по краям кадра, лодка между ними).
+      // Облака — небо не пустое.
+      { spr:"cloud", keys:[[0,420,86,1.6,0.9],[1,-120,86,1.6,0.9]] },
+      { spr:"cloud", keys:[[0,560,150,1.1,0.8],[1,60,150,1.1,0.8]] },
+      // Мост одним объектом (bridge: ферма на каменных опорах 330×168 px): низ пояса
+      // над головой гребца, опоры стоят в воде, мост проезжает через кадр; в t=0.5
+      // пролёт ровно над лодкой. Мост рисуется ДО лодки.
       { spr:"bridge", keys:[[0,-240,356,1,1],[0.12,70,356,1,1],[0.5,210,356,1,1],[0.88,350,356,1,1],[1,660,356,1,1]] },
+      // По мосту едут машины (низ колёс на настиле, y=212): едут вдоль моста.
+      { spr:"car",       keys:[[0.12,-60,212,1,0],[0.18,-30,212,1,1],[0.46,160,212,1,1],[0.52,205,212,1,0]] },
+      { spr:"car_red_r", keys:[[0.5,335,212,1,0],[0.55,330,212,1,1],[0.85,295,212,1,1],[0.88,285,212,1,0]] },
       // Тени моста и опор на воде — смещаются с тем же течением, что и река.
       { spr:"shadow", keys:[[0,430,376,1,0.38],[1,-380,376,1,0.15]] },
       { spr:"shadow", keys:[[0,1130,384,1,0.3],[1,320,384,1,0.12]] },
-      // Гребец в жёлтой байдарке (как в игре), вид сбоку; два кадра гребли
-      // сменяются (cycle). Спрайт привязан нижним краем — это лопасть в воде,
-      // днище корпуса уходит под линию воды 344; покачивание ±2 px.
+      // Гребец в жёлтой байдарке (как в игре), вид сбоку; два кадра гребли.
       { spr:"kayak_man", cycle:{ per:16, spr:["kayak_man","kayak_man_b"] },
         keys:[[0,210,368,1,1],[0.5,210,370,1,1],[1,210,368,1,1]] }
     ] }
@@ -4048,6 +4084,7 @@ function drwCut(){
     cx.fillStyle = "#8f939b"; cx.fillRect(xf(118), yf(twY0), (344-118)*s, 1.5*s);   // кромка у здания
     cx.fillStyle = "#6f737a"; cx.fillRect(xf(118), yf(twY1-1), (344-118)*s, 1*s);     // кромка у перрона
     cx.fillStyle = "#2b2f34"; cx.fillRect(0, gy + 34*s, cw, 8*s);
+
     // Ж/д пути в нижней пустой зоне: 6 рядов путей (шпалы + рельсы), с зазором между колеями.
     // Балластный слой, светлые рельсы по краям, тёмные шпалы-бруски через шаг.
     // Между нижними путями (1-я y=412 и 2-я y=464) — полоса зелени с отступом.
@@ -4066,6 +4103,14 @@ function drwCut(){
       cx.fillRect(0, yy - wd/2 - 1*s, cw, rw.rs*s);                       // верхний рельс
       cx.fillRect(0, yy + wd/2, cw, rw.rs*s);                             // нижний рельс
     }
+    // Перрон у нижнего края: светлая плитка, жёлтая линия безопасности вдоль края путей, тень.
+    // Люди стоят на нём ногами (y≈410), поезд — позади на пути y=372.
+    cx.fillStyle = "#4a4f57"; cx.fillRect(0, yf(381), cw, 4*s);
+    cx.fillStyle = "#b9bcc4"; cx.fillRect(0, yf(385), cw, 44*s);
+    cx.fillStyle = "#e0b83a"; cx.fillRect(0, yf(386), cw, 3*s);
+    cx.fillStyle = "#a2a6af";
+    for (let p = 0; p < 460; p += 22) cx.fillRect(xf(p), yf(390), 2*s, 39*s);
+    cx.fillStyle = "#7a7e86"; cx.fillRect(0, yf(428), cw, 3*s);
   }
   for (const a of sc.actors){
     const st = cutState(a, g.cut.t);
