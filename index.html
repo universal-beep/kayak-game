@@ -9952,6 +9952,19 @@ function layoutSides(cssW, cssH, full){
 // Боковые зоны десктопа — продолжение картины уровня: тот же drwBg (трава с туманом к горизонту,
 // берега, деревья, привязанные к течению) на отдельном канвасе позади поля, только шире; на
 // старте и в меню — продолжение закатной сцены заставки. Сверху — погода уровня.
+// Фон открытого экрана меню (или null, если открыт только заплыв/заставка).
+const MENU_VEIL_IDS = ["continueScreen","pauseScreen","endScreen","mapScreen","finishScreen","failScreen","campScreen",
+                       "diaryScreen","recordsScreen","editScreen","customEnd","raceScreen"];
+function menuVeil(){
+  if (typeof document === "undefined" || typeof getComputedStyle !== "function") return null;
+  for (const id of MENU_VEIL_IDS){
+    const el = document.getElementById(id);
+    if (!el || !el.classList || el.classList.contains("hidden")) continue;
+    const c = getComputedStyle(el).backgroundColor;
+    if (c && c !== "transparent" && c !== "rgba(0, 0, 0, 0)") return c;
+  }
+  return null;
+}
 function drwSides(){
   // Десктоп: вся сцена одним проходом на холст во всё окно (rndrWide). Холст
   // поля тогда прозрачен — он остаётся только для касаний. Возвращает false,
@@ -9974,9 +9987,18 @@ function drwSides(){
   b.setTransform(k, 0, 0, k, ox, oy);
   rndrWide(b, -ext, W + extR);
   b.setTransform(1, 0, 0, 1, 0, 0);
-  // В меню — лёгкая вуаль, чтобы экран меню читался; в заплыве и на заставке — нет.
-  const veil = g.s === "playing" || g.s === "start" || g.s === "countdown" ? 0 : 0.22;
-  if (veil){ b.fillStyle = "rgba(4,10,20," + veil + ")"; b.fillRect(0, 0, IW, IH); }
+  // Открыт экран меню (пауза, итог, маршрут, лагерь, редактор, гонка…) — его фон
+  // на всё окно. Раньше экран затемнял только колонку поля, а бока оставались
+  // яркими — «чёрный экран только посередине».
+  const veil = menuVeil();
+  // Только вне колонки поля: над полем лежит сам экран с тем же фоном —
+  // вуаль под ним затемняла бы середину вдвое.
+  if (veil){
+    const fw = Math.floor(W*k), fh = Math.floor(H*k);
+    b.fillStyle = veil;
+    b.fillRect(0, 0, ox + 2, IH); b.fillRect(ox + fw - 2, 0, IW - ox - fw + 2, IH);   // +2 px внахлёст: без щели на округлении
+    b.fillRect(ox, 0, fw, oy); b.fillRect(ox, oy + fh, fw, IH - oy - fh);
+  }
   return true;
 }
 // ---- Панели ----
