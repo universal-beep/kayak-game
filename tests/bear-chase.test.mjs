@@ -43,7 +43,7 @@ test("погоня есть только на 8-м дне", () => {
 test("стоя на месте, лодку догоняют и кусают", () => {
   const K = start();
   K.G.hp = 3; K.G.inv = 0;
-  K.startBearChase(-1);
+  K.startBearChase(-1, true);
   let bitten = -1;
   for (let i = 0; i < K.BEAR_FRAMES && K.G.bc && bitten < 0; i++) {
     frame(K, false);
@@ -57,7 +57,7 @@ test("стоя на месте, лодку догоняют и кусают", ()
 test("рывками вперёд от медведя уходят: он отстаёт, очки идут", () => {
   const K = start();
   K.G.hp = 3; K.G.inv = 0;
-  K.startBearChase(1);
+  K.startBearChase(1, true);
   const before = K.G.bsc;
   let burst = true;
   for (let i = 0; i < K.BEAR_FRAMES + 260 && K.G.bc; i++) {
@@ -74,7 +74,7 @@ test("рывками вперёд от медведя уходят: он отс�
 
 test("медведь рисуется в кадре и за кадром без ошибок", () => {
   const K = start();
-  K.startBearChase(-1);
+  K.startBearChase(-1, true);
   assert.doesNotThrow(() => K.drwBearSwim());          // за нижним краем: знак тревоги
   K.G.bc.d = 30; K.G.bc.wy = K.G.pwy - 30;
   assert.doesNotThrow(() => K.drwBearSwim());          // рядом с лодкой
@@ -85,14 +85,14 @@ test("медведь рисуется в кадре и за кадром без 
 
 test("после переворота лодки погоня сброшена", () => {
   const K = start();
-  K.startBearChase(1);
+  K.startBearChase(1, true);
   K.loseAttempt();
   assert.equal(K.G.bc, null);
 });
 
 test("не догнал — вылезает на берег и машет лапой вслед, потом уходит", () => {
   const K = start();
-  K.startBearChase(1);
+  K.startBearChase(1, true);
   K.G.bc.age = K.BEAR_FRAMES;            // время вышло
   K.G.bc.d = 120;
   frame(K, false);
@@ -111,9 +111,43 @@ test("не догнал — вылезает на берег и машет ла�
 
 test("оторвался далеко — медведь бросает погоню сразу", () => {
   const K = start();
-  K.startBearChase(-1);
+  K.startBearChase(-1, true);
   K.G.bc.d = K.BEAR_QUIT;
   K.G.rowing = 1; K.G.btnFwd = true;
   K.bearStep(STEP);
   assert.equal(K.G.bc.state, "wave");
+});
+
+test("медведь сначала гуляет по берегу, у лодки прыгает в воду, ныряет и выныривает позади", () => {
+  const K = start();
+  assert.ok(K.startBearChase(), "нашлось место на берегу");
+  const bc = K.G.bc;
+  assert.equal(bc.state, "walk");
+  assert.ok(K.G.bev.includes(bc.ev) && bc.ev.type === "bear", "обычный житель берега, ходит по берегу");
+  // Далеко впереди — просто гуляет, погони нет.
+  bc.ev.wy = K.G.pwy + 600;
+  for (let i = 0; i < 30; i++) frame(K, false);
+  assert.equal(K.G.bc.state, "walk");
+  assert.equal(K.G.hp, 3);
+  // Лодка подплыла — прыгает: с берега пропал, под водой.
+  K.G.bc.ev.wy = K.G.pwy + K.BEAR_JUMP - 1;
+  frame(K, false);
+  assert.equal(K.G.bc.state, "dive");
+  assert.ok(bc.ev.dead, "с берега исчез");
+  assert.doesNotThrow(() => K.drwBearSwim());
+  // Нырнул — выныривает уже позади лодки, в погоне.
+  for (let i = 0; i < K.BEAR_DIVE + 2 && K.G.bc.state === "dive"; i++) frame(K, false);
+  assert.equal(K.G.bc.state, "swim");
+  assert.ok(K.G.bc.wy < K.G.pwy, "позади лодки");
+  assert.ok(K.G.bc.d > K.BEAR_BITE);
+  assert.equal(K.G.hp, 3, "нырок не кусает");
+});
+
+test("бродит по берегу, пока лодка далеко: за кадром без погони не ныряет", () => {
+  const K = start();
+  K.startBearChase();
+  K.G.bc.ev.wy = K.G.pwy + 5000;
+  for (let i = 0; i < 60; i++) frame(K, false);
+  assert.equal(K.G.bc.state, "walk");
+  assert.equal(K.G.bcIdx, 1);
 });

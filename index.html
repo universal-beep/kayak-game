@@ -7171,16 +7171,31 @@ function spFighter(){
 // медведь выходит на берег и машет лапой вслед (награда в очках).
 const BEAR_CLOSE = 0.12, BEAR_ROW = 0.18, BEAR_FRAMES = 420, BEAR_GRACE = 45;
 const BEAR_GAP0 = 90, BEAR_BITE = 30, BEAR_QUIT = 240, BEAR_WAVE = 170;
+const BEAR_JUMP = 150, BEAR_DIVE = 55;           // за сколько px до лодки прыгает; сколько кадров под водой
 function bearChaseDue(){
   const L = level();
   if (!L.bearChase || g.bc) return false;
   const f = L.bearChase[g.bcIdx | 0];
   return f !== undefined && g.dist >= L.len*f && g.dist < L.len - FIN_SPAWN_M - 40;
 }
-function startBearChase(side){
+// Сначала медведь гуляет по берегу впереди (обычный житель берега), у лодки
+// прыгает в воду, ныряет и выныривает позади — уже в погоне. direct — сразу
+// погоня (для проб). Вернёт false, если на берегу нет места: пробуем снова.
+function startBearChase(side, direct){
   side = side || (Math.random() < 0.5 ? -1 : 1);
-  g.bc = { d: BEAR_GAP0, wy: g.pwy - BEAR_GAP0, t: side*0.9, side, age: 0, state: "swim", fade: 0 };
+  if (direct){ bearEmerge({ side, age:0 }); return true; }
+  const wy = spawnWy();
+  const ev = { type:"bear", side: widerBevSide(wy, side), wy, off:26 + Math.random()*38,
+               phase: Math.random()*6.28, mode:"swim", variant:0, shape:0, chaser:true };
+  if (!placeBev(ev, 1)) return false;
+  g.bc = { state:"walk", ev, side: ev.side, age:0, d:0, wy:ev.wy, t:ev.side*0.95, fade:0 };
   g.bcIdx = (g.bcIdx | 0) + 1;
+  return true;
+}
+// Выныривает позади лодки со стороны своего берега и плывёт следом.
+function bearEmerge(b){
+  g.bc = { d: BEAR_GAP0, wy: g.pwy - BEAR_GAP0, t: b.side*0.9, side: b.side, age: 0, state: "swim", fade: 0 };
+  if (!(g.bcIdx > 0)) g.bcIdx = 1;
   sfx("growl");
   popText("МЕДВЕДЬ! ГРЕБИ ВПЕРЁД!", "#ff5252");
   explain("bear", "МЕДВЕДЬ быстрее течения. Уйти можно только греблей вперёд (стрелка вверх), но сил мало — рывками");
@@ -7200,6 +7215,23 @@ function bearStep(step){
   const b = g.bc;
   if (!b) return;
   b.age++;
+  if (b.state === "walk"){
+    // Гуляет по берегу; когда лодка почти поравнялась — прыгает в воду.
+    if (b.ev.dead || offScreen(b.ev.wy)){ g.bc = null; return; }
+    if (b.ev.wy - g.pwy <= BEAR_JUMP){
+      const bx = screenXOf(b.t, b.ev.wy), by = screenYOf(b.ev.wy);
+      spPt(bx, by, "#dff0fa", 28);
+      sfx("splash");
+      b.ev.dead = true;                                     // с берега исчез
+      b.state = "dive"; b.age = 0; b.wy = b.ev.wy;
+    }
+    return;
+  }
+  if (b.state === "dive"){
+    b.wy += step;                                           // круги на воде плывут с течением
+    if (b.age >= BEAR_DIVE) bearEmerge(b);
+    return;
+  }
   if (b.state === "gone"){ b.wy += step*0.6; if (--b.fade <= 0) g.bc = null; return; }
   if (b.state === "wave"){
     // Бежит вдоль берега чуть медленнее лодки, прижимаясь к кромке воды: отстаёт
@@ -7247,6 +7279,16 @@ function drwBearSwim(){
   const b = g.bc;
   if (!b) return;
   const x = screenXOf(b.t, b.wy), y = screenYOf(b.wy);
+  if (b.state === "walk") return;                 // идёт по берегу как обычный житель
+  if (b.state === "dive"){
+    const k = b.age/BEAR_DIVE;
+    cx.strokeStyle = "rgba(255,255,255," + (0.8 - k*0.5) + ")"; cx.lineWidth = 3;
+    for (let i = 0; i < 3; i++){
+      const r = 8 + k*30 + i*9;
+      cx.beginPath(); cx.ellipse(x, y, r, r*0.6, 0, 0, Math.PI*2); cx.stroke();
+    }
+    return;
+  }
   if (b.state === "wave"){ if (y > -40 && y < H + 40) drwBearWave(x, y, b.side); return; }
   if (y > H + 30){
     if (Math.floor(g.frame/10) % 2 === 0){
@@ -7476,6 +7518,8 @@ const DEBUG_SCENES = {
   cows:  { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   moose: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   village: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  bearswim: { wy: 420, side: 1 },     // медведь в воде позади лодки (?day=8&scene=bearswim)
+  bearwave: { wy: 420, side: -1 },    // медведь на берегу машет лапой (?day=8&scene=bearwave)
   cyclists: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   fisher: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   pier: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
@@ -7512,6 +7556,12 @@ function sceneAt(s){
     spawnCamp(tape);
     // Лента в верхней трети кадра (y≈150), лагерь под ней виден целиком.
     teleportTo(Math.max(0, tape - 120));
+  } else if (s === "bearswim" || s === "bearwave"){
+    const sd = DEBUG_SCENES[s].side;
+    teleportTo(DEBUG_SCENES[s].wy);
+    startBearChase(sd, true);
+    g.bc.d = 55; g.bc.age = 60; g.bc.wy = g.pwy - 55;
+    if (s === "bearwave"){ g.bc.age = BEAR_FRAMES; bearStep(0); g.bc.fade = 99999; }
   } else if (s === "camp"){
     // Центр лагеря по центру экрана.
     const tape = L.len * PX_PER_M - 150;
@@ -7942,7 +7992,7 @@ function upd(){
   tickStamina();
   axeStep();
   g.scroll += step;
-  if (bearChaseDue()) startBearChase();
+  if (bearChaseDue()) startBearChase();   // не нашлось места на берегу — повтор в следующем кадре
   bearStep(step);
   ensureSegments(g.scroll + H*2);
   while (g.segs.length > 40) g.segs.shift();
@@ -8775,7 +8825,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, fightsTotal, fightStep, spFighter, FIGHT_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, fightsTotal, fightStep, spFighter, FIGHT_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
