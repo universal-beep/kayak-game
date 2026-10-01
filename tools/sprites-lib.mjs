@@ -24,7 +24,7 @@ export const GROUPS = [
   ["Река: препятствия", ["log", "branch", "snag", "boulder", "fang", "slab", "mossy", "pebbles", "barge", "boat", "shallows"]],
   ["Бонусы", ["bread", "whisky", "medkit", "axe", "sun"]],
   ["Лодки", ["kayak_center", "kayak_left", "kayak_right", "rower", "rower_flip", "oar"]],
-  ["Берег и финиш: природа", ["tree", "sfir", "sbirch", "sbush", "bush", "bear", "bear_b", "duck", "duckfly0", "duckfly1", "fish"]],
+  ["Берег и финиш: природа", ["tree", "sfir", "sbirch", "sbush", "bush", "bear", "bear_b", "bear_swim", "bear_swim_b", "bear_wave", "bear_wave_b", "duck", "duckfly0", "duckfly1", "fish"]],
   ["Берег и финиш: люди и лагерь", ["person", "girl", "sitter", "guitarist", "guitarist_b", "night_guitar", "night_guitar_b", "note", "fisher", "tent", "tent2", "pack", "fire", "tower", "church", "house"]],
   ["Пляж", ["sunbather", "sunbather_f", "towel", "umbrella", "swimmer0", "swimmer1"]],
   ["Мосты", ["bridge", "truss", "deck", "pier", "shadow"]],

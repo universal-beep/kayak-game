@@ -69,6 +69,8 @@ const RULES = {
   tent2: "Купольная палатка.",
   pack: "Рюкзак у лагеря на финише.",
   boat: "Катер: идёт навстречу быстрее течения, за кормой клин волн, которые качают и толкают байдарку.",
+  bear_swim: "Медведь в погоне (день 8): выныривает позади лодки и плывёт следом; догоняет, пока не гребёшь вперёд.",
+  bear_wave: "Не догнал — вылезает на берег и машет лапой вслед; на правом берегу — отражённая копия.",
   bear: "Медведь бродит по берегу — на Медведице и Осуге, переступает лапами, всегда целиком на суше и в кадре.",
   night_guitar: "Гитарист ночного мульта: в профиль на чурбаке лицом к костру, бьёт по струнам.",
   church: "Церковь у места прибытия.",
@@ -94,6 +96,7 @@ function uniqueOf(L, R) {
   if (L.river === 1) u.push(["Цапля", ["heron", "heron_fly0"]], ["Велосипедисты", ["cyclist0", "cyclist1"]], ["Медведь", ["bear"]]);
   if (L.river === 2) u.push(["Лоси", ["moose", "moosecow", "moosecalf"]], ["Деревни", ["house"]]);
   if (L.river === 3) u.push(["Стадо с пастухом", ["cow", "bull", "calf", "cow_water", "shepherd", "shepherd_old", "shepherd_girl"]], ["Медведь", ["bear"]]);
+  if (L.bearChase) u.push(["Погоня медведя", ["bear_swim", "bear_wave"]]);
   if (L.rain) u.push(["Дождевики", ["person_rain", "kayak_center_rain"]]);
   if (L.barges) u.push(["Баржи", ["barge"]]);
   if (L.snags) u.push(["Коряги", ["snag"]]);
@@ -177,7 +180,7 @@ export function buildBook() {
     u.forEach(([, names]) => names.forEach(n => uniq.add(n)));
     return { L, R, u, f: features(L, R), pool: [...new Set(pools[L.river] || [])], info: dayInfo(K, levels.indexOf(L)) };
   });
-  const SKIP = new Set(["kayak_left", "kayak_right", "shallows", "guitarist_b", "bear_b", "night_guitar_b"]);
+  const SKIP = new Set(["kayak_left", "kayak_right", "shallows", "guitarist_b", "bear_b", "bear_swim_b", "bear_wave_b", "night_guitar_b"]);
   const commonGroups = data.groups.filter(g => g !== "Катсцены и прочее" && g !== "Мосты")
     .map(g => [g, Object.keys(data.sprites).filter(n => data.sprites[n].group === g && !uniq.has(n) && !SKIP.has(n))])
     .filter(([, n]) => n.length);
