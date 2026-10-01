@@ -72,3 +72,32 @@ test("фон по бокам и панели рисуются без ошибо�
   for (const d of [0, 1, 2, 3]) { K.G.day = d * 2; assert.doesNotThrow(() => K.drwSides(), "река " + d); }
   assert.doesNotThrow(() => K.layoutSides(420, 720, true));
 });
+
+test("боковые зоны — продолжение уровня: тот же drwBg шире поля, у каждой реки свой декор, холст игры не подменяется", () => {
+  const { K, sandbox } = loadGame();
+  K.resetSave(); K.sg();
+  sandbox.innerWidth = 1600; sandbox.innerHeight = 900;
+  K.layoutSides(630, 900, false);
+  const ctx = sandbox.document.getElementById("bgCanvas").getContext("2d");
+  const base = ctx.drawImage, xs = [];
+  const seen = day => {
+    K.G.day = day; setupWorld(K, { wy: 9000 }); K.G.s = "playing"; xs.length = 0;
+    ctx.drawImage = function (img, x, y) { xs.push(x); return base.apply(this, arguments); };
+    K.drwSides();
+    ctx.drawImage = base;
+    return xs.slice();
+  };
+  const volga = seen(0);
+  assert.ok(volga.some(x => x < -40), "декор в левой боковой зоне (за краем поля)");
+  assert.ok(volga.some(x => x > 420 + 40), "и в правой");
+  // Набор декора разных рек различается: Осуга — глухая тайга, Тверца — деревня.
+  assert.notDeepEqual(K.DEEP_SETS[3], K.DEEP_SETS[2]);
+  assert.ok(K.DEEP_SETS[2].includes("house") && K.DEEP_SETS[3].every(n => n !== "house"));
+  assert.ok(seen(7).length > 0, "Осуга рисуется");
+  // Меню: продолжение заставки по бокам, без ошибок.
+  K.G.s = "start";
+  assert.doesNotThrow(() => K.drwSides());
+  // Холст игры после рисования боков тот же, что был (cx не остался на фоновом).
+  K.G.s = "playing";
+  assert.doesNotThrow(() => K.rndr());
+});

@@ -282,7 +282,7 @@ canvas { display:block;margin:0 auto; }
 <aside id="panelL" class="side hidden"></aside>
 <aside id="panelR" class="side hidden"></aside>
 <script>
-const c=document.getElementById("game"),cx=c.getContext("2d");
+const c=document.getElementById("game"); let cx=c.getContext("2d"); const gameCx=cx;
 cx.imageSmoothingEnabled=false;
 const W=420,H=720;c.width=W;c.height=H;
 let cutFull=false;   // канвас на весь экран, пока идёт катсцена
@@ -5536,7 +5536,24 @@ function hsh(n){
   return (n >>> 0) / 4294967296;
 }
 
-function drwBg(){
+// Боковые зоны десктопа: шаг рядов вглубь и доля пустых мест, набор декора по рекам
+// (Волга — пляжи и берёзки, Медведица — ёлки и валуны, Тверца — деревня, Осуга — глухая тайга).
+const DEEP_DX = 58, DEEP_SKIP = [0.55, 0.35, 0.6, 0.25];
+const DEEP_SETS = [
+  ["sbirch","sbush","sbush","tree","sbirch","umbrella","tent2","banya","boulder","sbush"],
+  ["sfir","sfir","sfir","sbirch","sfir","sbush","boulder","mossy","sfir","pebbles"],
+  ["sbirch","tree","house","sbush","sbirch","tree","house","sbush","banya","sbirch"],
+  ["sfir","sfir","sfir","sfir","sbush","boulder","sfir","mossy","slab","sfir"]
+];
+function deepDecor(){
+  const r = Math.min(level().river, DEEP_SETS.length - 1);
+  // День 6 — Торжок: церкви чаще (в наборе Тверцы она одна из десяти).
+  return level().day === 6 && r === 2 ? DEEP_SETS[2].concat(["church", "church"]) : DEEP_SETS[r];
+}
+function drwBg(x0, x1){
+  // x0..x1 — какую часть по ширине закрасить: игровое поле 0…W или шире (боковые зоны десктопа).
+  const wide = x0 !== undefined;
+  if (!wide){ x0 = 0; x1 = W; }
   // Даль смазывается туманом: чем выше на экране (дальше по реке), тем сильнее
   // трава и вода светлеют к цвету неба. Так возникает мягкий горизонт без рамки,
   // и сцена читается как «плыву вперёд», а не «мотор вверх».
@@ -5560,8 +5577,8 @@ function drwBg(){
     const edge  = mixHex("#0d47a1", "#d8e9f5", fog);
 
     cx.fillStyle = grass;
-    cx.fillRect(0, y, Math.max(0, L), BAND);
-    cx.fillRect(Math.min(W, R), y, W - R, BAND);
+    cx.fillRect(x0, y, Math.max(0, L - x0), BAND);
+    cx.fillRect(Math.min(x1, R), y, x1 - R, BAND);
 
     cx.fillStyle = sand;
     cx.fillRect(L - 6, y, 6, BAND);
@@ -5610,8 +5627,8 @@ function drwBg(){
     const osugaDense = level().river === 3 && hsh(Math.floor(wy/900)*37 + 3) < 0.5;
     if (osugaDense){
       cx.fillStyle = "rgba(8,36,18,0.22)";
-      if (L > 3) cx.fillRect(0, y, L - 3, BAND);
-      if (R < W - 3) cx.fillRect(R + 3, y, W - R - 3, BAND);
+      if (L > x0 + 3) cx.fillRect(x0, y, L - 3 - x0, BAND);
+      if (R < x1 - 3) cx.fillRect(R + 3, y, x1 - R - 3, BAND);
     }
 
     // Береговой декор: кусты, деревья, камыш. Живут на травяных полосах,
@@ -5668,6 +5685,18 @@ function drwBg(){
           }
         } else if (vwx % 3 === 1 && s3 > 0.45){
           place("sfir", s2 > 0.5 ? 1 : -1, 30 + Math.floor(s1*30));
+        }
+      }
+      // Боковые зоны десктопа (wide): лес/деревня уходят вглубь за край поля, у каждой реки свой набор.
+      if (wide && vwx % 3 === 1) for (const side of [-1, 1]){
+        const reach = side < 0 ? -x0 : x1 - W;
+        for (let r = 0; r*DEEP_DX < reach + 20; r++){
+          const h = hsh(vwx*41 + r*13 + side*7), h2 = hsh(vwx*23 + r*29 + side*5);
+          if (h < DEEP_SKIP[level().river]) continue;
+          const list = deepDecor(), name = list[Math.floor(h2*list.length) % list.length], sz = spriteSize(name);
+          const x = side < 0 ? -(r*DEEP_DX) - 8 - h*14 : W + r*DEEP_DX + 8 + h*14;
+          if (x + sz.w/2 > L - 12 && x - sz.w/2 < R + 12) continue;       // не на воде
+          drawSprite(name, x, foot - sz.h/2);
         }
       }
       if (s1 > 0.30 && s1 < 0.44 && (wy % 22) < BAND){
@@ -9556,16 +9585,20 @@ function drawOrderOf(obs){
 // Заставка: рассвет над рекой, силуэты ёлок, байдарка покачивается на воде.
 // Рисуется, пока игра в состоянии «start»; кнопки — поверх, в DOM.
 let titleT = 0;
-function drwTitle(){
+function drwTitle(x0, x1){
+  // x0..x1 — ширина сцены: поле 0…W или шире (боковые зоны десктопа). Узор тот же, за краями повторяется.
+  const wide = x0 !== undefined;
+  if (!wide){ x0 = 0; x1 = W; } else titleT--;            // кадр считает только основной вызов
   titleT++;
   const hz = 330;                                         // линия горизонта
   const sky = cx.createLinearGradient(0, 0, 0, hz);
   sky.addColorStop(0, "#2b3a78"); sky.addColorStop(0.55, "#e0789a"); sky.addColorStop(1, "#ffc77a");
-  cx.fillStyle = sky; cx.fillRect(0, 0, W, hz);
+  cx.fillStyle = sky; cx.fillRect(x0, 0, x1 - x0, hz);
+  const m0 = Math.floor(x0/W), m1 = Math.floor((x1 - 1)/W);   // плитки шириной W, что захватывает сцена
   // Звёзды гаснут к горизонту.
   cx.fillStyle = "rgba(255,255,255,0.8)";
-  for (let i = 0; i < 26; i++){
-    const x = (i*97 + 13) % W, y = (i*53 + 7) % 150;
+  for (let m = m0; m <= m1; m++) for (let i = 0; i < 26; i++){
+    const x = (i*97 + 13) % W + m*W, y = (i*53 + 7) % 150;
     if ((titleT + i*11) % 90 < 70) cx.fillRect(x, y, 2, 2);
   }
   // Солнце: диск и кольца.
@@ -9575,33 +9608,34 @@ function drwTitle(){
   }
   // Два гребня дальних холмов.
   const ridge = (col, base, amp, f, ph) => {
-    cx.fillStyle = col; cx.beginPath(); cx.moveTo(0, hz);
-    for (let x = 0; x <= W; x += 14) cx.lineTo(x, base - amp*Math.sin(x*f + ph) - amp*0.5*Math.sin(x*f*2.3 + ph));
-    cx.lineTo(W, hz); cx.closePath(); cx.fill();
+    cx.fillStyle = col; cx.beginPath(); cx.moveTo(x0, hz);
+    for (let x = x0; x <= x1 + 14; x += 14) cx.lineTo(x, base - amp*Math.sin(x*f + ph) - amp*0.5*Math.sin(x*f*2.3 + ph));
+    cx.lineTo(x1 + 14, hz); cx.closePath(); cx.fill();
   };
   ridge("#6a4f86", hz - 26, 12, 0.012, 1.0);
   ridge("#3d3a6b", hz - 8,  10, 0.018, 2.4);
   // Ёлки на дальнем берегу.
-  for (let i = 0; i < 15; i++){
-    const nm = i % 4 === 3 ? "sbirch" : "sfir";
+  for (let i = Math.floor(x0/29) - 1; i*29 < x1 + 29; i++){
+    const nm = ((i % 4) + 4) % 4 === 3 ? "sbirch" : "sfir";
     const sz = spriteSize(nm);
-    if (sz) drawSprite(nm, 14 + i*29 + (i%2)*7, hz - sz.h/2 + 6);
+    if (sz) drawSprite(nm, 14 + i*29 + (((i % 2) + 2) % 2)*7, hz - sz.h/2 + 6);
   }
   // Вода.
   const wat = cx.createLinearGradient(0, hz, 0, H);
   wat.addColorStop(0, "#f2a77a"); wat.addColorStop(0.18, "#3f77b8"); wat.addColorStop(1, "#0d3f7a");
-  cx.fillStyle = wat; cx.fillRect(0, hz, W, H - hz);
+  cx.fillStyle = wat; cx.fillRect(x0, hz, x1 - x0, H - hz);
   // Солнечная дорожка и рябь: пиксельные полоски плывут к зрителю.
-  for (let i = 0; i < 34; i++){
+  for (let m = m0; m <= m1; m++) for (let i = 0; i < 34; i++){
     const k = ((i*0.137 + titleT*0.0016) % 1);
     const y = hz + 4 + k*k*(H - hz - 10);
-    const w = 10 + k*70, x = (i*79 % W);
+    const w = 10 + k*70, x = (i*79 % W) + m*W;
     cx.fillStyle = "rgba(255,240,190," + (0.55 - k*0.35) + ")";
     if (Math.abs(x - 300) < 110 + k*60) cx.fillRect(x - w/2, y, w, 2 + k*2);
     cx.fillStyle = "rgba(200,230,255," + (0.22 + k*0.18) + ")";
-    cx.fillRect((i*131 + titleT*0.6*(0.3 + k)) % (W + 80) - 40, y + 3, 14 + k*34, 2);
+    cx.fillRect((i*131 + titleT*0.6*(0.3 + k)) % (W + 80) - 40 + m*W, y + 3, 14 + k*34, 2);
   }
-    // Байдарка с гребцом (kayak_man, две фазы гребка): качается и чуть дрейфует.
+  if (wide) return;
+  // Байдарка с гребцом (kayak_man, две фазы гребка): качается и чуть дрейфует.
   const bob = Math.sin(titleT*0.05)*3, kx = 150 + Math.sin(titleT*0.012)*10, ky = 396 + bob;
   cx.fillStyle = "rgba(0,0,0,0.25)";
   cx.beginPath(); cx.ellipse(kx, ky + 42, 78, 7, 0, 0, Math.PI*2); cx.fill();
@@ -9688,8 +9722,9 @@ function layoutSides(cssW, cssH, full){
   }
   panelSig = "";                              // размеры поменялись — перерисовать панели
 }
-// Травяной фон по бокам: те же деревья, что на берегах реки; сдвигаются вниз вместе с течением.
-const SIDE_CELL = 74;
+// Боковые зоны десктопа — продолжение картины уровня: тот же drwBg (трава с туманом к горизонту,
+// берега, деревья, привязанные к течению) на отдельном канвасе позади поля, только шире; на
+// старте и в меню — продолжение закатной сцены заставки. Сверху — погода уровня.
 function drwSides(){
   if (typeof document === "undefined" || sideW < 8 || g.s === "cutscene") return;
   const bg = document.getElementById("bgCanvas");
@@ -9697,41 +9732,47 @@ function drwSides(){
   const b = bg.getContext("2d"), k = sideScale, IW = innerWidth, IH = innerHeight;
   const river = RIVERS[Math.min(level().river, RIVERS.length - 1)] || RIVERS[0];
   const grass = g.rGrass || river.grass;
+  b.setTransform(1, 0, 0, 1, 0, 0);
   b.imageSmoothingEnabled = false;
   b.fillStyle = grass;
   b.fillRect(0, 0, IW, IH);
-  // Пятна и пучки травы потемнее/посветлее — чтобы не было ровной заливки.
-  const move = (g.s === "playing" ? g.scroll : (nowMs()*0.03)) * k;
-  const cell = SIDE_CELL*k, rows = Math.ceil(IH/cell) + 2;
-  const names = river === RIVERS[0] ? ["sbirch","sbush","tree","sbirch","sbush"] :
-                river === RIVERS[1] ? ["sfir","sbirch","sfir","sbush","sfir"] :
-                river === RIVERS[2] ? ["sbirch","tree","sbush","sfir","sbirch"] : ["sfir","sfir","sbirch","sbush","sfir"];
-  const side = (x0, x1, seed) => {
-    for (let r = -1; r < rows; r++){
-      const wr = Math.floor((r*cell - move)/cell);                   // номер ряда в мире — сцена привязана к течению
-      const y0 = ((r*cell + move) % (rows*cell)) - cell;
-      for (let c = 0; (x0 + c*cell) < x1; c++){
-        const h = hsh(wr*131 + c*17 + seed), h2 = hsh(wr*37 + c*53 + seed*3);
-        const x = x0 + c*cell + (h - 0.5)*cell*0.5, y = y0 + (h2 - 0.5)*cell*0.5;
-        // Ближе к реке (краю поля) — реже и ниже кусты, дальше — густой лес.
-        const near = x1 === x0 ? 0 : Math.abs((x < IW/2 ? x1 : x0) - x)/(x1 - x0);
-        if (h < 0.18 + (1 - near)*0.2) continue;
-        const nm = names[Math.floor(h2*names.length) % names.length];
-        const sp = SPR[nm];
-        if (!sp || !sp.img) continue;
-        const w = sp.img.width*k, hh = sp.img.height*k;
-        b.fillStyle = "rgba(0,0,0,0.16)";
-        b.beginPath(); b.ellipse(x, y + hh*0.5, w*0.4, 5*k, 0, 0, Math.PI*2); b.fill();
-        b.drawImage(sp.img, Math.round(x - w/2), Math.round(y - hh/2), Math.round(w), Math.round(hh));
-      }
+  // Поле в окне: левый край и высота (канвас по центру); боковая зона в «игровых» пикселях.
+  const ox = sideW, oy = Math.max(0, Math.floor((IH - H*k)/2));
+  const ext = ox/k + 4, extR = (IW - ox - Math.floor(W*k))/k + 4;
+  b.setTransform(k, 0, 0, k, ox, oy);
+  cx = b;
+  try {
+    if (g.s === "start") drwTitle(-ext, W + extR);
+    else {
+      drwBg(-ext, W + extR);
+      sideWeather(b, -ext, W + extR);
     }
-  };
-  side(0, sideW, 1);
-  side(IW - sideW, IW, 2);
-  // Лёгкая вуаль: в заплыве почти нет (трава в одну краску с берегом поля), в меню — темнее.
-  const veil = g.s === "playing" ? 0.04 : 0.34;
-  b.fillStyle = "rgba(4,10,20," + veil + ")";
-  b.fillRect(0, 0, IW, IH);
+  } finally { cx = gameCx; }
+  b.setTransform(1, 0, 0, 1, 0, 0);
+  // В меню (не заплыв) — лёгкая вуаль, чтобы панели читались; в заплыве почти нет.
+  const veil = g.s === "playing" ? 0 : (g.s === "start" ? 0 : 0.22);
+  if (veil){ b.fillStyle = "rgba(4,10,20," + veil + ")"; b.fillRect(0, 0, IW, IH); }
+}
+// Дождь, дымка уровня по бокам — теми же формулами, что и на поле, но на всю ширину.
+function sideWeather(b, x0, x1){
+  const L = level(), r = L.rain || 0, wd = x1 - x0;
+  if (r){
+    b.fillStyle = "rgba(20,32,48," + (0.16*r).toFixed(2) + ")"; b.fillRect(x0, 0, wd, H);
+    b.strokeStyle = "rgba(200,225,255," + (0.35*r).toFixed(2) + ")"; b.lineWidth = 1;
+    const n = Math.round(70*r*wd/W);
+    for (let i = 0; i < n; i++){
+      const x = x0 + (i*137 + g.frame*7) % wd, y = (i*211 + g.frame*23) % H;
+      b.beginPath(); b.moveTo(x, y); b.lineTo(x - 3, y + 12); b.stroke();
+    }
+  }
+  const f = L.fog || 0;
+  if (f){
+    const gr = b.createLinearGradient(0, 0, 0, H*0.55);
+    gr.addColorStop(0, "rgba(218,226,231," + f.toFixed(2) + ")");
+    gr.addColorStop(0.5, "rgba(218,226,231," + (f*0.42).toFixed(2) + ")");
+    gr.addColorStop(1, "rgba(218,226,231,0)");
+    b.fillStyle = gr; b.fillRect(x0, 0, wd, H*0.55);
+  }
 }
 
 // ---- Панели ----
@@ -10154,7 +10195,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fogWarn, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, DEEP_SETS, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fogWarn, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
