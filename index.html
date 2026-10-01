@@ -4314,7 +4314,7 @@ const LEVELS = [
   { day:3, river:1, place:"СТОЯНКА В ЛЕСУ",     len:1000, goal:"shallowsmax", need:1,
     goalText:"Задеть не больше одной мели",  aggro:0.30, fights:[{at:0.12,n:1},{at:0.36,n:3,pack:true},{at:0.60,n:3,pack:true},{at:0.82,n:1}], forks:true, snags:true, arrive:"camp", dens:0.014 },
   { day:4, river:1, place:"ЛАГЕРЬ НА МЕДВЕДИЦЕ",len:1000, goal:"parries",     need:3,
-    goalText:"Парировать 3 удара веслом",    aggro:0.25, fights:[{at:0.20,n:3,pack:true},{at:0.50,n:1},{at:0.78,n:3,pack:true}], forks:true, snags:true, arrive:"camp", dens:0.016 },
+    goalText:"Парировать 3 удара веслом",    aggro:0.25, fights:[{at:0.15,n:2},{at:0.40,n:1},{at:0.62,n:2},{at:0.85,n:2}], forks:true, snags:true, arrive:"camp", dens:0.016 },
   { day:5, river:2, place:"ДЕРЕВНЯ",            len:1000, goal:"bridges",     need:4,
     goalText:"Пройти 4 моста в пролёт",      aggro:0.12, fights:[{at:0.45,n:1}], rain:0.55, bridges:true, arrive:"village", dens:0.017 },
   { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:1,
@@ -4324,7 +4324,7 @@ const LEVELS = [
   { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:20,
     goalText:"Набрать комбо 20",             aggro:0.10, fights:[{at:0.45,n:2}], fog:0.85, bearChase:[0.28, 0.70], arrive:"camp",   dens:0.018 },
   { day:9, river:3, place:"УСТЬЕ ОСУГИ",        len:1200, goal:"parries",     need:4,
-    goalText:"Парировать 4 удара веслом",    aggro:0.15, fights:[{at:0.12,n:1},{at:0.38,n:3,pack:true},{at:0.62,n:3,pack:true},{at:0.84,n:2,pack:true}], arrive:"camp",   dens:0.019 }
+    goalText:"Парировать 4 удара веслом",    aggro:0.15, fights:[{at:0.12,n:1},{at:0.38,n:3,pack:true},{at:0.62,n:3,pack:true},{at:0.84,n:2}], arrive:"camp",   dens:0.019 }
 ];
 
 // Свой уровень (редактор) подменяет день похода: g.custom — его описание.
@@ -4791,7 +4791,20 @@ function forkSuppress(w){
   }
   return k;
 }
-function widthRaw(w){ return baseWidthAt(w) * (1 - 0.38*rapidBlend(w)) * (1 - 0.22*finishGain(w)); }
+// Ватага злых гребцов идёт по расширенному руслу: трое в ряд на узкой реке
+// не разойдутся. Зона плавно расширяется до PACK_WIDEN и так же сужается.
+const PACK_WIDEN = 0.4, PACK_TAPER = 220;
+function packBlend(w){
+  let k = 0;
+  const zs = g.packZones;
+  if (zs) for (const z of zs){
+    const d = w < z.a ? z.a - w : w > z.b ? w - z.b : 0;
+    if (d >= PACK_TAPER) continue;
+    k = Math.max(k, d === 0 ? 1 : 0.5 + 0.5*Math.cos(Math.PI*d/PACK_TAPER));
+  }
+  return k;
+}
+function widthRaw(w){ return baseWidthAt(w) * (1 - 0.38*rapidBlend(w)) * (1 - 0.22*finishGain(w)) * (1 + PACK_WIDEN*packBlend(w)); }
 // У сцены на берегу русло сужается только С ЕЁ стороны (см. roomAt):
 // дальний берег стоит на месте, ближний отступает на недостающее.
 function widthAt(w){ return widthRaw(w) - roomAt(w).cut; }
@@ -7028,7 +7041,15 @@ function spBev(){
     if (!g.custom && level().day >= 2 && DOG_KINDS[ev.kind] && Math.random() < 0.7) ev.dog = mkDog(ev);
   }
   if (ty === "cyclists") ev.count = cyclistCount(ev);
-  if (placeBev(ev, 1)){ if (ty === "cows") cowsWade(ev); if (ty === "pier") pierBoat(ev); }
+  if (placeBev(ev, 1)){
+    if (ty === "cows") cowsWade(ev);
+    if (ty === "pier") pierBoat(ev);
+    // Сцена на берегу сужает русло (roomAt): если из-за этого рядом с камнем щель
+    // для лодки закрывается, сцену не ставим.
+    const reach = ROOM_FULL + ROOM_TAPER + 40;
+    if (!g.custom && g.obs.some(o => Math.abs(o.wy - ev.wy) < reach && gapFor(o, o.t) < PASS_MIN))
+      g.bev.splice(g.bev.indexOf(ev), 1);
+  }
   g.ned=g.dist+(22+Math.random()*38)*(volga ? 4 : 1);
 }
 // Одна-две коровы заходят в воду у берега пастуха: стоят близко к кромке
@@ -7293,6 +7314,78 @@ function chkCl(){
     if(Math.hypot(dx,dy)<kr+14){apBn(b);g.bns.splice(i,1);}
   }
 }
+/* ===== Страж проходимости ===== */
+// Препятствия, которые двигаются (бревно, ветка, соперник), после появления
+// сходятся с камнями и друг с другом, и на узкой реке щели не оставалось:
+// не пройти без потери сердца. Раньше проход проверялся только при появлении.
+// Теперь пока предмет в поле зрения, щель вокруг него не меньше PASS_MIN:
+// иначе он сдвигается в лучшее место, а если такого нет и его не видно — убирается.
+const PASS_MIN = 58, PASS_AHEAD = 170;
+// ahead — на сколько px вверх по реке заглядываем: неподвижное нагоняет подвижное сверху.
+function gapFor(o, t, ahead){
+  const vy = o.visHalfY || 24, vx = o.visHalf || 24;
+  let worst = Infinity;
+  for (let y = o.wy - vy; y <= o.wy + vy + (ahead || 0); y += 8){
+    const c = centerAt(y), hw = widthAt(y)/2, x0 = screenXOf(t, o.wy);
+    const iv = [[x0 - vx, x0 + vx]];
+    for (const q of g.obs){
+      if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0) continue;   // перевёрнутая лодка тонет и не мешает
+      if (Math.abs(q.wy - y) > (q.visHalfY || 24)) continue;
+      const x = screenXOf(q.t, q.wy), h = q.visHalf || 24;
+      iv.push([x - h, x + h]);
+    }
+    const sh = forkShape(y);
+    if (sh && sh.h > 0.02) iv.push([c + (sh.c - sh.h)*hw, c + (sh.c + sh.h)*hw]);
+    iv.sort((p, q) => p[0] - q[0]);
+    let at = c - hw, best = 0;
+    for (const [p, q] of iv){ best = Math.max(best, p - at); at = Math.max(at, q); }
+    worst = Math.min(worst, Math.max(best, c + hw - at));
+  }
+  return worst;
+}
+// Не лежит ли предмет в точке t поверх другого (такие «решения» отменяются: separate() всё равно растащит).
+function overlapsAny(o, t){
+  const x0 = screenXOf(t, o.wy);
+  for (const q of g.obs){
+    if (q === o || q.type === "barge" || q.type === "boat" || q.flipT > 0) continue;
+    if (Math.abs(q.wy - o.wy) > (q.visHalfY || 24) + (o.visHalfY || 24)) continue;
+    if (Math.abs(screenXOf(q.t, q.wy) - x0) < ((q.visHalf || 24) + (o.visHalf || 24))*0.85) return true;
+  }
+  return false;
+}
+function keepPassage(){
+  if (g.custom) return;                       // в своём уровне всё стоит как нарисовано
+  for (const o of g.obs.slice()){
+    const mobile = o.type === "log" || o.type === "branch" || (o.type === "kayaker" && !(o.flipT > 0));
+    const stat = o.type === "rock" || o.type === "snag" || o.type === "shallows";
+    if (!mobile && !stat) continue;
+    if (o.tied || o.cow) continue;
+    const sy = screenYOf(o.wy);
+    if (sy > g.py + 20 || sy < -330) continue;          // уже проплыли или ещё далеко
+    if (stat && sy > -40) continue;                      // видимое неподвижное не двигаем
+    const ahead = mobile ? PASS_AHEAD : 0;
+    if (gapFor(o, o.t, ahead) >= PASS_MIN) continue;
+    const hw = widthAt(o.wy)/2, lim = Math.max(0, Math.min(0.88, 1 - (o.visHalf || 20)/hw));
+    let best = null;
+    for (let k = 1; k <= 30 && best === null; k++)
+      for (const dir of [1, -1]){
+        const t = o.t + dir*k*0.04;
+        if (Math.abs(t) <= lim && !overlapsAny(o, t) && gapFor(o, t, ahead) >= PASS_MIN){ best = t; break; }
+      }
+    if (best !== null){
+      if (stat) o.t = best;                              // не видно — переставляем сразу
+      else { o.t += Math.max(-0.03, Math.min(0.03, best - o.t)); o.vt = 0; }
+    } else if (sy < -40){
+      g.obs.splice(g.obs.indexOf(o), 1);                // щели нет и его не видно — убираем
+    } else if (mobile && sy < g.py - 100){
+      // Щели нет, а предмет уже в кадре, но ещё далеко от лодки: тонет у всех на глазах.
+      spPt(screenXOf(o.t, o.wy), sy, "#cfe8f5", 22);
+      if (o.type === "kayaker"){ o.flipT = FLIP_FRAMES; o.aggro = false; o.swingT = -1; }
+      else g.obs.splice(g.obs.indexOf(o), 1);
+    }
+  }
+}
+
 /* ===== Дерущиеся байдарочники: расписание встреч ===== */
 // Злой гребец — главный «знакомый» персонаж. В день, когда он впервые встречается
 // (3-й), их много: игрок успевает разобраться с замахом и парированием. Дальше
@@ -7331,13 +7424,18 @@ function fightIntro(){
 // все они попадают в один экран, и по ширине русла вразнобой.
 const PACK_GAP = 150;
 function spPack(n){
-  const wy0 = spawnWy(), spanEnd = wy0 + (n - 1)*PACK_GAP;
+  // Ставим дальше обычного места появления: расширение русла начинается за кадром.
+  const wy0 = spawnWy() + 450, spanEnd = wy0 + (n - 1)*PACK_GAP;
+  if (rapidBlend(wy0 - PACK_TAPER) > 0.02 || rapidBlend(spanEnd + PACK_TAPER) > 0.02) return false;   // на пороге не выходят
   for (let w = wy0 - 100; w <= spanEnd + 100; w += 100) if (forkAt(w)) return false;
   for (const fk of g.forks) if (fk.end > wy0 - 100 && fk.start < spanEnd + 500) return false;
   if (g.obs.some(o => o.type === "kayaker" && o.aggro && o.wy > wy0 - 400)) return false;
   const vn = OB_SPRITE.kayaker, visHalf = spriteSize(vn).w/2, visHalfY = spriteSize(vn).h/2, halfPx = obHalfPx("kayaker", 18);
   const cols = [-0.55, 0.05, 0.55, -0.2].slice(0, n).sort(() => Math.random() - 0.5);
   const made = [];
+  const zone = { a: wy0 - 120, b: spanEnd + 200 };
+  g.packZones = (g.packZones || []).filter(z => z.b > g.scroll - 500);
+  g.packZones.push(zone);
   for (let i = 0; i < n; i++){
     const wy = wy0 + i*PACK_GAP, rw = widthAt(wy), lim = Math.max(0, 0.92 - 2*halfPx/rw);
     let t = null;
@@ -7345,7 +7443,7 @@ function spPack(n){
       const cand = Math.max(-lim, Math.min(lim, cols[i] + (a ? (Math.random() - 0.5)*0.5 : 0)));
       if (!inIsland(cand, wy) && spaceFree(cand, wy, visHalf) && leavesPassage(cand, wy, visHalf, visHalfY)) t = cand;
     }
-    if (t === null){ for (const o of made) g.obs.splice(g.obs.indexOf(o), 1); return false; }
+    if (t === null){ for (const o of made) g.obs.splice(g.obs.indexOf(o), 1); g.packZones.pop(); return false; }
     const o = { t, wy, type:"kayaker", size:18, halfPx, sprite:null, vt:0, visHalf, visHalfY,
                 variant:AGGRO_VARIANT, aggro:true, swingT:-1, seed:Math.floor(Math.random()*120) };
     g.obs.push(o); made.push(o);
@@ -7908,7 +8006,7 @@ function sg(){
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
-  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;
+  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;g.packZones=[];
   ensureSegments(H*2);
   const r = river();
   g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks; g.rFreq = r.freq || 1;
@@ -8449,6 +8547,7 @@ function upd(){
     for(const o of g.obs)
       if(o.type=="log"||o.type=="branch"||o.type=="kayaker")separate(o);
   for(const o of g.obs) pushOutOfIsland(o);
+  keepPassage();
   for(const b of g.bns) pushOutOfIsland(b);
   for(let i=g.bns.length-1;i>=0;i--)if(offScreen(g.bns[i].wy))g.bns.splice(i,1);
   for(let i=g.bev.length-1;i>=0;i--){
@@ -9075,7 +9174,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
