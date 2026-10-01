@@ -91,3 +91,57 @@ test("медведь на берегу бродит шире на десктоп
   assert.ok(wide > phone, "шире: " + Math.round(wide) + " против " + Math.round(phone));
   assert.ok(wide <= 260, "не дальше 260: " + Math.round(wide));
 });
+
+// Ещё живые сцены только для десктопа, по разным рекам: лоси щиплют траву
+// (Тверца, Осуга), грибники (Медведица, Осуга), охотник с собакой гонит
+// медведя (Медведица).
+test("новые сцены: спрайты и разнесены по рекам", () => {
+  const K = world(0);
+  for (const n of ["hunter", "hunter_b", "mushroomer", "mushroomer_b", "mushrooms", "bear_run", "bear_run_b"]) {
+    assert.ok(K.SPR[n], "нет " + n);
+    if (n !== "mushrooms") assert.ok(K.SPR[n + "_l"], "нет отражения " + n);
+  }
+  const names = r => K.FAR_SCENES[r].map(s => s.name);
+  assert.ok(names(1).includes("hunt") && names(1).includes("mushrooms"), "Медведица: " + names(1));
+  assert.ok(names(2).includes("moosegraze"), "Тверца: " + names(2));
+  assert.ok(names(3).includes("mushrooms") && names(3).includes("moose"), "Осуга: " + names(3));
+  for (let r = 0; r < 4; r++) for (const sc of K.FAR_SCENES[r]) for (const p of sc.parts) assert.ok(p.dx >= 140, sc.name + " у поля");
+});
+
+test("погоня: медведь впереди, собака за ним, охотник сзади; бегут, пока сцена проплывает", () => {
+  const K = world(2);
+  const hunt = K.FAR_SCENES[1].find(s => s.name === "hunt");
+  const a = K.farChase({ side: -1, parts: hunt.parts }, 100, 0), b = K.farChase({ side: -1, parts: hunt.parts }, 500, 0);
+  const dx = (r, spr) => r.find(p => p.spr.startsWith(spr)).dx;
+  for (const r of [a, b]) {
+    assert.ok(dx(r, "bear_run") < dx(r, "dog_run") && dx(r, "dog_run") < dx(r, "hunter"), "медведь ближе к реке, охотник дальше всех");
+    for (const p of r) assert.ok(p.dx >= 140, "только на десктопе");
+  }
+  assert.ok(dx(b, "bear_run") < dx(a, "bear_run"), "бегут к реке, пока сцена проплывает вниз");
+  const right = K.farChase({ side: 1, parts: hunt.parts }, 300, 0);
+  assert.ok(right.every(p => p.spr.endsWith("_l")), "на правом берегу бегут влево — отражены");
+  assert.notEqual(K.farChase({ side: -1, parts: hunt.parts }, 300, 0)[0].spr, K.farChase({ side: -1, parts: hunt.parts }, 300, 7)[0].spr, "лапы переступают");
+});
+
+test("грибница наклоняется к грибам", () => {
+  const K = world(2);
+  const s = new Set();
+  for (let f = 0; f < 400; f += 10) s.add(K.farPart({ spr: "mushroomer", dx: 200 }, 0, f).spr);
+  assert.ok(s.has("mushroomer") && s.has("mushroomer_b"));
+});
+
+test("грибники разные; сектанты у огня — только на 7-м дне и ходят по кругу", () => {
+  const K = world(6);
+  assert.equal(K.SPR.mushroomer.variants.length, 3, "три расцветки грибницы");
+  assert.ok(K.SPR.grandpa && K.SPR.grandpa_l, "дед-грибник");
+  const cultOn = d => { for (let s = 0; s < 6000; s++) { const sc = K.farScene(s, 3, d); if (sc && sc.name === "cult") return true; } return false; };
+  assert.equal(cultOn(7), true, "на 7-м дне есть");
+  for (const d of [8, 9]) assert.equal(cultOn(d), false, "на " + d + "-м нет");
+  const cult = K.FAR_SCENES[3].find(s => s.name === "cult");
+  const ring = cult.parts.filter(p => p.ring !== undefined);
+  assert.equal(ring.length, 5, "пятеро");
+  const a = K.farPart(ring[0], 1, 0), b = K.farPart(ring[0], 1, 300);
+  assert.ok(Math.abs(a.ox - b.ox) > 5 || Math.abs(a.dy - b.dy) > 3, "ходят по кругу");
+  const arms = new Set(); for (let f = 0; f < 320; f += 10) arms.add(K.farPart(ring[0], 1, f).spr);
+  assert.ok(arms.has("cultist") && arms.has("cultist_b"), "поднимают руки");
+});
