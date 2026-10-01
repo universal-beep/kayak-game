@@ -165,3 +165,15 @@ test("разбился в регате — экран «НЕ ДОШЛИ» без
   assert.equal(K.G.s, "customEnd");
   assert.equal(K.regattaResult(), null, "итога нет — не доплыл");
 });
+
+test("«ЕЩЁ РАЗ» после регаты — снова регата на той же трассе", () => {
+  const { K } = game();
+  const tr = K.REGATTA_TRACKS[3];
+  K.startRegatta(tr);
+  run(K);
+  assert.equal(K.G.s, "customEnd");
+  K.raceAgain();
+  assert.ok(K.G.custom.race.bots && K.G.custom.race.bots.length === 7, "снова 8 лодок");
+  assert.equal(K.G.custom.race.bots.track.id, tr.id, "та же трасса");
+  assert.equal(K.G.s, "countdown");
+});

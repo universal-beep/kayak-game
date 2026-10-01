@@ -10541,10 +10541,7 @@ function edSetLen(i){
   document.getElementById("edPlay").addEventListener("click", () => { startMusic(); saveCustom(); startCustom(); });
   document.getElementById("edBack").addEventListener("click", showStart);
   document.getElementById("startEditBtn").addEventListener("click", () => { startMusic(); showEditor(); });
-  document.getElementById("ceAgain").addEventListener("click", () => {
-    if (g.lastRace && g.custom && g.custom.race){ const lr = g.lastRace; startRace(lr.lvl, lr.ghost || g.myRun); }
-    else startCustom();
-  });
+  document.getElementById("ceAgain").addEventListener("click", raceAgain);
   document.getElementById("ceEdit").addEventListener("click", showEditor);
   document.getElementById("ceMenu").addEventListener("click", showStart);
 }
@@ -10894,6 +10891,15 @@ function showRaceInvite(id){
   });
 }
 
+// «ЕЩЁ РАЗ» на экране конца: регата — снова регата на той же трассе (раньше
+// запускалась гонка с призраком), гонка — та же река против призрака друга
+// или своего прошлого заезда, свой уровень — он же.
+function raceAgain(){
+  const R = raceOf();
+  if (R && R.bots){ startRegatta(R.bots.track); return; }
+  if (g.lastRace && R){ const lr = g.lastRace; startRace(lr.lvl, lr.ghost || g.myRun); return; }
+  startCustom();
+}
 /* ===== 12в. Регата: 8 лодок ===== */
 // Ты и семь ботов стартуете строем поперёк широкой реки. Боты — с
 // характерами: скорость (mul), как далеко видят (look), какой запас берут от
@@ -11097,7 +11103,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
