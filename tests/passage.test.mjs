@@ -27,20 +27,29 @@ test("бревно, догнавшее камень на узкой реке: щ
   assert.ok(K.gapFor(log, log.t) < K.PASS_MIN, "сначала проход закрыт");
   for (let i = 0; i < 80; i++) K.keepPassage();
   const alive = K.G.obs.includes(log);
-  assert.ok(!alive || log.sinkT > 0 || K.gapFor(log, log.t) >= K.PASS_MIN, "щель есть, бревно тонет или его нет");
+  assert.ok(!alive || K.gapFor(log, log.t) >= K.PASS_MIN, "щель есть или бревно ушло");
+  assert.ok(!(log.sinkT > 0), "бревна не тонут");
   assert.ok(K.G.obs.includes(rock), "камень остался");
 });
 
-test("соперник и мель без решения: далеко от лодки — переворачивается и тонет", () => {
+// Раньше соперник без щели сам переворачивался и тонул на виду — игрок
+// видел, что «чужие лодки исчезают сами». Теперь он налегает на вёсла и
+// проскакивает тесное место быстрее, а сам не тонет.
+test("соперник у мели без щели: не тонет, а проскакивает быстрее", () => {
   const K = world();
   K.G.scroll = 5000; K.G.pwy = 5000;
   ob(K, "shallows", -0.50, 5000 + 300, 51);
   const foe = ob(K, "kayaker", 0.30, 5000 + 300, 32);
   foe.variant = 0;
-  const burst0 = K.G.pts.length;
   K.keepPassage();
-  assert.ok(foe.flipT > 0 || !K.G.obs.includes(foe), "соперник не остался стеной");
-  assert.equal(K.G.pts.length, burst0, "без вспышки брызг: переворот тихий");
+  assert.ok(K.G.obs.includes(foe) && !(foe.flipT > 0), "на месте и не перевернулся");
+  assert.ok(foe.rushT > 0, "налегает на вёсла");
+  const wy0 = foe.wy;
+  K.G.s = "playing"; K.upd();
+  const fast = foe.wy - wy0;
+  const calm = ob(K, "kayaker", 0.0, 5000 - 900, 32), c0 = calm.wy;
+  K.G.s = "playing"; K.upd();
+  assert.ok(fast > (calm.wy - c0)*1.8, "идёт заметно быстрее спокойного: " + fast + " / " + (calm.wy - c0));
 });
 
 test("рядом с лодкой подвижное не убирают внезапно", () => {
@@ -94,19 +103,33 @@ test("тройки (pack) только на 3-м и 9-м днях", () => {
   });
 });
 
-test("бревно без решения далеко от лодки тонет медленно (не пропадает вспышкой)", () => {
+// Бревно, которому нет места, не тонет: ближний соперник откидывает его
+// веслом к своему берегу, и оно остаётся лежать у кромки.
+test("бревно без щели: соперник откидывает его веслом на берег", () => {
   const K = world();
   K.G.scroll = 5000; K.G.pwy = 5000;
   ob(K, "shallows", -0.50, 5000 + 300, 51);
   const log = ob(K, "log", 0.30, 5000 + 300, 39);
-  const burst0 = K.G.pts.length;
+  const foe = ob(K, "kayaker", 0.0, 5000 + 420, 32);
   K.keepPassage();
-  assert.ok(log.sinkT > 0, "начало тонуть");
-  assert.equal(K.G.pts.length, burst0, "без частиц");
-  const left = log.sinkT;
-  assert.ok(K.G.obs.includes(log), "ещё на месте, исчезает постепенно");
-  for (let i = 0; i < left + 2; i++) { K.G.s = "playing"; K.upd(); }
-  assert.ok(!K.G.obs.includes(log), "утонуло");
+  assert.ok(!K.G.obs.includes(log), "из воды убрано — проход свободен");
+  assert.ok(!(log.sinkT > 0), "не тонет");
+  const a = K.G.ashore.find(e => e.o === log);
+  assert.ok(a, "лежит у берега");
+  assert.ok(a.t1 > 0.8, "к ближнему берегу (правому): " + a.t1);
+  assert.ok(foe.pokeT > 0 && foe.pokeAt === a, "соперник ткнул веслом");
+  for (let i = 0; i < 60; i++) { K.G.s = "playing"; K.upd(); }
+  assert.ok(K.G.ashore.includes(a) && a.k >= 1, "доехало до кромки и лежит");
+  assert.ok(K.G.obs.includes(foe) && !(foe.flipT > 0), "соперник цел");
+});
+
+test("бревно без щели и без соперников рядом — прибивает к берегу, а не топит", () => {
+  const K = world();
+  K.G.scroll = 5000; K.G.pwy = 5000;
+  ob(K, "shallows", -0.50, 5000 + 300, 51);
+  const log = ob(K, "log", 0.30, 5000 + 300, 39);
+  K.keepPassage();
+  assert.ok(!K.G.obs.includes(log) && K.G.ashore.some(e => e.o === log), "на берегу");
 });
 
 test("новый камень не ставится туда, куда придёт плывущее бревно и закроет проход", () => {
