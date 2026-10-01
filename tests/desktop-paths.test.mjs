@@ -108,19 +108,31 @@ test("новые сцены: спрайты и разнесены по река�
   for (let r = 0; r < 4; r++) for (const sc of K.FAR_SCENES[r]) for (const p of sc.parts) assert.ok(p.dx >= 140, sc.name + " у поля");
 });
 
-test("погоня: медведь впереди, собака за ним, охотник сзади; бегут, пока сцена проплывает", () => {
+// Погоня с историей (по мере того, как сцена проплывает через экран, p 0→1):
+// охотник с собакой идут от реки вглубь, медведь стоит далеко; собака чует —
+// стоп и «!»; медведь удирает за край окна, собака и охотник — за ним, тоже
+// за край. Медведь заметно впереди собаки.
+test("погоня: прогулка → собака чует → медведь удирает за край, они за ним", () => {
   const K = world(2);
   const hunt = K.FAR_SCENES[1].find(s => s.name === "hunt");
-  const a = K.farChase({ side: -1, parts: hunt.parts }, 100, 0), b = K.farChase({ side: -1, parts: hunt.parts }, 500, 0);
-  const dx = (r, spr) => r.find(p => p.spr.startsWith(spr)).dx;
-  for (const r of [a, b]) {
-    assert.ok(dx(r, "bear_run") < dx(r, "dog_run") && dx(r, "dog_run") < dx(r, "hunter"), "медведь ближе к реке, охотник дальше всех");
-    for (const p of r) assert.ok(p.dx >= 140, "только на десктопе");
-  }
-  assert.ok(dx(b, "bear_run") < dx(a, "bear_run"), "бегут к реке, пока сцена проплывает вниз");
-  const right = K.farChase({ side: 1, parts: hunt.parts }, 300, 0);
-  assert.ok(right.every(p => p.spr.endsWith("_l")), "на правом берегу бегут влево — отражены");
-  assert.notEqual(K.farChase({ side: -1, parts: hunt.parts }, 300, 0)[0].spr, K.farChase({ side: -1, parts: hunt.parts }, 300, 7)[0].spr, "лапы переступают");
+  const at = (p, side = -1, f = 0) => {
+    const sy = p*(K.H + 240) - 120;
+    const r = K.farChase({ side, parts: hunt.parts }, sy, f);
+    const one = spr => r.find(q => q.spr.startsWith(spr));
+    return { r, bear: one("bear"), dog: one("dog"), hunter: one("hunter") };
+  };
+  const walk = at(0.15), walk2 = at(0.35), sniff = at(0.47), run = at(0.75), end = at(1);
+  assert.ok(walk.dog.dx > walk.hunter.dx, "собака впереди охотника");
+  assert.ok(walk.bear.dx - walk.dog.dx >= 120, "медведь далеко");
+  assert.ok(walk2.hunter.dx > walk.hunter.dx, "идут вглубь");
+  assert.ok(sniff.dog.mark, "собака почуяла — «!»");
+  assert.ok(run.bear.dx - run.dog.dx >= 150, "медведь заметно впереди собаки: " + Math.round(run.bear.dx - run.dog.dx));
+  assert.ok(run.bear.dx > sniff.bear.dx && run.dog.dx > sniff.dog.dx, "бегут");
+  for (const q of end.r) assert.ok(q.dx > 650, q.spr + " убежал за край: " + Math.round(q.dx));
+  for (const q of walk.r.concat(run.r)) assert.ok(q.dx >= 140, "только на десктопе");
+  assert.ok(run.r.every(q => q.spr.endsWith("_l")), "на левом берегу бегут влево (вглубь) — отражены");
+  assert.ok(at(0.75, 1).r.every(q => !q.spr.endsWith("_l")), "на правом — вправо");
+  assert.notEqual(at(0.75, -1, 0).dog.spr, at(0.75, -1, 5).dog.spr, "лапы переступают");
 });
 
 test("грибница наклоняется к грибам", () => {

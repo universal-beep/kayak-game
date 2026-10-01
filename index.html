@@ -5903,7 +5903,8 @@ function nearRoad(swy, h){
 // постоянный, примерно одна сцена на полтора экрана.
 const FAR_SCENES = [
   [ { name:"dacha", parts:[{ spr:"house", dx:180 }, { spr:"banya", dx:250, dy:-14 }, { spr:"person", dx:216, dy:-34, v:2 }] },
-    { name:"beach", parts:[{ spr:"umbrella", dx:170 }, { spr:"sunbather", dx:204, dy:-8 }, { spr:"towel", dx:240, dy:-4 }] } ],
+    // Загорающие — на песке у воды (житель «пляж»), а не на траве в лесу.
+    { name:"camp", parts:[{ spr:"tent2", dx:172 }, { spr:"fire", dx:214, dy:-10 }, { spr:"sitter", dx:238, dy:-6 }] } ],
   [ { name:"bear",  parts:[{ spr:"bear", dx:200 }] },
     { name:"camp",  parts:[{ spr:"tent2", dx:170 }, { spr:"fire", dx:212, dy:-10 }, { spr:"sitter", dx:236, dy:-6 }] },
     { name:"hunt", chase:true, parts:[{ spr:"bear_run", dx:150 }, { spr:"dog_run", dx:210, dy:-4 }, { spr:"hunter", dx:262, dy:2 }] },
@@ -5928,16 +5929,34 @@ function farScene(slot, river, day){
   for (const c of set){ pick -= c.w || 1; if (pick < 0){ sc = c; break; } }
   return { name: sc.name, side: hsh(slot*31 + 3) < 0.5 ? -1 : 1, parts: sc.parts, chase: !!sc.chase };
 }
-// Погоня: медведь, собака, охотник бегут к реке, пока сцена проплывает мимо
-// (sy — экранная высота сцены): сверху они далеко в поле, внизу — у опушки.
-// Лапы переступают; на правом берегу бегут влево — отражены.
+// Погоня с историей. p — сколько сцена прошла через экран (0 — вошла сверху,
+// 1 — ушла вниз), около пяти секунд. Сначала охотник с собакой идут от реки
+// вглубь, медведь стоит далеко и смотрит на них; собака чует — стоп и «!»;
+// медведь удирает за край окна, собака и охотник — за ним и тоже за край.
+// dx — от края поля вглубь; «вглубь» на левом берегу — влево (отражены).
+const HUNT_WALK = 0.4, HUNT_SNIFF = 0.55;
 function farChase(fs, sy, f){
-  const p = Math.max(0, Math.min(1, (sy + 120)/(H + 240))), shift = (1 - p)*300;
-  return fs.parts.map((q, i) => {
-    let spr = q.spr + (Math.floor((f + i*3)/6) % 2 ? "_b" : "");
-    if (fs.side > 0) spr += "_l";
-    return { spr, dx: q.dx + shift, dy: (q.dy || 0) + Math.abs(Math.sin(f*0.35 + i))*2 };
-  });
+  const p = Math.max(0, Math.min(1, (sy + 120)/(H + 240)));
+  const out = fs.side < 0 ? "_l" : "";                 // бегут вглубь
+  const toRiver = fs.side < 0 ? "" : "_l";             // медведь до бегства смотрит на них
+  const w = Math.min(p, HUNT_WALK)/HUNT_WALK;          // доля прогулки
+  const c = p < HUNT_SNIFF ? 0 : (p - HUNT_SNIFF)/(1 - HUNT_SNIFF);   // доля погони
+  const step = (n, per) => Math.floor((f + n)/per) % 2 ? "_b" : "";
+  let hunter = 150 + w*70, dog = 186 + w*70, bear = 380;
+  const items = [];
+  if (c > 0){
+    bear += c*(c < 0.5 ? 2 : 1)*520 + (c >= 0.5 ? 260 : 0);    // удирает быстрее всех
+    dog += c*560; hunter += c*500;
+    items.push({ spr: "bear_run" + step(0, 5) + out, dx: bear, dy: 0 });
+    items.push({ spr: "dog_run" + step(2, 5) + out, dx: dog, dy: -4 });
+    items.push({ spr: "hunter" + step(4, 6) + out, dx: hunter, dy: 2 });
+  } else {
+    const walking = p < HUNT_WALK;
+    items.push({ spr: "bear_run" + toRiver, dx: bear, dy: 0 });
+    items.push({ spr: "dog_run" + (walking ? step(2, 10) : "") + out, dx: dog, dy: -4, mark: !walking });
+    items.push({ spr: "hunter" + (walking ? step(4, 12) : "") + out, dx: hunter, dy: 2 });
+  }
+  return items;
 }
 // Дальние сцены живые: коровы и лоси щиплют траву (кадр с опущенной головой),
 // медведь бродит, люди чуть покачиваются, над костром идёт дым. i — номер
@@ -6008,10 +6027,32 @@ function rndrWide(ctx, x0, x1){
   cx = ctx;
   try { withView(x0, x1, rndr); } finally { cx = c0; }
 }
+// Части дальних сцен копятся за проход фона и рисуются после него: фон
+// идёт полосами сверху вниз, и фигуру ниже своей полосы следующие полосы
+// травы закрашивали (у человечка на даче оставалась одна голова).
+let farQueue = [];
+function drwFarQueue(x0, x1){
+  farQueue.sort((a, b) => b.pw - a.pw);              // дальше (выше по течению) — раньше
+  for (const a of farQueue){
+    const sz = spriteSize(a.spr), x = a.x, pw = a.pw;
+    if (x + sz.w/2 < x0 - 10 || x - sz.w/2 > x1 + 10 || nearRoad(pw, sz.h) || onCycRoad(x, pw, sz.w/2)) continue;
+    const yy = screenYOf(pw) - sz.h/2 + a.oy;
+    drawSprite(a.spr, x, yy, a.v);
+    if (a.mark){ cx.fillStyle = "#ffd54f"; cx.font = "10px " + F; cx.textAlign = "center"; cx.fillText("!", x, yy - sz.h/2 - 4); cx.textAlign = "left"; }
+    if (a.smoke) for (let k = 0; k < 3; k++){              // дым клубами вверх
+      const q = (g.frame*0.5 + k*33) % 100;
+      cx.fillStyle = "rgba(200,200,195," + (0.45*(1 - q/100)).toFixed(2) + ")";
+      const rr = 3 + q*0.07;
+      cx.fillRect(Math.round(x - rr + Math.sin(q*0.07 + k)*4), Math.round(yy - sz.h/2 - q*0.6), Math.round(rr*2), Math.round(rr*2));
+    }
+  }
+  farQueue = [];
+}
 function drwBg(x0, x1){
   // x0..x1 — какую часть по ширине закрасить; по умолчанию — видимая ширина сцены.
   if (x0 === undefined){ x0 = VX0; x1 = VX1; }
   const wide = x0 < 0 || x1 > W;
+  farQueue = [];
   // Даль смазывается туманом: чем выше на экране (дальше по реке), тем сильнее
   // трава и вода светлеют к цвету неба. Так возникает мягкий горизонт без рамки,
   // и сцена читается как «плыву вперёд», а не «мотор вверх».
@@ -6164,22 +6205,10 @@ function drwBg(x0, x1){
       if (wide){
         const fs = farScene(vwx, level().river);
         const items = !fs ? [] : fs.chase
-          ? farChase(fs, screenYOf(swy), g.frame).map(q => ({ spr: q.spr, x: fs.side < 0 ? -q.dx : W + q.dx, pw: swy + q.dy, oy: 0 }))
+          ? farChase(fs, screenYOf(swy), g.frame).map(q => ({ spr: q.spr, x: fs.side < 0 ? -q.dx : W + q.dx, pw: swy + q.dy, oy: 0, mark: q.mark }))
           : fs.parts.map((p, i) => { const a = farPart(p, i, g.frame);
               return { spr: a.spr, x: (fs.side < 0 ? -p.dx : W + p.dx) + a.ox, pw: swy + (p.dy || 0) + (a.dy || 0), oy: a.oy, v: p.v, smoke: a.smoke }; });
-        items.sort((a, b) => b.pw - a.pw);               // дальше (выше по течению) — раньше
-        for (const a of items){
-          const sz = spriteSize(a.spr), x = a.x, pw = a.pw;
-          if (x + sz.w/2 < x0 - 10 || x - sz.w/2 > x1 + 10 || nearRoad(pw, sz.h) || onCycRoad(x, pw, sz.w/2)) continue;
-          const yy = screenYOf(pw) - sz.h/2 + a.oy;
-          drawSprite(a.spr, x, yy, a.v);
-          if (a.smoke) for (let k = 0; k < 3; k++){              // дым клубами вверх
-            const q = (g.frame*0.5 + k*33) % 100;
-            cx.fillStyle = "rgba(200,200,195," + (0.45*(1 - q/100)).toFixed(2) + ")";
-            const rr = 3 + q*0.07;
-            cx.fillRect(Math.round(x - rr + Math.sin(q*0.07 + k)*4), Math.round(yy - sz.h/2 - q*0.6), Math.round(rr*2), Math.round(rr*2));
-          }
-        }
+        farQueue.push(...items);                          // рисуются после фона
       }
       if (s1 > 0.30 && s1 < 0.44 && (wy % 22) < BAND){
         cx.fillStyle = "#4d6b35";
@@ -6188,6 +6217,7 @@ function drwBg(x0, x1){
       cx.globalAlpha = 1;
     }
   }
+  drwFarQueue(x0, x1);
 }
 // Соответствие внутренних типов препятствий именам спрайтов.
 const OB_SPRITE = { boat:"boat", log:"log", shallows:"shallows", kayaker:"rower", snag:"snag", branch:"branch", barge:"barge" };
@@ -6711,7 +6741,10 @@ function drwBev(e){
     const cyc = (g.frame*0.6 + ph*120) % 900;
     if (cyc < 300){                            // подходят к палатке
       const k = cyc/300;
-      const fromX = bx + e.side*70;
+      // Подходят из-за края видимой сцены: на десктопе она шире, и из точки в
+      // 70 px от палатки пара возникала посреди луга «из воздуха».
+      const edgeX = e.side < 0 ? VX0 - 30 : VX1 + 30;
+      const fromX = bx + e.side*Math.max(70, Math.abs(edgeX - bx));
       drawSprite("person", fromX + (bx - fromX)*k - 12, by + 4, 0);
       // Вторая в паре — девушка (длинные волосы, сарафан; через раз блондинка).
       drawSprite("girl", fromX + (bx - fromX)*k + 12, by + 4, Math.floor(ph*3) % 2);
@@ -8255,10 +8288,12 @@ function spawnCamp(wy){
 // Пулы береговых сцен по рекам. Каждая река — свой характер:
 // Волга людная и пляжная, лесные реки — дикие. Индекс — номер реки.
 const BEV_POOLS = [
-  ["beach","beach","guitar","guitar","camp","fire","ducks","fisher","pier","bush","tree"],
-  ["bear","camp","fire","heron","fisher","cyclists","banya","bush","tree","tree"],
+  // Пляжей на Волге было 2 из 11 — за день (жителей на Волге всего ~9) выходил
+  // один или ни одного. Волга — пляжная река: 6 из 15, около трёх за день.
+  ["beach","beach","beach","beach","beach","beach","guitar","guitar","camp","fire","ducks","fisher","pier","bush","tree"],
+  ["bear","camp","fire","heron","fisher","cyclists","banya","beach","bush","tree","tree"],
   ["moose","camp","fire","ducks","fisher","pier","bush","tree","tree"],
-  ["bear","camp","fire","ducks","fisher","cows","cows","banya","bush","tree","tree"]
+  ["bear","camp","fire","ducks","fisher","cows","cows","banya","beach","bush","tree","tree"]
 ];
 
 // Волга — большая вода: жителей на её узких берегах вчетверо реже, и
@@ -8268,7 +8303,10 @@ function spBev(){
   const volga = level().river === 0;
   const pool = BEV_POOLS[level().river] || BEV_POOLS[0];
   const ty = pool[Math.floor(Math.random()*pool.length)];
-  const wy = spawnWy() + (volga ? BEV_AHEAD : 0);
+  // Велодорога тянется на CYC_REACH вниз от своей точки: точку ставим так
+  // далеко впереди, чтобы вся дорога появилась за верхним краем, а не
+  // «накрыла ковром» уже видимый берег.
+  const wy = spawnWy() + (volga ? BEV_AHEAD : 0) + (ty === "cyclists" ? CYC_REACH : 0);
   // Сцена кладётся на БОЛЕЕ ШИРОКИЙ берег (widerBevSide): там спрайт и группа
   // помещаются целиком. Раньше случайная сторона давала сцены, которые на узкой
   // полосе суши резались краем кадра.
@@ -10261,7 +10299,7 @@ function rndr(){
   drwAxeFly();drwWind();drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();drwRaceHud();drwCountdown();
   if (g.whiskyT > 0){
     cx.strokeStyle = "rgba(232,168,56," + (0.30 + Math.sin(g.frame*0.15)*0.08) + ")";
-    cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
+    cx.lineWidth = 10; cx.strokeRect(VX0 + 5, 5, VX1 - VX0 - 10, H - 10);   // по краю видимой сцены
   }
 }
 // Сколько кадров симуляции нужно отыграть за dtMs реального времени.
@@ -11481,7 +11519,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
