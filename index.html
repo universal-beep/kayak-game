@@ -20,6 +20,18 @@
 * { margin:0;padding:0;box-sizing:border-box; }
 html,body { width:100%;height:100%;background:#1a1a2e;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none; }
 canvas { display:block;margin:0 auto; }
+#bgCanvas { position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:0;margin:0;image-rendering:pixelated; }
+#game { position:relative;z-index:1; }
+#ui { z-index:2; }
+.side { position:fixed;top:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:8px;padding:12px 10px;overflow:hidden;pointer-events:none;font-family:"Press Start 2P",monospace;font-size:8px;line-height:1.8;color:#cfe8f5; }
+.side .sp { background:rgba(8,16,26,0.80);border:2px solid #2c5f86;border-radius:6px;padding:9px 10px; }
+.side h3 { font-size:9px;color:#4fc3f7;font-weight:normal;margin-bottom:5px;letter-spacing:1px; }
+.side .dim { color:#8aa0ad; } .side .gp { color:#7fd67f;font-size:9px; }
+.side .bar { height:7px;background:rgba(255,255,255,0.12);margin:6px 0 3px; } .side .bar i { display:block;height:100%;background:#7fd67f; }
+.side .rt { display:flex;justify-content:space-between;padding:1px 3px; } .side .rt.cur { background:rgba(79,195,247,0.22);color:#fff; } .side .rt.off { color:#52636e; }
+.side .rt u { text-decoration:none;color:#33424d; } .side .rt span:last-child { font-family:sans-serif;font-size:10px;color:#ffd54f; }
+.side .bn { display:flex;align-items:center;gap:7px;margin:3px 0; } .side .bn canvas { flex:none;margin:0;image-rendering:pixelated; }
+.side .brow { padding:2px 3px;line-height:1.7; } .side .board { width:auto;max-width:none; }
 #ui { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none; }
 #mapScreen,#finishScreen,#failScreen,#diaryScreen,#campScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 .maph { font-family:"Press Start 2P",monospace;font-size:16px;color:#4fc3f7;margin-bottom:10px;letter-spacing:3px; }
@@ -265,13 +277,16 @@ canvas { display:block;margin:0 auto; }
   <div><b>ДВОЙНОЙ ТАП</b> — УДАР ВЕСЛОМ</div>
 </div>
 <div id="pauseBtn" class="hidden">II</div>
+<canvas id="bgCanvas"></canvas>
 <canvas id="game"></canvas>
+<aside id="panelL" class="side hidden"></aside>
+<aside id="panelR" class="side hidden"></aside>
 <script>
 const c=document.getElementById("game"),cx=c.getContext("2d");
 cx.imageSmoothingEnabled=false;
 const W=420,H=720;c.width=W;c.height=H;
 let cutFull=false;   // канвас на весь экран, пока идёт катсцена
-function rs(){if(cutFull){c.width=innerWidth;c.height=innerHeight;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px";return;}const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.width=W;c.height=H;c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";}
+function rs(){if(cutFull){c.width=innerWidth;c.height=innerHeight;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px";if(typeof layoutSides==="function")layoutSides(innerWidth,innerHeight,true);return;}const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.width=W;c.height=H;c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";if(typeof layoutSides==="function")layoutSides(Math.floor(W*s),Math.floor(H*s),false);}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
 const g={weeds:[],waves:[],s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,strikeT:0,taughtParry:false,vestUsed:false,bridgeCinema:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,df:1,pa:0,
@@ -9377,6 +9392,172 @@ function rndr(){
 // Чистая функция (состояние аккумулятора acc передаётся/возвращается) — её
 // держат тесты. Аккумулятор копит доли кадра: на 30fps экрана одним тиком
 // в 33.3мс отыгрывается ровно 2 шага симуляции.
+/* ===== Десктоп: берега по бокам и боковые панели ===== */
+// На широком экране игра (420×720) остаётся по центру, а по бокам берега продолжаются
+// на всю ширину окна (та же трава и деревья реки, едут вместе с течением), поверх
+// них — две панели: слева ход похода (день, цель и её счёт, маршрут по девяти
+// дням, справка о месте), справа таблица дня, бонусы и управление. На узком экране
+// (телефон) панелей нет, всё как раньше.
+var PANEL_MAX = 380;
+var PANEL_MIN_SIDE = 200;                    // уже — панелей нет (var: rs() вызывается раньше этого места)
+// Раскладка: размер поля в CSS-пикселях и ширина боковой полосы с каждой стороны.
+function sideLayout(innerW, innerH, gw, gh){
+  const s = Math.min(innerW/gw, innerH/gh);
+  const cssW = Math.floor(gw*s), cssH = Math.floor(gh*s);
+  const side = Math.max(0, Math.floor((innerW - cssW)/2));
+  return { s, cssW, cssH, side, panels: side >= PANEL_MIN_SIDE };
+}
+var sideW = 0, sideScale = 1, panelsOn = false;
+function layoutSides(cssW, cssH, full){
+  if (typeof document === "undefined") return;
+  const lay = full ? { side:0, panels:false, s:1 } : sideLayout(innerWidth, innerHeight, W, H);
+  sideW = lay.side; sideScale = lay.s; panelsOn = lay.panels;
+  const bg = document.getElementById("bgCanvas"), ui = document.getElementById("ui");
+  if (bg){ bg.width = innerWidth; bg.height = innerHeight; }
+  if (ui && ui.style){ ui.style.left = sideW + "px"; ui.style.right = sideW + "px"; }
+  for (const [id, left] of [["panelL", true], ["panelR", false]]){
+    const el = document.getElementById(id);
+    if (!el || !el.style) continue;
+    // Панель прижата к полю, ширина не больше PANEL_MAX; остальное — лес.
+    const pw = Math.max(0, Math.min(PANEL_MAX, sideW - 24));
+    el.style.width = pw + "px";
+    el.style[left ? "left" : "right"] = Math.max(0, sideW - pw - 12) + "px";
+    if (el.classList) el.classList[panelsOn ? "remove" : "add"]("hidden");
+  }
+  panelSig = "";                              // размеры поменялись — перерисовать панели
+}
+// Травяной фон по бокам: те же деревья, что на берегах реки; сдвигаются вниз вместе с течением.
+const SIDE_CELL = 74;
+function drwSides(){
+  if (typeof document === "undefined" || sideW < 8 || g.s === "cutscene") return;
+  const bg = document.getElementById("bgCanvas");
+  if (!bg || !bg.getContext) return;
+  const b = bg.getContext("2d"), k = sideScale, IW = innerWidth, IH = innerHeight;
+  const river = RIVERS[Math.min(level().river, RIVERS.length - 1)] || RIVERS[0];
+  const grass = g.rGrass || river.grass;
+  b.imageSmoothingEnabled = false;
+  b.fillStyle = grass;
+  b.fillRect(0, 0, IW, IH);
+  // Пятна и пучки травы потемнее/посветлее — чтобы не было ровной заливки.
+  const move = (g.s === "playing" ? g.scroll : (nowMs()*0.03)) * k;
+  const cell = SIDE_CELL*k, rows = Math.ceil(IH/cell) + 2;
+  const names = river === RIVERS[0] ? ["sbirch","sbush","tree","sbirch","sbush"] :
+                river === RIVERS[1] ? ["sfir","sbirch","sfir","sbush","sfir"] :
+                river === RIVERS[2] ? ["sbirch","tree","sbush","sfir","sbirch"] : ["sfir","sfir","sbirch","sbush","sfir"];
+  const side = (x0, x1, seed) => {
+    for (let r = -1; r < rows; r++){
+      const wr = Math.floor((r*cell - move)/cell);                   // номер ряда в мире — сцена привязана к течению
+      const y0 = ((r*cell + move) % (rows*cell)) - cell;
+      for (let c = 0; (x0 + c*cell) < x1; c++){
+        const h = hsh(wr*131 + c*17 + seed), h2 = hsh(wr*37 + c*53 + seed*3);
+        const x = x0 + c*cell + (h - 0.5)*cell*0.5, y = y0 + (h2 - 0.5)*cell*0.5;
+        // Ближе к реке (краю поля) — реже и ниже кусты, дальше — густой лес.
+        const near = x1 === x0 ? 0 : Math.abs((x < IW/2 ? x1 : x0) - x)/(x1 - x0);
+        if (h < 0.18 + (1 - near)*0.2) continue;
+        const nm = names[Math.floor(h2*names.length) % names.length];
+        const sp = SPR[nm];
+        if (!sp || !sp.img) continue;
+        const w = sp.img.width*k, hh = sp.img.height*k;
+        b.fillStyle = "rgba(0,0,0,0.16)";
+        b.beginPath(); b.ellipse(x, y + hh*0.5, w*0.4, 5*k, 0, 0, Math.PI*2); b.fill();
+        b.drawImage(sp.img, Math.round(x - w/2), Math.round(y - hh/2), Math.round(w), Math.round(hh));
+      }
+    }
+  };
+  side(0, sideW, 1);
+  side(IW - sideW, IW, 2);
+  // Лёгкая вуаль: в заплыве почти нет (трава в одну краску с берегом поля), в меню — темнее.
+  const veil = g.s === "playing" ? 0.04 : 0.34;
+  b.fillStyle = "rgba(4,10,20," + veil + ")";
+  b.fillRect(0, 0, IW, IH);
+}
+
+// ---- Панели ----
+var panelSig = "", panelTick = 0;
+function goalProgress(L, st){
+  switch (L.goal){
+    case "bonuses":     return st.bonuses + " / " + L.need;
+    case "passed":      return st.passed + " / " + L.need;
+    case "shallowsmax": return "мелей: " + st.shallowsHit + " (можно " + L.need + ")";
+    case "parries":     return st.parries + " / " + L.need;
+    case "bridges":     return st.bridges + " / " + L.need;
+    case "hearts":      return "сердец: " + st.hp;
+    case "cleanrapids": return st.cleanRapids + " / " + L.need;
+    case "combo":       return "лучшее комбо " + st.maxCombo + " / " + L.need;
+  }
+  return "";
+}
+function panelLeftHtml(){
+  const L = level(), custom = !!g.custom, inPlay = g.s === "playing" || g.s === "paused" || g.s === "continue";
+  const st = g;
+  let h = "<div class='sp'><h3>" + (custom ? "СВОЙ УРОВЕНЬ" : "ДЕНЬ " + L.day + " · " + escHtml(river().name)) + "</h3>";
+  h += "<div>" + escHtml(custom ? "Дойти до финиша" : L.place) + "</div>";
+  if (!custom) h += "<div class='dim'>" + escHtml(river().note) + "</div>";
+  h += "</div>";
+  if (inPlay){
+    const pr = Math.max(0, Math.min(1, st.dist/L.len));
+    h += "<div class='sp'><h3>ЦЕЛЬ ДНЯ</h3><div>" + escHtml(L.goalText) + "</div>" +
+         (custom ? "" : "<div class='gp'>" + goalProgress(L, st) + "</div>") +
+         "<div class='bar'><i style='width:" + Math.round(pr*100) + "%'></i></div>" +
+         "<div class='dim'>до финиша " + Math.max(0, Math.round(L.len - st.dist)) + " м</div></div>";
+    h += "<div class='sp'><h3>ЗАПЛЫВ</h3><div>очки " + (st.sc + st.bsc) + "</div><div>сердца " + st.hp + " · попытки " + st.lives + "</div>" +
+         (st.combo > 1 ? "<div class='gp'>комбо x" + st.combo + "</div>" : "") +
+         (st.mazai && !st.mazai.done ? "<div class='gp'>МАЗАЙ: зайцы " + st.mazai.got + "/" + st.mazai.n + "</div>" : "") +
+         (st.yacht ? "<div class='gp'>ЯХТА!</div>" : "") + "</div>";
+  }
+  if (!custom){
+    h += "<div class='sp'><h3>ПОХОД</h3>";
+    LEVELS.forEach((D, i) => {
+      const open = i <= save.day, cur = D.day === L.day, stars = starsOf(D.day);
+      h += "<div class='rt" + (cur ? " cur" : "") + (open ? "" : " off") + "'><span>" + D.day + " " + escHtml(RIVERS[D.river].name) + "</span><span>" +
+           (open ? "★".repeat(stars) + "<u>" + "★".repeat(3 - stars) + "</u>" : "—") + "</span></div>";
+    });
+    h += "<div class='dim'>звёзд " + totalStars() + "/27 · рюкзак " + save.wallet + "</div></div>";
+    if (DIARY[L.day]) h += "<div class='sp dim'>" + DIARY[L.day] + "</div>";
+  }
+  return h;
+}
+function panelRightHtml(){
+  const L = level(), custom = !!g.custom;
+  let h = "";
+  if (!custom){
+    h += "<div class='sp'><h3>ДЕНЬ " + L.day + " · ТАБЛИЦА</h3>" + boardHtml(L.day) +
+         (onlineUrl() ? "<div class='dim'>все игроки — на экране «Рекорды»</div>" : "") + "</div>";
+  } else h += "<div class='sp'><h3>РЕКОРД УРОВНЯ</h3><div class='gp'>" + (cs.best || 0) + "</div></div>";
+  h += "<div class='sp'><h3>БОНУСЫ</h3>" +
+       [["bread","БАТОН — гребок сильнее на 8 с"],["whisky","ВИСКИ — неуязвим, очки x2, 6 с"],["medkit","АПТЕЧКА — сердце или щит"],
+        ["axe","ТОПОР — двойной тап: бросить"],["sun","СОЛНЦЕ — очки и комбо"]]
+        .map(([n, t]) => "<div class='bn'><canvas data-ic='" + n + "' width='24' height='24'></canvas><span>" + t + "</span></div>").join("") + "</div>";
+  h += "<div class='sp'><h3>УПРАВЛЕНИЕ</h3><div>← → руль · ↑ гребок · ↓ табанить</div><div>пробел / X удар · Esc пауза · M музыка</div>" +
+       "<div>геймпад: стик руль · A гребок · B удар · Start пауза</div></div>";
+  return h;
+}
+function drawPanelIcons(){
+  if (typeof document === "undefined" || !document.querySelectorAll) return;
+  for (const cv of document.querySelectorAll("canvas[data-ic]")){
+    const nm = BN_SPRITE[cv.getAttribute ? cv.getAttribute("data-ic") : ""];
+    const sp = nm && SPR[nm];
+    if (!sp || !sp.img || !cv.getContext) continue;
+    const c2 = cv.getContext("2d");
+    c2.imageSmoothingEnabled = false;
+    const sc = Math.min(1, 22/Math.max(sp.img.width, sp.img.height));
+    c2.clearRect(0, 0, 24, 24);
+    c2.drawImage(sp.img, Math.round((24 - sp.img.width*sc)/2), Math.round((24 - sp.img.height*sc)/2), Math.round(sp.img.width*sc), Math.round(sp.img.height*sc));
+  }
+}
+function updPanels(force){
+  if (!panelsOn || typeof document === "undefined") return;
+  const L = document.getElementById("panelL"), R = document.getElementById("panelR");
+  if (!L || !R) return;
+  const sig = [g.s, g.day, g.hp, g.lives, Math.floor(g.dist/5), g.sc + g.bsc, g.combo > 1, g.bonuses, g.passed, g.parries, g.bridges,
+               g.mazai ? g.mazai.got : -1, g.yacht, save.day, save.wallet, !!g.custom].join("|");
+  if (!force && sig === panelSig) return;
+  const first = panelSig === "" || R.innerHTML === "";
+  panelSig = sig;
+  L.innerHTML = panelLeftHtml();
+  if (first || force || g.s !== "playing"){ R.innerHTML = panelRightHtml(); drawPanelIcons(); }
+}
+rs();                                         // раскладка по боковым полосам — теперь, когда всё объявлено
 function simPlan(dtMs, acc){
   const STEP = 1000 / 60;
   const total = acc + (dtMs > 0 ? dtMs : 0);
@@ -9400,13 +9581,15 @@ function lp(t){
   let dt = now - _lpLast;
   _lpLast = now;
   pollGamepad();
-  if (g.s === "paused"){ _lpAcc = 0; rndr(); requestAnimationFrame(lp); return; }
+  if (g.s === "paused"){ _lpAcc = 0; rndr(); drwSides(); if (++panelTick % 12 === 0) updPanels(); requestAnimationFrame(lp); return; }
   const plan = simPlan(dt, _lpAcc);
   _lpAcc = plan.acc;
   let n = plan.steps;
   if (n > 4) n = 4;            // защита от спирали смерти на слабых устройствах
   while (n-- > 0) upd();
   rndr();
+  drwSides();
+  if (++panelTick % 12 === 0) updPanels();
   requestAnimationFrame(lp);
 }
 
@@ -9713,7 +9896,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
