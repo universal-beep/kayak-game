@@ -52,3 +52,73 @@ export async function ghostRoute(req, env, url, { json, cleanName }) {
   }
   return json({ error: "method" }, 405);
 }
+
+// ---- Гонка вдвоём вживую: комната (Durable Object) ----
+//
+//   GET /room?code=КОД&role=host|guest  (Upgrade: websocket)
+//
+// Хозяин (host) приходит первым и приносит уровень; гость получает уровень
+// и имя хозяина; когда оба на месте — обоим «старт через START_IN мс».
+// Дальше комната только пересылает сопернику положение (pos) и финиш (fin).
+// Физику каждый считает у себя: лодки друг друга не толкают, задержка не важна.
+// Сокеты — «спящие» (acceptWebSocket): комната не держит память между
+// сообщениями, роль и имя лежат во вложении сокета, уровень — в хранилище.
+export const START_IN = 3500;
+const CODE_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export function validCode(c) { return typeof c === "string" && /^[A-Z2-9]{4}$/.test(c) && [...c].every(ch => CODE_ABC.includes(ch)); }
+const okNum = v => Number.isFinite(v) && Math.abs(v) < 1e7;
+
+export class RaceRoom {
+  constructor(ctx, env) { this.ctx = ctx; this.env = env; }
+  async fetch(req) {
+    if ((req.headers.get("Upgrade") || "").toLowerCase() !== "websocket") return new Response("websocket", { status: 426 });
+    const role = new URL(req.url).searchParams.get("role") === "host" ? "host" : "guest";
+    if (this.ctx.getWebSockets().length >= 2 || this.ctx.getWebSockets(role).length) return new Response("full", { status: 409 });
+    const pair = new WebSocketPair();
+    this.ctx.acceptWebSocket(pair[1], [role]);
+    pair[1].serializeAttachment({ role, name: "" });
+    return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+  other(ws) { return this.ctx.getWebSockets().find(s => s !== ws) || null; }
+  send(ws, m) { try { ws.send(JSON.stringify(m)); } catch (e) {} }
+  async webSocketMessage(ws, raw) {
+    let m;
+    try { m = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw)); } catch (e) { return; }
+    if (!m || typeof m.type !== "string") return;
+    const me = ws.deserializeAttachment() || {}, peer = this.other(ws);
+    if (m.type === "hello") {
+      const name = String(m.name || "").replace(/[^0-9A-Za-zА-Яа-яЁё _\-]/g, "").trim().slice(0, 12).toUpperCase() || "ПУТНИК";
+      ws.serializeAttachment({ role: me.role, name });
+      if (me.role === "host") {
+        if (!validLevel(m.lvl)) return;
+        await this.ctx.storage.put("lvl", m.lvl);
+        await this.ctx.storage.put("host", name);
+      } else {
+        const lvl = await this.ctx.storage.get("lvl");
+        if (!lvl || !peer) { this.send(ws, { type: "nohost" }); return; }
+        this.send(ws, { type: "lvl", lvl, name: await this.ctx.storage.get("host") });
+        this.send(peer, { type: "joined", name });
+      }
+      // Оба представились — общий старт.
+      const all = this.ctx.getWebSockets();
+      if (all.length === 2 && all.every(s => (s.deserializeAttachment() || {}).name) && await this.ctx.storage.get("lvl"))
+        for (const s of all) this.send(s, { type: "start", in: START_IN });
+      return;
+    }
+    if (!peer) return;
+    if (m.type === "pos" && okNum(m.f) && okNum(m.wy) && okNum(m.t)) this.send(peer, { type: "pos", f: m.f, wy: m.wy, t: m.t });
+    else if (m.type === "fin" && Number.isInteger(m.frames) && m.frames > 0) this.send(peer, { type: "fin", frames: m.frames });
+  }
+  async webSocketClose(ws) {
+    const peer = this.other(ws);
+    if (peer) this.send(peer, { type: "left" });
+  }
+  async webSocketError(ws) { return this.webSocketClose(ws); }
+}
+// Маршрут /room: код -> своя комната (один Durable Object на код).
+export function roomRoute(req, env, url) {
+  const code = url.searchParams.get("code") || "";
+  if (!validCode(code)) return new Response("code", { status: 400 });
+  if (!env.ROOM) return new Response("rooms off", { status: 503 });
+  return env.ROOM.get(env.ROOM.idFromName(code)).fetch(req);
+}

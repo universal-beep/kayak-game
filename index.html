@@ -63,7 +63,7 @@ canvas { display:block;margin:0 auto; }
 .board { font-family:"Press Start 2P",monospace;font-size:8px;color:#bbb;width:100%;max-width:300px;margin:6px 0 4px; }
 .brow { display:flex;justify-content:space-between;padding:3px 4px;line-height:1.6; }
 #recordsScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px;overflow-y:auto; }
-#customEnd .selectable { user-select:text;-webkit-user-select:text;word-break:break-all;color:#ffd54f; }
+#raceScreen .selectable, #customEnd .selectable { user-select:text;-webkit-user-select:text;word-break:break-all;color:#ffd54f; }
 #editScreen,#customEnd,#raceScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.97);pointer-events:all;padding:12px;overflow-y:auto; }
 .edrow { display:flex;align-items:center;justify-content:center;gap:6px;margin:4px 0;font-family:"Press Start 2P",monospace;font-size:8px;color:#ddd; }
 .edrow span { min-width:84px;text-align:center; }
@@ -236,9 +236,12 @@ canvas { display:block;margin:0 auto; }
     </div>
   </div>
   <div id="raceScreen" class="hidden">
-    <h1 class="maph">ВЫЗОВ!</h1>
+    <h1 class="maph" id="rsTitle">ВЫЗОВ!</h1>
     <div class="finrun" id="rsText">ЗАГРУЗКА…</div>
+    <div class="finrun hidden selectable" id="rsLink"></div>
     <div class="maprow">
+      <button class="btn small hidden" id="rsSolo">ОДИН</button>
+      <button class="btn small hidden" id="rsDuo">ВДВОЁМ ПО СЕТИ</button>
       <button class="btn small" id="rsGo">ПЛЫТЬ</button>
       <button class="btn small ghost" id="rsMenu">В МЕНЮ</button>
     </div>
@@ -3335,9 +3338,11 @@ function finishGain(w){
 // сужают только пороги.
 const RIVER_WIDTH = 240;
 function baseWidthAt(w){
-  return RIVER_WIDTH * (g.rWidth || 1) * (g.custom && g.custom.wide ? RACE_WIDE : 1);
+  // Гонка — одна ширина для всех рек: множитель к узкой Осуге давал почти
+  // обычную реку, а к Волге (1,5) — шире экрана.
+  return RIVER_WIDTH * (g.custom && g.custom.wide ? RACE_WIDE : (g.rWidth || 1));
 }
-// Гонка идёт по широкой реке: есть где обогнать и разойтись.
+// Гонка идёт по широкой реке: есть где обогнать и разойтись (348 px из 420).
 const RACE_WIDE = 1.45;
 
 function secondDiff(fn, w, h){
@@ -9258,6 +9263,7 @@ function logStep(o, flow){
 
 function upd(){
   if(g.s=="cutscene"){ updCut(); return; }
+  if(g.s=="countdown"){ g.frame++; if (--g.cdT <= 0){ g.s = "playing"; sfx("bonus"); } return; }
   if(g.s=="arrive"){ updArrive(); return; }
   if(g.s=="continue"){
     g.frame++;
@@ -9790,7 +9796,7 @@ function rndr(){
   for(const b of g.bridges_) drwBridge(b);
   drwTape();
   cx.restore();
-  drwAxeFly();drwWind();drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();drwRaceHud();
+  drwAxeFly();drwWind();drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();drwRaceHud();drwCountdown();
   if (g.whiskyT > 0){
     cx.strokeStyle = "rgba(232,168,56," + (0.30 + Math.sin(g.frame*0.15)*0.08) + ")";
     cx.lineWidth = 10; cx.strokeRect(5, 5, W-10, H-10);
@@ -10465,14 +10471,19 @@ function raceOf(){ return g.custom && g.custom.race; }
 function raceStep(){
   const R = raceOf();
   if (!R || R.end) return;
-  if (R.f % GHOST_STEP === 0) R.track.push(Math.round(g.pwy), Math.round(g.t*1000));
+  if (R.f % GHOST_STEP === 0){
+    R.track.push(Math.round(g.pwy), Math.round(g.t*1000));
+    if (R.net) netSend({ type: "pos", f: R.f, wy: Math.round(g.pwy), t: Math.round(g.t*1000) });
+  }
   R.f++;
+  if (R.net) netSmooth(R.net);
 }
 function raceFinishLine(){
   const R = raceOf();
   if (!R || R.end) return;
   R.end = Math.max(1, R.f);
   R.track.push(Math.round(g.pwy), Math.round(g.t*1000));
+  if (R.net) netSend({ type: "fin", frames: R.end });
 }
 // Положение призрака на кадре f: точка j записана на кадре j*GHOST_STEP,
 // последняя — на финише (кадр frames). Между точками — по прямой.
@@ -10488,6 +10499,7 @@ function ghostAt(gh, f){
 // На сколько метров мы впереди призрака (минус — позади).
 function raceGap(){
   const R = raceOf();
+  if (R && R.net) return R.net.show ? (g.pwy - R.net.show.wy)/PX_PER_M : 0;
   if (!R || !R.ghost) return 0;
   return (g.pwy - ghostAt(R.ghost, R.f).wy)/PX_PER_M;
 }
@@ -10498,6 +10510,12 @@ function raceTime(f){
 function raceResult(){
   const R = raceOf();
   if (!R) return null;
+  if (R.net){
+    // Вдвоём: кто первым пересёк ленту. Соперник ещё плывёт или вышел — мы первые.
+    const rf = R.net.rival.frames || null;
+    return { mine: R.end, ghost: rf, name: R.net.rival.name || "ДРУГ", win: R.end > 0 && (rf == null || R.end < rf),
+             waiting: R.end > 0 && rf == null && !R.net.rival.left, left: !!R.net.rival.left };
+  }
   const gh = R.ghost ? R.ghost.frames : null;
   return { mine: R.end, ghost: gh, name: R.ghost ? R.ghost.name : null, win: gh == null ? null : R.end > 0 && R.end < gh };
 }
@@ -10529,7 +10547,9 @@ async function raceLoad(id, deps){
 }
 function drwGhost(){
   const R = raceOf();
-  if (!R || !R.ghost || g.s !== "playing" && g.s !== "arrive" && g.s !== "paused") return;
+  if (!R || g.s !== "playing" && g.s !== "arrive" && g.s !== "paused" && g.s !== "countdown") return;
+  if (R.net){ drwRival(R.net); return; }
+  if (!R.ghost) return;
   const p = ghostAt(R.ghost, R.f), y = screenYOf(p.wy);
   if (y < -60 || y > H + 60) return;
   const x = screenXOf(p.t, p.wy);
@@ -10546,7 +10566,7 @@ function drwRaceHud(){
   if (!R || g.s !== "playing") return;
   cx.save(); cx.font = "9px " + F; cx.textAlign = "right";
   cx.fillStyle = "#ffd54f"; cx.fillText(raceTime(R.f), W - 12, 84);   // под сердечками
-  if (R.ghost){
+  if (R.ghost || (R.net && R.net.show)){
     const d = Math.round(raceGap());
     cx.fillStyle = d >= 0 ? "#7fd67f" : "#ff8a80";
     cx.fillText((d >= 0 ? "ВПЕРЕДИ " : "ПОЗАДИ ") + Math.abs(d) + " М", W - 12, 98);
@@ -10557,22 +10577,145 @@ function raceEndScreen(ok){
   const R = raceOf(), box = document.getElementById("ceRace"), ch = document.getElementById("ceChallenge"),
         link = document.getElementById("ceLink"), ed = document.getElementById("ceEdit");
   link.classList.add("hidden"); link.textContent = "";
+  document.getElementById("ceBest").classList[R ? "add" : "remove"]("hidden");   // рекорд редактора в гонке ни при чём
   if (!R){ document.getElementById("cePlace").textContent = "СВОЙ УРОВЕНЬ"; box.classList.add("hidden"); ch.classList.add("hidden"); ed.classList.remove("hidden"); return; }
   ed.classList.add("hidden");
   document.getElementById("cePlace").textContent = "ГОНКА";
   const res = raceResult();
-  if (res.ghost != null)
-    document.getElementById("ceTitle").textContent = res.win ? "ОБОГНАЛ!" : ok ? "ОТСТАЛ" : "НЕ ДОШЛИ";
+  g.lastOk = ok;
+  if (res.ghost != null || R.net)
+    document.getElementById("ceTitle").textContent = res.win ? (R.net ? "ПОБЕДА!" : "ОБОГНАЛ!") : ok ? "ОТСТАЛ" : "НЕ ДОШЛИ";
   box.textContent = (ok ? "ТЫ " + raceTime(res.mine) : "ТЫ НЕ ДОПЛЫЛ") +
-                    (res.ghost != null ? " · " + (res.name || "ПРИЗРАК") + " " + raceTime(res.ghost) : "");
+                    (res.ghost != null ? " · " + (res.name || "ПРИЗРАК") + " " + raceTime(res.ghost) :
+                     res.left ? " · " + res.name + " ВЫШЕЛ" : res.waiting ? " · " + res.name + " ЕЩЁ ПЛЫВЁТ…" : "");
   box.classList.remove("hidden");
   ch.classList[ok ? "remove" : "add"]("hidden");
   if (ok) g.myRun = racePayload(save.name);
+}
+// ---- Гонка вдвоём по сети ----
+// Комната на сервере (server/race.mjs, Durable Object): хозяин создаёт код и
+// уровень, ссылку ?room=КОД отправляет другу. Когда оба на месте, сервер
+// даёт общий старт — отсчёт 3-2-1, и оба плывут ту же реку. Каждый считает
+// свою лодку сам и 10 раз в секунду шлёт положение; лодка соперника плавно
+// подтягивается к последнему присланному месту. Друг друга не толкают.
+const ROOM_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function roomCode(){ let c = ""; for (let i = 0; i < 4; i++) c += ROOM_ABC[Math.floor(Math.random()*ROOM_ABC.length)]; return c; }
+function roomFrom(search){
+  const m = /[?&]room=([A-Z2-9]{4})(?:&|$)/.exec(search || "");
+  return m && [...m[1]].every(ch => ROOM_ABC.includes(ch)) ? m[1] : null;
+}
+function roomLink(code, href){ return String(href).split("#")[0].split("?")[0] + "?room=" + code; }
+function netOpen(code, role, deps){
+  const base = onlineBase(deps), WS = (deps && deps.WebSocket) || (typeof WebSocket === "function" ? WebSocket : null);
+  if (!base || !WS) return null;
+  const ws = new WS(base.replace(/^http/, "ws") + "/room?code=" + code + "&role=" + role);
+  ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch(err){ return; } netMsg(m); };
+  ws.onclose = () => { if (g.net && g.net.ws === ws && g.net.state !== "done") g.net.closed = true; };
+  return ws;
+}
+function netSend(m){ const n = g.net; if (n && n.ws && n.ws.readyState === 1) try { n.ws.send(JSON.stringify(m)); } catch(e){} }
+function netHost(name, deps){
+  const code = roomCode(), lvl = raceLevel(1 + Math.floor(Math.random()*99999));
+  g.net = { role:"host", code, lvl, state:"wait", rival:{ name:"" }, pos:null, show:null };
+  const ws = g.net.ws = netOpen(code, "host", deps);
+  if (ws) ws.onopen = () => netSend({ type:"hello", name: name || "ПУТНИК", lvl });
+  return { code, link: roomLink(code, typeof location !== "undefined" ? location.href : "") };
+}
+function netJoin(code, name, deps){
+  g.net = { role:"guest", code, lvl:null, state:"join", rival:{ name:"" }, pos:null, show:null };
+  const ws = g.net.ws = netOpen(code, "guest", deps);
+  if (ws) ws.onopen = () => netSend({ type:"hello", name: name || "ПУТНИК" });
+}
+function netMsg(m){
+  const n = g.net;
+  if (!n) return;
+  if (m.type === "lvl"){ n.lvl = m.lvl; n.rival.name = m.name || "ДРУГ"; n.state = "ready"; rsSay(n.rival.name + " НА СТАРТЕ — СЕЙЧАС ПОПЛЫВЁМ"); }
+  else if (m.type === "joined"){ n.rival.name = m.name || "ДРУГ"; n.state = "ready"; rsSay(n.rival.name + " ПОДКЛЮЧИЛСЯ — СЕЙЧАС ПОПЛЫВЁМ"); }
+  else if (m.type === "nohost"){ n.state = "nohost"; rsSay("ГОНКА НЕ НАЙДЕНА — ПОПРОСИ ДРУГА СОЗДАТЬ НОВУЮ"); }
+  else if (m.type === "start" && n.lvl){
+    n.state = "race";
+    startRace(n.lvl);
+    g.custom.race.net = n;
+    g.s = "countdown"; g.cdT = Math.max(1, Math.round((m.in || 3000)/1000*60));
+  }
+  else if (m.type === "pos"){ n.pos = { f: m.f, wy: m.wy, t: m.t/1000 }; }
+  else if (m.type === "fin"){ n.rival.frames = m.frames; if (g.s === "customEnd") raceEndScreen(g.lastOk); }
+  else if (m.type === "left"){ n.rival.left = true; if (g.s === "customEnd") raceEndScreen(g.lastOk); else popText((n.rival.name || "ДРУГ") + " ВЫШЕЛ", "#9aa9b2"); }
+}
+// Лодка соперника плавно подтягивается к последнему месту из сети.
+function netSmooth(n){
+  if (!n.pos) return;
+  if (!n.show){ n.show = { wy: n.pos.wy, t: n.pos.t }; return; }
+  n.show.wy += (n.pos.wy - n.show.wy)*0.2;
+  n.show.t += (n.pos.t - n.show.t)*0.2;
+}
+function drwRival(n){
+  if (!n.show || n.rival.left) return;
+  const y = screenYOf(n.show.wy);
+  const x = screenXOf(n.show.t, n.show.wy);
+  if (y < -60 || y > H + 60){
+    // Соперник за краем кадра — стрелка у края в его сторону.
+    cx.save(); cx.fillStyle = "#ff8a80"; cx.font = "8px " + F; cx.textAlign = "center";
+    const up = y < 0, ay = up ? 112 : H - 70;
+    cx.fillText((up ? "▲ " : "▼ ") + (n.rival.name || "ДРУГ"), Math.max(40, Math.min(W - 40, x)), ay);
+    cx.restore();
+    return;
+  }
+  drawShadow(x, y + spriteSize("kayak_center").h/2 - 4, spriteSize("kayak_center").w);
+  cx.save(); cx.globalAlpha = 0.85; drawSprite("kayak_center", x, y, 1); cx.restore();
+  cx.save(); cx.font = "7px " + F; cx.textAlign = "center";
+  cx.fillStyle = "rgba(0,0,0,0.6)"; cx.fillRect(x - 30, y - 44, 60, 11);
+  cx.fillStyle = "#ff8a80"; cx.fillText(n.rival.name || "ДРУГ", x, y - 35);
+  cx.restore();
+}
+function drwCountdown(){
+  if (g.s !== "countdown") return;
+  const k = Math.ceil(g.cdT/60);
+  cx.save(); cx.fillStyle = "rgba(0,0,0,0.35)"; cx.fillRect(0, 0, W, H);
+  cx.font = "48px " + F; cx.textAlign = "center"; cx.fillStyle = "#ffd54f";
+  cx.fillText(k > 0 ? String(k) : "!", W/2, H/2);
+  if (g.net && g.net.rival.name){ cx.font = "9px " + F; cx.fillStyle = "#fff"; cx.fillText("ГОНКА С " + g.net.rival.name, W/2, H/2 + 40); }
+  cx.restore();
+}
+function rsSay(t){ const el = typeof document !== "undefined" && document.getElementById("rsText"); if (el) el.textContent = t; }
+function rsButtons(list){
+  for (const id of ["rsSolo","rsDuo","rsGo"]) document.getElementById(id).classList[list.includes(id) ? "remove" : "add"]("hidden");
+}
+function showRaceMenu(){
+  hideAllScreens();
+  g.s = "raceMenu";
+  document.getElementById("raceScreen").classList.remove("hidden");
+  document.getElementById("rsTitle").textContent = "ГОНКА";
+  document.getElementById("rsLink").classList.add("hidden");
+  rsSay("ШИРОКАЯ РЕКА, ОДНА ДЛЯ ВСЕХ. ОДИН — НА ВРЕМЯ, ПОТОМ МОЖНО ВЫЗВАТЬ ДРУГА. ВДВОЁМ — ДРУГ ПО ССЫЛКЕ, СТАРТ ОДНОВРЕМЕННО.");
+  rsButtons(["rsSolo","rsDuo"]);
+}
+function showRaceHost(){
+  const h = netHost(save.name);
+  document.getElementById("rsTitle").textContent = "ВДВОЁМ";
+  const link = document.getElementById("rsLink");
+  link.textContent = h.link; link.classList.remove("hidden");
+  rsSay("ОТПРАВЬ ДРУГУ ССЫЛКУ И ЖДИ — СТАРТ, КАК ТОЛЬКО ОН ОТКРОЕТ");
+  rsButtons([]);
+  try { navigator.clipboard.writeText(h.link).then(() => campToast("ССЫЛКА СКОПИРОВАНА — ОТПРАВЬ ДРУГУ"), () => {}); } catch(e){}
+}
+function showRaceJoin(code){
+  hideAllScreens();
+  g.s = "raceMenu";
+  document.getElementById("raceScreen").classList.remove("hidden");
+  document.getElementById("rsTitle").textContent = "ВДВОЁМ";
+  document.getElementById("rsLink").classList.add("hidden");
+  rsSay("ПОДКЛЮЧАЮСЬ К ГОНКЕ " + code + "…");
+  rsButtons([]);
+  netJoin(code, save.name);
 }
 function showRaceInvite(id){
   hideAllScreens();
   g.s = "raceInvite";
   document.getElementById("raceScreen").classList.remove("hidden");
+  document.getElementById("rsTitle").textContent = "ВЫЗОВ!";
+  document.getElementById("rsLink").classList.add("hidden");
+  rsButtons(["rsGo"]);
   const txt = document.getElementById("rsText"), go = document.getElementById("rsGo");
   go.classList.add("hidden"); txt.textContent = "ЗАГРУЗКА…";
   raceLoad(id).then(gh => {
@@ -10583,9 +10726,11 @@ function showRaceInvite(id){
   });
 }
 {
-  document.getElementById("startRaceBtn").addEventListener("click", () => { startMusic(); startRace(raceLevel(1 + Math.floor(Math.random()*99999))); });
+  document.getElementById("startRaceBtn").addEventListener("click", () => { startMusic(); showRaceMenu(); });
+  document.getElementById("rsSolo").addEventListener("click", () => { startRace(raceLevel(1 + Math.floor(Math.random()*99999))); });
+  document.getElementById("rsDuo").addEventListener("click", showRaceHost);
   document.getElementById("rsGo").addEventListener("click", () => { if (g.invite){ startMusic(); startRace(g.invite.lvl, g.invite); } });
-  document.getElementById("rsMenu").addEventListener("click", showStart);
+  document.getElementById("rsMenu").addEventListener("click", () => { if (g.net && g.net.ws) try { g.net.ws.close(); } catch(e){} g.net = null; showStart(); });
   document.getElementById("ceChallenge").addEventListener("click", () => {
     const link = document.getElementById("ceLink"), btn = document.getElementById("ceChallenge");
     link.classList.remove("hidden"); link.textContent = "ОТПРАВЛЯЮ…";
@@ -10594,13 +10739,13 @@ function showRaceInvite(id){
       const url = raceLink(id, location.href);
       link.textContent = url;
       btn.classList.add("hidden");
-      try { navigator.clipboard.writeText(url).then(() => campToast("ССЫЛКА СКОПИРОВАНА — ОТПРАВЬ ДРУГУ")); } catch(e){}
+      try { navigator.clipboard.writeText(url).then(() => campToast("ССЫЛКА СКОПИРОВАНА — ОТПРАВЬ ДРУГУ"), () => {}); } catch(e){}
     });
   });
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
@@ -10647,6 +10792,7 @@ if (typeof __KAYAK_TEST__ === "undefined"){
   // и отладочные сцены стояли чёрным экраном на кадре 0.
   if (dayIdx != null){ startDay(dayIdx); applyDebugScene(); }
   else if (raceIdFrom(location.search)) showRaceInvite(raceIdFrom(location.search));
+  else if (roomFrom(location.search)) showRaceJoin(roomFrom(location.search));
   lp();
 }
 </script>

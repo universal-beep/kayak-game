@@ -8,7 +8,10 @@
 // последнее. pid наружу не отдаётся: сервер лишь помечает строку mine, когда
 // в GET пришёл тот же pid. Всё проверяется: форма запроса, имя, потолок очков,
 // частота запросов с одного адреса.
-import { ghostRoute } from "./race.mjs";
+import { ghostRoute, roomRoute, RaceRoom } from "./race.mjs";
+
+// Класс комнаты гонки вдвоём — Durable Object (привязка ROOM в wrangler.toml).
+export { RaceRoom };
 
 export const MAX_DAY = 9;
 export const MAX_SCORE_DAY = 60000;        // потолок очков за один день
@@ -58,6 +61,8 @@ export default {
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
     const url = new URL(req.url);
     const ip = req.headers.get("cf-connecting-ip") || "local";
+    // Гонка вдвоём: WebSocket в комнату по коду (server/race.mjs).
+    if (url.pathname === "/room") return roomRoute(req, env, url);
     // Гонка с призраком (server/race.mjs). Запись — под тем же ограничением частоты.
     if (url.pathname === "/ghost") {
       if (req.method === "POST" && await limited(env, ip)) return json({ error: "rate" }, 429);

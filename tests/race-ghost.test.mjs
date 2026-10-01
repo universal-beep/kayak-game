@@ -111,3 +111,14 @@ test("гонка не трогает рекорд своего уровня в �
   assert.equal(K.getCs().best, 123, "рекорд редактора прежний");
   assert.match(K.panelLeftHtml(), /ГОНКА/);
 });
+
+test("ширина гонки одна для всех рек и умещается в кадр", () => {
+  const K = game();
+  const ws = [];
+  for (let seed = 0; seed < 4; seed++) {                 // река = зерно % 4: все четыре
+    K.startRace(K.raceLevel(seed));
+    ws.push(Math.round(K.baseWidthAt(K.itemWy({ r: 1 }))));   // базовая: пороги реки сужают и в гонке
+  }
+  assert.equal(new Set(ws).size, 1, "одинаково: " + ws);
+  assert.ok(ws[0] > 300 && ws[0] < K.W - 40, "широкая, но берега видны: " + ws[0]);
+});
