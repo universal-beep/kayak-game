@@ -1000,6 +1000,66 @@ const SPR = {
     "..kBBBBmmmmmbbbbk........",
     "..kbbbbBBBBbbbbbk........",
     "..kbbbbkkkkkkkkk........."]},
+  // Собака рыбака (папа с сыном, у «Нивы»): лежит, бежит по берегу, прыгает на лодку, плывёт назад.
+  // Смотрит вправо; на правом берегу — отражённые копии «_l». Генератор — по геометрии с автообводкой.
+  dog_lie:{map:["......................",
+    "......................",
+    "......................",
+    ".............kkk......",
+    "............kbbBkk....",
+    ".....kkkkkkkkbbBBBk...",
+    "...kkBBBBBBBkbbBKBkk..",
+    ".kkBBBBBBBBBBbbBBmmKk.",
+    "kBBBBBBBBBBBBbbBBmmmk.",
+    "BkkBmmmmmmmmBBBBBBkk..",
+    "k..kkBBBBBBBkkkmmmmmk.",
+    ".....kkkkkkk...kkkkk.."]},
+  dog_run:{map:[".k..........kbbBkk....",
+    "kBk.........kbbBBBk...",
+    "kBBk..kkkkkkkbbBKBkk..",
+    ".kBkkkBBBBBBBbbBBmmKk.",
+    ".kBBBBBBBBBBBbbBBmmmk.",
+    "..kBBBBBBBBBBBBBBBkk..",
+    "...kBmmmmmmmmBBBkk....",
+    "....kmmmmmmmmkkk......",
+    "...kBBbbkkbbBBk.......",
+    "...kBBbbkkbbBBk.......",
+    "...kBBbbkkbbBBk.......",
+    "....kkkk..kkkk........"]},
+  dog_run_b:{map:[".k..........kbbBkk....",
+    "kBk.........kbbBBBk...",
+    "kBBk..kkkkkkkbbBKBkk..",
+    ".kBkkkBBBBBBBbbBBmmKk.",
+    ".kBBBBBBBBBBBbbBBmmmk.",
+    "..kBBBBBBBBBBBBBBBkk..",
+    "...kBmmmmmmmmBBBkk....",
+    "...kkmmmmmmmmkkk......",
+    "..kBBkbbkkbbkBBk......",
+    "..kBBkbbkkbbkBBk......",
+    "...kkkbbkkbbkkk.......",
+    "......kk..kk.........."]},
+  dog_jump:{map:["..............kbbBkk..",
+    ".kk...........kbbBBBk.",
+    "kBBkk..kkkkkkkkbbBKBkk",
+    ".kkBBkkBBBBBBBBbbBBmmK",
+    "...kkBBBBBBBBBBbbBBmmm",
+    ".kkkBBBBBBBBBBBBBBBBkk",
+    "kBBBBBmmmmmmmmBBkBkkk.",
+    "kBBBbbbbbBBBBbbbbbBBBk",
+    ".kkkbbbbbkkkkbbbbbBBBk",
+    "....kkkkk....kkkkkkkk.",
+    "......................",
+    "......................"]},
+  dog_swim:{map:["........kkk...........",
+    ".......kbbBkk.........",
+    ".......kbbBBBk........",
+    ".......kbbBKBkk.......",
+    "......kBbbBBmmKk......",
+    ".......kbbBBmmmk......",
+    ".......kBBBBBkk.......",
+    ".ffff.ffffffffffff.fff",
+    "..ffffffffffffffffff..",
+    "....ffffff..ffffff...."]},
   // Цапля (Медведица, вместо уток): серая, стоит на одной ноге у берега,
   // белая шея буквой S, чёрный хохол, длинный жёлтый клюв. Два кадра полёта:
   // шея втянута, ноги назад, крыло вверх / вниз. Смотрит вправо — к воде
@@ -2368,7 +2428,7 @@ SPR.kayak_left_rain  = { map: shearMap(SPR.kayak_center_rain.map, -1) };
 SPR.kayak_right_rain = { map: shearMap(SPR.kayak_center_rain.map,  1) };
 for (const n of ["fisher", "fisher_rain", "fisher_stand", "fisher_stand_rain", "fisher_kid", "fisher_car", "fisher_bike", "heron", "heron_fly0", "heron_fly1", "cow", "cow_b", "cow_water", "shepherd",
                  "bull", "calf", "shepherd_old", "shepherd_girl", "walkway", "rowboat", "banya",
-                 "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf", "bear_wave", "bear_wave_b"])
+                 "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf", "bear_wave", "bear_wave_b", "dog_lie", "dog_run", "dog_run_b", "dog_jump", "dog_swim"])
   SPR[n + "_l"] = { map: SPR[n].map.map(r => [...r].reverse().join("")), variants: SPR[n].variants };
 SPR.fisher_l_rain = SPR.fisher_rain_l; delete SPR.fisher_rain_l;
 SPR.fisher_stand_l_rain = SPR.fisher_stand_rain_l; delete SPR.fisher_stand_rain_l;
@@ -2688,6 +2748,10 @@ function sfx(kind){
   } else if (kind === "swing"){
     tone(180, t, 0.09, "sawtooth", 0.07);
     tone(240, t + 0.07, 0.07, "square", 0.05);
+  } else if (kind === "bark"){
+    // Лай: два коротких «гав» прямоугольной волной.
+    tone(330, t, 0.07, "square", 0.09); tone(250, t + 0.02, 0.09, "sawtooth", 0.06);
+    tone(310, t + 0.17, 0.07, "square", 0.09); tone(235, t + 0.19, 0.09, "sawtooth", 0.06);
   } else if (kind === "growl"){
     // Рык медведя: низкие «пилы» с дрожью, как мотор, но злее.
     tone(95, t, 0.30, "sawtooth", 0.10);
@@ -6923,7 +6987,10 @@ function spBev(){
             variant:ty==="beach"?Math.floor(Math.random()*4):0,
             shape:Math.floor(Math.random()*3)};
   if (ty === "cows") ev.seed = Math.floor(Math.random()*1000);
-  if (ty === "fisher"){ ev.kind = fisherKind(ev, level().river); ev.lucky = fisherLucky(ev); }
+  if (ty === "fisher"){
+    ev.kind = fisherKind(ev, level().river); ev.lucky = fisherLucky(ev);
+    if (!g.custom && level().day >= 2 && DOG_KINDS[ev.kind] && Math.random() < 0.7) ev.dog = mkDog(ev);
+  }
   if (ty === "cyclists") ev.count = cyclistCount(ev);
   if (placeBev(ev, 1)){ if (ty === "cows") cowsWade(ev); if (ty === "pier") pierBoat(ev); }
   g.ned=g.dist+(22+Math.random()*38)*(volga ? 4 : 1);
@@ -7270,6 +7337,75 @@ function spFighter(){
   return false;
 }
 
+/* ===== Собака рыбака ===== */
+// Собака есть у части рыбаков (папа с сыном, у «Нивы») со 2-го дня. Лежит у
+// рыбака, пока лодка далеко от берега. Лодка близко к берегу и рядом по
+// течению — вскакивает и лает, бежит вдоль воды за лодкой, присаживается
+// (замах DOG_TELL кадров, его видно) и прыгает. Отвернул от берега или ушёл
+// вперёд — промах: собака плюхается в воду и плывёт назад, а ты получаешь
+// очки. Попала — минус сердце. Прыжок один: потом сидит у берега.
+const DOG_SEE = 260, DOG_NEAR = 95, DOG_TELL = 32, DOG_LEAP = 16, DOG_SWIM = 70, DOG_ALERT = 22;
+const DOG_KINDS = { fisher_kid:1, fisher_car:1 };
+function mkDog(e){ return { state:"lie", age:0, wy:e.wy - 54, off:e.off + 30, k:0 }; }
+function dogBusy(d){ return d.state !== "lie" && d.state !== "done"; }
+function boatGap(side){ return (1 - side*g.t)*widthAt(g.pwy)/2; }       // px от центра лодки до кромки берега
+function dogStep(e){
+  const d = e.dog, side = e.side;
+  d.age++;
+  const gap = boatGap(side), along = d.wy - g.pwy;
+  const step = Math.max(2, g.sp);
+  if (d.state === "lie"){
+    if (Math.abs(along) < DOG_SEE && gap < DOG_NEAR){ d.state = "alert"; d.age = 0; sfx("bark"); }
+  } else if (d.state === "alert"){
+    if (d.age >= DOG_ALERT){
+      if (gap < DOG_NEAR + 20){ d.state = "run"; d.age = 0; } else { d.state = "lie"; d.age = 0; }
+    }
+  } else if (d.state === "run" || d.state === "tell"){
+    // Бежит вдоль берега чуть впереди лодки: так она прыгнет наперерез.
+    d.wy += Math.max(-step*2.2, Math.min(step*2.2, (g.pwy + 25) - d.wy));
+    d.off += (22 - d.off)*0.12;
+    if (gap > DOG_NEAR + 45 || d.age > 420){ d.state = "lie"; d.age = 0; return; }   // лодка ушла от берега — потеряла интерес
+    if (d.state === "run" && Math.abs(d.wy - g.pwy) < 55 && gap < DOG_NEAR){ d.state = "tell"; d.age = 0; sfx("bark"); }
+    else if (d.state === "tell" && d.age >= DOG_TELL){ d.state = "leap"; d.age = 0; }
+  } else if (d.state === "leap"){
+    if (d.age >= DOG_LEAP){
+      const hit = Math.abs(d.wy - g.pwy) < 62 && gap < DOG_NEAR + 25;
+      d.swy = g.pwy; d.st = g.t; d.state = "swim"; d.age = 0;
+      spPt(screenXOf(g.t, g.pwy), g.py, "#dff0fa", 18); sfx("splash");
+      if (hit){ damage(); popText("СОБАКА!", "#ff5252"); }
+      else { addBonus(50); g.dogDodged = (g.dogDodged || 0) + 1; popText("УВЕРНУЛСЯ +" + award(50), "#7fd67f"); }
+    }
+  } else if (d.state === "swim"){
+    if (d.age >= DOG_SWIM){ d.state = "done"; d.age = 0; d.wy = d.swy; d.off = 24; }
+  }
+}
+function drwDog(e){
+  const d = e.dog, side = e.side, mir = side > 0 ? "_l" : "";
+  const edgeAt = w => centerAt(w) + side*widthAt(w)/2;
+  let nm, x, y;
+  if (d.state === "leap"){
+    const k = d.age/DOG_LEAP, fx = edgeAt(d.wy) + side*d.off, fy = screenYOf(d.wy);
+    x = fx + (screenXOf(g.t, g.pwy) - fx)*k; y = fy + (g.py - fy)*k - Math.sin(k*Math.PI)*28;
+    nm = "dog_jump";
+  } else if (d.state === "swim"){
+    const k = d.age/DOG_SWIM, ex = edgeAt(d.swy) + side*20;
+    x = screenXOf(d.st, d.swy) + (ex - screenXOf(d.st, d.swy))*k; y = screenYOf(d.swy) + Math.sin(g.frame*0.2)*1.5;
+    nm = "dog_swim";
+  } else {
+    x = edgeAt(d.wy) + side*d.off; y = screenYOf(d.wy);
+    if (d.state === "lie" || d.state === "done") nm = "dog_lie";
+    else if (d.state === "run") nm = Math.floor(g.frame/5) % 2 ? "dog_run_b" : "dog_run";
+    else { nm = "dog_run"; y -= Math.abs(Math.sin(g.frame*0.45))*4; }            // alert, tell: подпрыгивает и лает
+  }
+  if (y < -60 || y > H + 60) return;
+  x = Math.max(14, Math.min(W - 14, x));
+  drawSprite(nm + mir, x, y);
+  if (d.state === "alert" || d.state === "tell"){
+    cx.fillStyle = "#ff5252"; cx.font = "12px " + F; cx.textAlign = "center";
+    cx.fillText("!", x, y - 26); cx.textAlign = "left";
+  }
+}
+
 /* ===== Погоня медведя (день 8) ===== */
 // Медведь выходит из воды у берега позади лодки и плывёт следом. Расстояние
 // до него (b.d, px) каждый кадр сокращается на BEAR_CLOSE от скорости течения,
@@ -7598,6 +7734,7 @@ const DEBUG_SCENES = {
   cows:  { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   moose: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
   village: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
+  dog: { wy: 420, side: -1 },         // рыбак с собакой (?day=3&scene=dog)
   bearswim: { wy: 420, side: 1 },     // медведь в воде позади лодки (?day=8&scene=bearswim)
   bearwave: { wy: 420, side: -1 },    // медведь на берегу машет лапой (?day=8&scene=bearwave)
   cyclists: { wy: 420, side: Math.random() < 0.5 ? -1 : 1 },
@@ -7648,15 +7785,16 @@ function sceneAt(s){
     g.tapeWy = tape; g.landSide = 1;
     spawnCamp(tape);
     teleportTo(Math.max(0, tape - 150));
-  } else if (s === "beach" || s === "ducks" || s === "heron" || s === "cows" || s === "moose" || s === "village" || s === "cyclists" || s === "fisher" || s === "pier" || s === "banya"){
+  } else if (s === "beach" || s === "ducks" || s === "heron" || s === "cows" || s === "moose" || s === "village" || s === "cyclists" || s === "fisher" || s === "dog" || s === "pier" || s === "banya"){
     const wy = DEBUG_SCENES[s].wy;
     // На широкий берег (widerBevSide) и в дебаге: картинка должна показывать,
     // как сцена сидит на берегу вживую — тем же правилом, что и в спавне.
     const side = widerBevSide(wy, DEBUG_SCENES[s].side);
-    g.bev.push({ type:s, side, wy, off:34, phase:1.7, mode:"swim", atCamp:false,
+    g.bev.push({ type:s === "dog" ? "fisher" : s, side, wy, off:34, phase:1.7, mode:"swim", atCamp:false,
                  variant: DEBUG_SCENES.beach.variant, seed: Math.floor(Math.random()*1000) });
     if (s === "cows") cowsWade(g.bev[g.bev.length - 1]);
     if (s === "pier") pierBoat(g.bev[g.bev.length - 1]);
+    if (s === "dog"){ const e = g.bev[g.bev.length - 1]; e.kind = "fisher_kid"; e.lucky = false; e.dog = mkDog(e); }
     if (s === "fisher"){                         // ?scene=fisher&kind=fisher_car
       const k = typeof location !== "undefined" ? new URLSearchParams(location.search).get("kind") : null;
       g.bev[g.bev.length - 1].kind = SPR[k] ? k : fisherKind(g.bev[g.bev.length - 1], L.river);
@@ -7741,7 +7879,7 @@ function sg(){
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
-  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;
+  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;
   ensureSegments(H*2);
   const r = river();
   g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks; g.rFreq = r.freq || 1;
@@ -8287,10 +8425,12 @@ function upd(){
   for(let i=g.bev.length-1;i>=0;i--){
     const e = g.bev[i];
     updBev(e);
+    if (e.dog) dogStep(e);
     // Житель, под которого сужено русло, удаляется только когда за нижнюю
     // кромку ушла вся зона сужения — иначе русло на экране прыгало назад.
     const reach = e.roomDef ? ROOM_FULL + ROOM_TAPER : 0;
-    if (e.dead || offScreen(e.wy + reach)) g.bev.splice(i,1);
+    // Собака в деле (бежит, прыгает, плывёт) держит сцену, даже если рыбак уже за кадром.
+    if ((e.dead || offScreen(e.wy + reach)) && !(e.dog && dogBusy(e.dog))) g.bev.splice(i,1);
   }
   for(let i=g.pts.length-1;i>=0;i--){const p=g.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.lf--;if(p.lf<=0)g.pts.splice(i,1);}
   ensureForks(g.scroll + H*3);
@@ -8547,6 +8687,7 @@ function rndr(){
   if (amp > 0.1) cx.translate((Math.random()-0.5)*amp, (Math.random()-0.5)*amp);
   drwBg();
   for(const e of g.bev)drwBev(e);
+  for(const e of g.bev) if (e.dog) drwDog(e);
   drwWeeds();                                   // трава лежит на воде, под всем
   drwWaves();                                   // волны от катера
   for(const b of g.bridges_) drwBridgeAim(b);   // поплавки лежат на воде
@@ -8905,7 +9046,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
