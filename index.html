@@ -1140,20 +1140,19 @@ const SPR = {
     "..krrrkkrrrk..",
     "..krrrkkrrrk..",
     "..kRrrkkrrRk.."]},
-  hare_isle:{map:["............knknk.....",
-    "............knknnk....",
-    "............kHkHnk....",
-    "............knnnk.....",
-    "......kkkkkknnKnkk....",
-    ".....knnnnnnnnneeKk...",
-    "...kknnnnnnnnnneeek...",
-    "..kwwwnnnnnnnnnnkk....",
-    "..kwwweeeeeenSSSSSkk..",
-    ".kSwwneeeeoondddSSSSk.",
-    "kSSddddnnnoodddddddSSk",
-    "kSddddddddddddddddddSk",
-    ".kkddddddddddddddddkk.",
-    "..fkkkSSSSSSSSSSkkk..."]},
+  hare:{map:["..........knnknk..",
+    "..........knnknk..",
+    "..........kHnkHk..",
+    "..........knnnnk..",
+    "......kkkkknnKnk..",
+    "....kknnnnnnnneKk.",
+    "...knnnnnnnnnnnek.",
+    "..kwnnnnnnnnnnnk..",
+    ".kwwwnnnnnnnnkk...",
+    ".kwwwnnnnnnnnk....",
+    ".kwwweeeeeennk....",
+    "..kkooonnooook....",
+    "...koookkkkkk....."]},
   yacht:{map:["......kiiZwwZiik......",
     ".....kWWZwwwwZWWk.....",
     ".....kiZwwggwwZik.....",
@@ -1192,6 +1191,91 @@ const SPR = {
     ".kWZLLLLLLrrLLLLLLZWk.",
     "..kiZLLLLLrrrLLLLZik..",
     "..kWWZLLLLrrLLLLZWWk.."]},
+  // Цапля ловит рыбу: три момента (наклон, тянется к воде, клюв в воде) — шире стоячей на 6 клеток вправо.
+  heron_b1:{map:["............................",
+    "................kkkk........",
+    "...............kKKKKk.......",
+    "..............kKwwwuwk......",
+    ".............kkKwwwwyyk.....",
+    "............kwwWwwwwwyyk....",
+    "............kwwWkkwkkkyyk...",
+    "....kkkkkkkkwwWk..k...kyyk..",
+    "...kWWWWWWWkwwWk.......kk...",
+    "..kWWWWWWWWwWkk.............",
+    ".kGGGGGGGGwwwk..............",
+    ".kGjjjjjjGwwwk..............",
+    "kgggjjjjjGwwwk..............",
+    "kgggggggggwwwk..............",
+    ".kkkgggggggkk...............",
+    "....kkkkMMMk................",
+    ".......kMkk.................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    "......kMMMk.................",
+    ".......kkk..................",
+    "............................",
+    "............................"]},
+  heron_b2:{map:["............................",
+    "............................",
+    "............................",
+    "............................",
+    "............................",
+    "............................",
+    "............kkkkkk..........",
+    "....kkkkkkkkwKwwwWkk........",
+    "...kWWWWWWWkwwWWwwWWk.......",
+    "..kWWWWWWWWwWkkkkkwwWk......",
+    ".kGGGGGGGGwwwk...kKKKKk.....",
+    ".kGjjjjjjGwwwk..kKwwwuwk....",
+    "kgggjjjjjGwwwk..kKwwwwyyk...",
+    "kgggggggggwwwk...kwwwwyyk...",
+    ".kkkgggggggkk.....kkwkkyyk..",
+    "....kkkkMMMk........k.kyyk..",
+    ".......kMkk............kyyk.",
+    ".......kMk.............kyyk.",
+    ".......kMk..............kk..",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    ".......kMk..................",
+    "......kMMMk.................",
+    ".......kkk..................",
+    "............................",
+    "............................"]},
+  heron_b3:{map:["............................",
+    "............................",
+    "............................",
+    "............................",
+    "............................",
+    "............................",
+    "............kk..............",
+    "....kkkkkkkkwKkk............",
+    "...kWWWWWWWkwwWWkk..........",
+    "..kWWWWWWWWwWkwwwWk.........",
+    ".kGGGGGGGGwwwkkkwwWk........",
+    ".kGjjjjjjGwwwk..kwwWk.......",
+    "kgggjjjjjGwwwk...kwwWk......",
+    "kgggggggggwwwk....kwwWk.....",
+    ".kkkgggggggkk......kwwWk....",
+    "....kkkkMMMk........kwwWk...",
+    ".......kMkk.........kwwWk...",
+    ".......kMk...........kwwWk..",
+    ".......kMk...........kwwWk..",
+    ".......kMk..........kKKKKWk.",
+    ".......kMk.........kKwwwuwk.",
+    ".......kMk.........kKwwwwyyk",
+    ".......kMk..........kwwwwyyk",
+    ".......kMk...........kkwkyyk",
+    "......kMMMk............kkyyk",
+    ".......kkk..............kyyk",
+    ".........................kk.",
+    "....................ffffffff"]},
   // Цапля (Медведица, вместо уток): серая, стоит на одной ноге у берега,
   // белая шея буквой S, чёрный хохол, длинный жёлтый клюв. Два кадра полёта:
   // шея втянута, ноги назад, крыло вверх / вниз. Смотрит вправо — к воде
@@ -2587,7 +2671,7 @@ SPR.kayak_left_rain  = { map: shearMap(SPR.kayak_center_rain.map, -1) };
 SPR.kayak_right_rain = { map: shearMap(SPR.kayak_center_rain.map,  1) };
 for (const n of ["fisher", "fisher_rain", "fisher_stand", "fisher_stand_rain", "fisher_kid", "fisher_car", "fisher_bike", "heron", "heron_fly0", "heron_fly1", "cow", "cow_b", "cow_water", "shepherd",
                  "bull", "calf", "shepherd_old", "shepherd_girl", "walkway", "rowboat", "banya",
-                 "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf", "fish", "bear_wave", "bear_wave_b", "dog_lie", "dog_run", "dog_run_b", "dog_jump", "dog_swim"])
+                 "moose", "moose_b", "moosecow", "moosecow_b", "moosecalf", "fish", "heron_b1", "heron_b2", "heron_b3", "bear_wave", "bear_wave_b", "dog_lie", "dog_run", "dog_run_b", "dog_jump", "dog_swim"])
   SPR[n + "_l"] = { map: SPR[n].map.map(r => [...r].reverse().join("")), variants: SPR[n].variants };
 SPR.fisher_l_rain = SPR.fisher_rain_l; delete SPR.fisher_rain_l;
 SPR.fisher_stand_l_rain = SPR.fisher_stand_rain_l; delete SPR.fisher_stand_rain_l;
@@ -5451,7 +5535,7 @@ function drwBg(){
 }
 // Соответствие внутренних типов препятствий именам спрайтов.
 const OB_SPRITE = { boat:"boat", log:"log", shallows:"shallows", kayaker:"rower", snag:"snag", branch:"branch", barge:"barge" };
-const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun", mazai:"badge", hare:"hare_isle" };
+const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun", mazai:"badge", hare:"hare" };
 
 // Искра, где встретились вёсла при парировании.
 function drwClash(){
@@ -5583,6 +5667,16 @@ function drwBn(b){
   const x = screenXOf(b.t, b.wy);
   const y = screenYOf(b.wy) + Math.sin(g.frame*0.08)*3;
   if (y < -70 || y > H + 70) return;
+  if (b.type === "hare"){
+    // Песок под зайцем — та же отмель, что у мели; заяц сидит сверху.
+    const sand = SPR.shallows && SPR.shallows.img;
+    if (sand){
+      const w = sand.width*HARE_SAND, h = sand.height*HARE_SAND;
+      cx.drawImage(sand, Math.round(x - w/2), Math.round(y - h/2 + 6), Math.round(w), Math.round(h));
+    }
+    drawSprite("hare", x + 3, y - 7 + Math.abs(Math.sin(g.frame*0.07 + b.wy))*2);
+    return;
+  }
   const name = BN_SPRITE[b.type] || "bread";
   const sz = spriteSize(name);
   drawShadow(x, y + sz.h/2, sz.w);
@@ -5675,19 +5769,28 @@ function drwBev(e){
     }
     cx.fillStyle = "rgba(255,255,255,0.28)";
     cx.fillRect(bx - 12, by + 36, 24, 2); cx.fillRect(bx - 7, by + 40, 14, 2);
-    // Ловит рыбу: стоит, потом бросок клювом вперёд-вниз (плеск), держит рыбку, глотает.
-    const cyc = (g.frame + Math.floor(ph*300)) % HERON_CYCLE, dirW = e.side < 0 ? 1 : -1;
-    let ang = 0, catchFish = false;
-    if (cyc >= 300 && cyc < 330) ang = Math.sin((cyc - 300)/30*Math.PI)*0.62;
-    if (cyc >= 316 && cyc < 400) catchFish = !(e.lucky === false);
-    if (cyc === 314) spPt(bx + dirW*30, by + 38, "#dff0fa", 8);
-    cx.save();
-    cx.translate(bx, by + 36); cx.rotate(ang*dirW); cx.translate(-bx, -(by + 36));
-    drawSprite("heron" + L, bx, by);
-    cx.restore();
-    if (catchFish && cyc < 380){
-      const hop = cyc < 330 ? 0 : Math.sin((cyc - 330)/8)*2;
-      drawSprite("fish" + L, bx + dirW*(28 - Math.max(0, cyc - 340)*0.2), by - 22 + hop + (cyc < 330 ? (330 - cyc)*0.8 : 0));
+    // Цикл рыбалки (HERON_CYCLE кадров): стоит → наклоняется (heron_b1) → тянется к воде (b2) →
+    // клюв в воде, круги (b3) → выпрямляется; иногда держит рыбку и глотает.
+    const t0 = g.frame + Math.floor(ph*300), cyc = t0 % HERON_CYCLE, dirW = e.side < 0 ? 1 : -1;
+    const lucky = hsh(Math.floor(t0/HERON_CYCLE)*7 + Math.round(ph*100)) < 0.55;
+    let nm = "heron";
+    if (cyc >= 250 && cyc < 262) nm = "heron_b1";
+    else if (cyc >= 262 && cyc < 274) nm = "heron_b2";
+    else if (cyc >= 274 && cyc < 330) nm = "heron_b3";
+    else if (cyc >= 330 && cyc < 342) nm = "heron_b2";
+    else if (cyc >= 342 && cyc < 354) nm = "heron_b1";
+    const bent = nm !== "heron";
+    // Кадры наклона шире на 6 клеток в сторону клюва и на 2 выше стоячего.
+    drawSprite(nm + L, bx + (bent ? dirW*9 : 0), by + (bent ? 3 : 0));
+    if (nm === "heron_b3"){
+      const k = (cyc - 274)/56, rx = bx + dirW*42, ry = by + 41;
+      cx.strokeStyle = "rgba(223,240,250," + (0.8 - k*0.5) + ")"; cx.lineWidth = 2;
+      for (let i = 0; i < 2; i++){ const r = 5 + ((cyc*0.35 + i*7) % 14); cx.beginPath(); cx.ellipse(rx, ry, r, r*0.4, 0, 0, Math.PI*2); cx.stroke(); }
+      if (cyc === 280) spPt(rx, ry, "#dff0fa", 8);
+    }
+    if (lucky && cyc >= 354 && cyc < 436){
+      const w = (cyc - 354);
+      drawSprite("fish" + L, bx + dirW*(36 - Math.min(10, w*0.25)), by - 24 + (w < 30 ? Math.sin(w*0.5)*3 : w*0.35));   // трепыхается, потом глотает
     }
     return;
   }
@@ -7764,6 +7867,8 @@ function chkCl(){
 // надо собрать. Собрал не меньше 80% — зайцы дарят яхту (g.yacht): до конца
 // уровня она идёт на 15% быстрее и не боится ни камней, ни брёвен, ни соперников;
 // только баржа её по-прежнему давит. Меньше — очки за каждого зайца.
+// Заяц сидит на песчаной отмели — той же, что мель (SPR.shallows), только поменьше.
+const HARE_HALF_X = 40, HARE_HALF_Y = 18, HARE_SAND = 0.8;
 const MAZAI_FRAMES = 1800, MAZAI_NEED = 0.8, MAZAI_GAP = 165, YACHT_SPEED = 1.15;
 function mazaiBadgeDue(){
   const L = level();
@@ -7787,11 +7892,11 @@ function startMazai(){
   explain("mazai", "ЗНАЧОК МАЗАЯ: 30 секунд ты дедушка Мазай. Плыви к зайцам на песчаных островках и подбирай их. Собрал 8 из 10 — зайцы подарят яхту до конца дня");
 }
 function spHare(){
-  const wy = spawnWy(), vn = BN_SPRITE.hare, visHalf = spriteSize(vn).w/2;
+  const wy = spawnWy(), visHalf = HARE_HALF_X;
   for (let a = 0; a < 14; a++){
     const t = (Math.random()*2 - 1)*0.72;
     if (inIsland(t, wy) || !spaceFree(t, wy, visHalf)) continue;
-    g.bns.push({ t, wy, type:"hare", visHalf, visHalfY: spriteSize(vn).h/2 });
+    g.bns.push({ t, wy, type:"hare", visHalf, visHalfY: HARE_HALF_Y });
     return true;
   }
   return false;
@@ -8005,7 +8110,7 @@ function spFighter(){
 // (замах DOG_TELL кадров, его видно) и прыгает. Отвернул от берега или ушёл
 // вперёд — промах: собака плюхается в воду и плывёт назад, а ты получаешь
 // очки. Попала — минус сердце. Прыжок один: потом сидит у берега.
-const HERON_HOPS = 2, HERON_FLY = 95, HERON_CYCLE = 420;
+const HERON_HOPS = 2, HERON_FLY = 95, HERON_CYCLE = 480;
 const DOG_SEE = 260, DOG_NEAR = 95, DOG_TELL = 32, DOG_LEAP = 16, DOG_SWIM = 70, DOG_ALERT = 22;
 const DOG_KINDS = { fisher_kid:1, fisher_car:1 };
 function mkDog(e){ return { state:"lie", age:0, wy:e.wy - 54, off:e.off + 30, k:0 }; }
@@ -8445,7 +8550,7 @@ function sceneAt(s){
       g.mazaiPlaced = true;
       g.bns.push({ t:0, wy:g.pwy + 150, type:"mazai", visHalf:spriteSize("badge").w/2, visHalfY:spriteSize("badge").h/2 });
       startMazai(); g.mazai.spawned = g.mazai.n - 2;
-      for (const [t, dy] of [[-0.5, 260], [0.45, 380]]) g.bns.push({ t, wy:g.pwy + dy, type:"hare", visHalf:spriteSize("hare_isle").w/2, visHalfY:spriteSize("hare_isle").h/2 });
+      for (const [t, dy] of [[-0.5, 260], [0.45, 380]]) g.bns.push({ t, wy:g.pwy + dy, type:"hare", visHalf:HARE_HALF_X, visHalfY:HARE_HALF_Y });
     }
   } else if (s === "bearswim" || s === "bearwave"){
     const sd = DEBUG_SCENES[s].side;
@@ -9896,7 +10001,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
