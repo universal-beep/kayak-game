@@ -116,3 +116,26 @@ test("генератор кладёт и реку, и берег, и прохо�
   assert.ok(shore > 30, "жители берега: " + shore);
   assert.ok(river > 30, "сужения, острова, трава: " + river);
 });
+
+// После удара лодка встаёт в центр русла. У развилки центр — остров: лодку
+// кидало на него, а через кадр выталкивало в рукав — двойной рывок.
+test("удар у развилки: лодка остаётся в своём рукаве, а не на острове", () => {
+  const K = game();
+  const cs = K.getCs();
+  cs.river = 1; cs.lenIdx = 1;
+  cs.items = [{ c: 3, r: 4, k: "fork" }];
+  K.startCustom();
+  const wy = K.itemWy({ r: 4 }) + 300;
+  K.G.pwy = wy; K.G.scroll = wy;
+  for (const side of [-1, 1]) {
+    const sh = K.forkShape(wy);
+    K.G.t = sh.c + side*(sh.h + 0.15); K.G.inv = 0; K.G.hp = 3; K.G.sh = false; K.G.whiskyT = 0;
+    K.damage();
+    assert.equal(K.G.hp, 2);
+    assert.ok(!K.inIsland(K.G.t, wy) && Math.abs(K.G.t - sh.c) > sh.h + 0.05, "не на острове: " + K.G.t.toFixed(2));
+    assert.equal(Math.sign(K.G.t - sh.c), side, "в своём рукаве");
+  }
+  K.G.pwy = K.itemWy({ r: 1 }); K.G.t = 0.5; K.G.inv = 0; K.G.hp = 3;
+  K.damage();
+  assert.equal(K.G.t, 0, "вне развилки — по-прежнему в середину");
+});

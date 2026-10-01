@@ -8596,6 +8596,14 @@ function bonusWeights(){
 
 // Три попытки, в каждой три сердца. Ничего не обнуляется: дистанция и счёт
 // идут сквозь все попытки, теряются только сердца.
+// Куда ставится лодка после удара: в середину русла, а у развилки — в
+// середину своего рукава (в середине русла там остров).
+function afterHitT(){
+  const sh = forkShape(g.pwy);
+  if (!sh || sh.h <= 0.02) return 0;
+  const side = g.t >= sh.c ? 1 : -1, edge = sh.c + side*sh.h, bank = side*0.85;
+  return (edge + bank)/2;
+}
 function damage(){
   if (g.inv > 0 || g.whiskyT > 0 || g.yacht) return;       // яхта не боится никого, кроме баржи
   if (g.sh){ g.sh = false; g.shake = 8; sfx("hit"); popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
@@ -8606,7 +8614,7 @@ function damage(){
   // Без гермомешка удар сбивает активные эффекты.
   if (!hasGear("drybag")){ g.breadT = 0; g.whiskyT = 0; }
   if (rapidBlend(g.pwy) > 0.5) g.cleanRun = false;
-  g.t = 0; g.vt = 0;
+  g.t = afterHitT(); g.vt = 0;
   g.sp = Math.max(1.8, g.sp*0.55);
   g.obs = g.obs.filter(o => o.cow || o.tied || Math.abs(o.wy - g.pwy) > 150);   // коровы и привязанные лодки остаются
   if (g.hp > 0){ sfx("hit"); popText("-1 СЕРДЦЕ","#ff5252"); return; }
@@ -10407,7 +10415,7 @@ function edSetLen(i){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
