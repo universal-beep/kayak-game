@@ -239,9 +239,11 @@ canvas { display:block;margin:0 auto; }
     <h1 class="maph" id="rsTitle">ВЫЗОВ!</h1>
     <div class="finrun" id="rsText">ЗАГРУЗКА…</div>
     <div class="finrun hidden selectable" id="rsLink"></div>
+    <div class="maprow hidden" id="rsTracks"></div>
     <div class="maprow">
       <button class="btn small hidden" id="rsSolo">ОДИН</button>
       <button class="btn small hidden" id="rsDuo">ВДВОЁМ ПО СЕТИ</button>
+      <button class="btn small hidden" id="rsReg">РЕГАТА · 8 ЛОДОК</button>
       <button class="btn small" id="rsGo">ПЛЫТЬ</button>
       <button class="btn small ghost" id="rsMenu">В МЕНЮ</button>
     </div>
@@ -9282,7 +9284,7 @@ function upd(){
   // Один шаг на всё: и прокрутка мира, и пройденные метры. Раньше дистанция
   // считалась мимо множителей, и стрежень с порогами на неё не влияли.
   const step = g.sp * sm * speedMulAt(g.scroll) * flowMul(g.t)
-             * (g.whiskyT > 0 ? 1.2 : 1) * (g.yacht ? YACHT_SPEED : 1) * windMul(g.frame, g.t);
+             * (g.whiskyT > 0 ? 1.2 : 1) * (g.yacht ? YACHT_SPEED : 1) * windMul(g.frame, g.t) * raceRowMul();
   if (level().wind && g.frame % 480 === 1) sfx("wind");
   g.dist += step * 0.04;
   rowStep(step);
@@ -9957,7 +9959,10 @@ function panelRightHtml(){
   const L = level(), custom = !!g.custom, R = raceOf();
   let h = "";
   if (stage === "play"){
-    if (R){
+    if (R && R.bots){
+      h += "<div class='sp'><h3>РЕГАТА · " + escHtml(R.bots.track.name) + "</h3>" +
+           regattaStandings().map((r, i) => "<div class='rt" + (r.me ? " cur" : "") + "'><span>" + (i + 1) + ". " + escHtml(r.name) + "</span><span></span></div>").join("") + "</div>";
+    } else if (R){
       const rival = R.net ? (R.net.rival.name || "ДРУГ") : R.ghost ? (R.ghost.name || "ПРИЗРАК") : null;
       h += "<div class='sp'><h3>ГОНКА</h3>" + (rival ? "<div>соперник: " + escHtml(rival) + "</div>" +
            (R.ghost ? "<div class='gp'>его время " + raceTime(R.ghost.frames) + "</div>" : "") :
@@ -10500,6 +10505,7 @@ function raceStep(){
   }
   R.f++;
   if (R.net) netSmooth(R.net);
+  if (R.bots) regattaStep(R);
 }
 function raceFinishLine(){
   const R = raceOf();
@@ -10507,6 +10513,7 @@ function raceFinishLine(){
   R.end = Math.max(1, R.f);
   R.track.push(Math.round(g.pwy), Math.round(g.t*1000));
   if (R.net) netSend({ type: "fin", frames: R.end });
+  if (R.bots) regattaFinish(R);
 }
 // Положение призрака на кадре f: точка j записана на кадре j*GHOST_STEP,
 // последняя — на финише (кадр frames). Между точками — по прямой.
@@ -10572,6 +10579,7 @@ function drwGhost(){
   const R = raceOf();
   if (!R || g.s !== "playing" && g.s !== "arrive" && g.s !== "paused" && g.s !== "countdown") return;
   if (R.net){ drwRival(R.net); return; }
+  if (R.bots){ drwBots(R); return; }
   if (!R.ghost) return;
   const p = ghostAt(R.ghost, R.f), y = screenYOf(p.wy);
   if (y < -60 || y > H + 60) return;
@@ -10587,6 +10595,14 @@ function drwGhost(){
 function drwRaceHud(){
   const R = raceOf();
   if (!R || g.s !== "playing") return;
+  if (R.bots){
+    cx.save(); cx.font = "14px " + F; cx.textAlign = "center";
+    const p = regattaPlace();
+    cx.fillStyle = "rgba(0,0,0,0.5)"; cx.fillRect(W/2 - 62, 66, 124, 24);
+    cx.fillStyle = p === 1 ? "#ffd54f" : p <= 3 ? "#cfe8f5" : "#ff8a80";
+    cx.fillText("МЕСТО " + p + "/8", W/2, 84);
+    cx.restore();
+  }
   cx.save(); cx.font = "9px " + F; cx.textAlign = "right";
   cx.fillStyle = "#ffd54f"; cx.fillText(raceTime(R.f), W - 12, 84);   // под сердечками
   if (R.ghost || (R.net && R.net.show)){
@@ -10606,6 +10622,21 @@ function raceEndScreen(ok){
   document.getElementById("cePlace").textContent = "ГОНКА";
   const res = raceResult();
   g.lastOk = ok;
+  if (R.bots){
+    const rr = regattaResult();
+    document.getElementById("cePlace").textContent = "РЕГАТА · " + R.bots.track.name;
+    if (!rr){
+      // Сошёл с дистанции: итога нет — показываем, кто где был в момент схода.
+      document.getElementById("ceTitle").textContent = "НЕ ДОШЛИ";
+      box.innerHTML = regattaStandings().map((r, i) => (r.me ? "<b style='color:#ff8a80'>" : "<span>") + (i + 1) + ". " + escHtml(r.name) + (r.me ? " — СОШЁЛ</b>" : "</span>")).join("<br>");
+      box.classList.remove("hidden"); ch.classList.add("hidden");
+      return;
+    }
+    document.getElementById("ceTitle").textContent = ["ЗОЛОТО!", "СЕРЕБРО!", "БРОНЗА!"][rr.place - 1] || "МЕСТО " + rr.place;
+    box.innerHTML = rr.rows.map(r => (r.me ? "<b style='color:#ffd54f'>" : "<span>") + r.place + ". " + escHtml(r.name) + " — " + raceTime(r.frames) + (r.me ? "</b>" : "</span>")).join("<br>");
+    box.classList.remove("hidden"); ch.classList.add("hidden");
+    return;
+  }
   if (res.ghost != null || R.net)
     document.getElementById("ceTitle").textContent = res.win ? (R.net ? "ПОБЕДА!" : "ОБОГНАЛ!") : ok ? "ОТСТАЛ" : "НЕ ДОШЛИ";
   box.textContent = (ok ? "ТЫ " + raceTime(res.mine) : "ТЫ НЕ ДОПЛЫЛ") +
@@ -10702,7 +10733,8 @@ function drwCountdown(){
 }
 function rsSay(t){ const el = typeof document !== "undefined" && document.getElementById("rsText"); if (el) el.textContent = t; }
 function rsButtons(list){
-  for (const id of ["rsSolo","rsDuo","rsGo"]) document.getElementById(id).classList[list.includes(id) ? "remove" : "add"]("hidden");
+  document.getElementById("rsTracks").classList.add("hidden");
+  for (const id of ["rsSolo","rsDuo","rsReg","rsGo"]) document.getElementById(id).classList[list.includes(id) ? "remove" : "add"]("hidden");
 }
 function showRaceMenu(){
   hideAllScreens();
@@ -10711,7 +10743,23 @@ function showRaceMenu(){
   document.getElementById("rsTitle").textContent = "ГОНКА";
   document.getElementById("rsLink").classList.add("hidden");
   rsSay("ШИРОКАЯ РЕКА, ОДНА ДЛЯ ВСЕХ. ОДИН — НА ВРЕМЯ, ПОТОМ МОЖНО ВЫЗВАТЬ ДРУГА. ВДВОЁМ — ДРУГ ПО ССЫЛКЕ, СТАРТ ОДНОВРЕМЕННО.");
-  rsButtons(["rsSolo","rsDuo"]);
+  rsButtons(["rsSolo","rsDuo","rsReg"]);
+}
+function showRegattaMenu(){
+  document.getElementById("rsTitle").textContent = "РЕГАТА";
+  rsSay("ТЫ И СЕМЬ СОПЕРНИКОВ, СТАРТ СТРОЕМ. ГРЕБИ — ГРЕБОК УСКОРЯЕТ; БОРТ О БОРТ — ОБА ТЕРЯЮТ ХОД.");
+  rsButtons([]);
+  const box = document.getElementById("rsTracks");
+  box.innerHTML = "";
+  for (const tr of REGATTA_TRACKS.concat([null])){
+    const b = document.createElement("button");
+    b.className = "btn small";
+    const best = tr && save.regatta && save.regatta[tr.id];
+    b.textContent = tr ? tr.name + (best ? " · " + (["🥇","🥈","🥉"][best - 1] || best + "-Е") : "") : "СЛУЧАЙНАЯ";
+    b.onclick = () => startRegatta(tr || { id: "rnd", name: "СЛУЧАЙНАЯ", river: Math.floor(Math.random()*4), lenIdx: 1, seed: 1 + Math.floor(Math.random()*99999) });
+    box.appendChild(b);
+  }
+  box.classList.remove("hidden");
 }
 function showRaceHost(){
   const h = netHost(save.name);
@@ -10752,6 +10800,7 @@ function showRaceInvite(id){
   document.getElementById("startRaceBtn").addEventListener("click", () => { startMusic(); showRaceMenu(); });
   document.getElementById("rsSolo").addEventListener("click", () => { startRace(raceLevel(1 + Math.floor(Math.random()*99999))); });
   document.getElementById("rsDuo").addEventListener("click", showRaceHost);
+  document.getElementById("rsReg").addEventListener("click", showRegattaMenu);
   document.getElementById("rsGo").addEventListener("click", () => { if (g.invite){ startMusic(); startRace(g.invite.lvl, g.invite); } });
   document.getElementById("rsMenu").addEventListener("click", () => { if (g.net && g.net.ws) try { g.net.ws.close(); } catch(e){} g.net = null; showStart(); });
   document.getElementById("ceChallenge").addEventListener("click", () => {
@@ -10767,8 +10816,210 @@ function showRaceInvite(id){
   });
 }
 
+/* ===== 12в. Регата: 8 лодок ===== */
+// Ты и семь ботов стартуете строем поперёк широкой реки. Боты — с
+// характерами: скорость (mul), как далеко видят (look), какой запас берут от
+// камней (margin), лихач лезет в узкий рукав, задира толкается сильнее.
+// Камни, мели, коряги, брёвна и острова боты видят по карте уровня, а не по
+// g.obs: препятствия появляются только рядом с игроком, и бот впереди плыл бы
+// по пустой реке. Удар — бот теряет ход на секунду. Лодки толкаются бортами
+// без потери сердец. Финиш — та же лента; кто не доплыл к нашему финишу,
+// досчитывается по его средней скорости.
+const REGATTA_TRACKS = [
+  { id:"volga",  name:"КУБОК ВОЛГИ",        river:0, lenIdx:1, seed:104 },
+  { id:"medv",   name:"МЕДВЕДИЦКИЙ СЛАЛОМ", river:1, lenIdx:1, seed:205, forks:true },
+  { id:"tverca", name:"ТВЕРЕЦКИЙ МАРАФОН",  river:2, lenIdx:2, seed:306 },
+  { id:"osuga",  name:"ОСУЖСКИЙ СПРИНТ",    river:3, lenIdx:0, seed:407 }
+];
+const BOT_STYLES = [
+  { style:"fast",    name:"СЕРЁГА",    mul:1.18, look:280, margin:26, variant:0 },
+  { style:"daring",  name:"ЖЕКА",      mul:1.14, look:200, margin:10, variant:1, narrow:true },
+  { style:"careful", name:"ИРИНА",     mul:1.07, look:340, margin:44, variant:2 },
+  { style:"bully",   name:"ЗЛОЙ ГЕНА", mul:1.12, look:240, margin:22, variant:AGGRO_VARIANT, bump:2.2 },
+  { style:"rookie",  name:"КОСТЯ",     mul:1.05, look:90,  margin:4,  variant:0 },
+  { style:"steady",  name:"НАТАША",    mul:1.10, look:260, margin:28, variant:1 },
+  { style:"old",     name:"ДЯДЬ ВИТЯ", mul:1.09, look:300, margin:32, variant:2 }
+];
+const REG_SOLID = { rock:30, shallows:34, snag:28, log:34 };
+function regattaLevel(tr){
+  const rows = customRows(tr.lenIdx);
+  let items = genCustom(tr.river, tr.lenIdx, 1, tr.seed).filter(it => it.k !== "kayaker" && it.k !== "aggro");
+  if (tr.forks){
+    // Слалом: остров каждые ~9 рядов, если проход остаётся.
+    for (let r = 4; r + 4 < rows; r += 9){
+      const c = r % 2 ? 2 : 4;
+      if (items.some(it => it.r >= r && it.r < r + 4 && (it.k === "fork" || it.k === "narrow"))) continue;
+      const keep = items.filter(it => !(it.r === r && it.c === c));
+      keep.push({ c, r, k:"fork" });
+      if (customBlockedRow(keep, rows) < 0) items = keep;
+    }
+  }
+  return { river: tr.river, lenIdx: tr.lenIdx, items: items.sort((a, b) => a.r - b.r || a.c - b.c) };
+}
+function startRegatta(tr){
+  const lvl = regattaLevel(tr);
+  startRace(lvl);
+  // Два ряда по четыре дорожки: в одну шеренгу восемь лодок стояли борт к
+  // борту и толкались сразу после выстрела. Ты — во втором ряду (первый ряд
+  // на 70 px впереди): лодка игрока у нижнего края экрана, и ряд позади неё
+  // уходил под край и под нижнюю подпись.
+  const R = raceOf(), LANES = [-0.6, -0.2, 0.2, 0.6], me = 1;
+  const slots = [];
+  for (let row = 0; row < 2; row++) for (let k = 0; k < 4; k++) if (!(row === 1 && k === me)) slots.push({ t: LANES[k], wy: g.pwy + (1 - row)*70 });
+  R.bots = BOT_STYLES.map((st, i) =>
+    Object.assign({ i, t: slots[i].t, wy: slots[i].wy, vt: 0, goal: slots[i].t, stunT: 0, boostT: 0, hits: 0, end: 0 }, st));
+  R.bots.track = tr;
+  R.startWy = g.pwy;
+  R.finWy = g.scroll + level().len*PX_PER_M - 150;
+  R.solid = lvl.items.filter(it => REG_SOLID[it.k]).map(it => ({ wy: itemWy(it), t: colT(it.c), half: REG_SOLID[it.k] }));
+  g.t = LANES[me];
+  g.s = "countdown"; g.cdT = 180;
+}
+function raceRowMul(){
+  if (!raceOf()) return 1;
+  return g.rowing > 0 ? 1.22 : g.rowing < 0 ? 0.75 : 1;
+}
+// Лучшая дорожка для бота: штраф за препятствия впереди (в пределах его
+// взгляда и с его запасом), за остров, за лодки прямо впереди; середина
+// течёт быстрее. Лихач любит узкий рукав.
+function botLane(b, R){
+  const hw = widthAt(b.wy)/2;
+  let best = b.t, bc = Infinity;
+  for (let t = -0.8; t <= 0.801; t += 0.08){
+    let c = Math.abs(t - b.t)*0.5 + Math.abs(t)*0.3;
+    for (const o of R.solid){
+      const ah = o.wy - b.wy;
+      if (ah < -30 || ah > b.look) continue;
+      const d = Math.abs(t - o.t)*hw, need = o.half + b.margin + 14;
+      if (d < need) c += (need - d)*(b.look + 40 - ah)/25;
+    }
+    for (const ah of [60, 140, 220]){
+      if (ah > b.look + 60) break;
+      const sh = forkShape(b.wy + ah);
+      if (sh && sh.h > 0.02){
+        if (Math.abs(t - sh.c) < sh.h + 0.1) c += 400;
+        else if (b.narrow && Math.sign(t - sh.c) === (sh.f.narrowLeft ? -1 : 1)) c -= 6;
+      }
+    }
+    for (const o of regattaBoats(R)){
+      if (o === b) continue;
+      const ah = o.wy - b.wy;
+      if (ah > 0 && ah < 90 && Math.abs((t - o.t)*hw) < 40) c += 30;
+    }
+    if (c < bc){ bc = c; best = t; }
+  }
+  return best;
+}
+function regattaBoats(R){ return [{ t: g.t, wy: g.pwy, me: true }].concat(R.bots); }
+function regattaStep(R){
+  for (const b of R.bots){
+    if (b.end) continue;
+    const hw = widthAt(b.wy)/2;
+    if ((R.f + b.i) % 4 === 0) b.goal = botLane(b, R);
+    b.vt = (b.vt + Math.max(-0.004, Math.min(0.004, (b.goal - b.t)*0.03)))*0.86;
+    b.t = Math.max(-0.85, Math.min(0.85, b.t + b.vt));
+    // Рывками, как человек: гребёт и отдыхает.
+    const row = ((R.f + b.i*37) % 240) < 95 ? 1.18 : 1;
+    b.wy += g.sp*speedMulAt(b.wy)*flowMul(b.t)*b.mul*row*(b.boostT > 0 ? 1.3 : 1)*(b.stunT > 0 ? 0.45 : 1);
+    if (b.stunT > 0) b.stunT--;
+    if (b.boostT > 0) b.boostT--;
+    if (!(b.stunT > 0)){
+      for (const o of R.solid){
+        if (Math.abs(o.wy - b.wy) > 26 || Math.abs((o.t - b.t)*hw) > o.half + 12) continue;
+        b.stunT = 55; b.hits++; b.t += (b.t >= o.t ? 1 : -1)*0.05; b.vt = 0;
+        if (Math.abs(screenYOf(b.wy) - H/2) < H/2) spPt(screenXOf(b.t, b.wy), screenYOf(b.wy), "#dff0fa", 8);
+        break;
+      }
+      const sh = forkShape(b.wy);
+      if (sh && sh.h > 0.02 && Math.abs(b.t - sh.c) < sh.h + 0.03){
+        b.t = sh.c + (b.t >= sh.c ? 1 : -1)*(sh.h + 0.07); b.stunT = 55; b.hits++; b.vt = 0;
+      }
+    }
+    // Бонус рядом — забирает.
+    for (let i = g.bns.length - 1; i >= 0; i--){
+      const bn = g.bns[i];
+      if (Math.abs(bn.wy - b.wy) < 30 && Math.abs((bn.t - b.t)*hw) < 30){ g.bns.splice(i, 1); b.boostT = 240; break; }
+    }
+    if (b.wy >= R.finWy) b.end = R.f;
+  }
+  regattaBump(R);
+}
+// Борт о борт: расходятся, оба теряют ход; сердце не тратится.
+function regattaBump(R){
+  const boats = regattaBoats(R);
+  for (let i = 0; i < boats.length; i++) for (let j = i + 1; j < boats.length; j++){
+    const a = boats[i], b = boats[j];
+    if (a.end || b.end) continue;
+    const hw = widthAt(a.wy)/2, dx = (a.t - b.t)*hw;
+    if (Math.abs(a.wy - b.wy) > 40 || Math.abs(dx) > 36) continue;
+    const dir = dx >= 0 ? 1 : -1, k = Math.max(a.bump || 1, b.bump || 1);
+    const push = 0.025*k;
+    for (const [o, sg] of [[a, dir], [b, -dir]]){
+      if (o.me){
+        g.t = Math.max(-0.88, Math.min(0.88, g.t + sg*push)); g.vt = sg*0.004;
+        if (!(g.bumpT > 0)){ g.bumpT = 40; g.sp = Math.max(1.8, g.sp*0.9); popText("БОРТ О БОРТ", "#cfe8f5"); }
+      } else { o.t = Math.max(-0.85, Math.min(0.85, o.t + sg*push)); o.vt = 0; o.stunT = Math.max(o.stunT, 18); }
+    }
+  }
+  if (g.bumpT > 0) g.bumpT--;
+}
+function regattaStandings(){
+  const R = raceOf();
+  if (!R || !R.bots) return [];
+  const rows = [{ name: save.name || "ТЫ", me: true, wy: g.pwy, end: R.end }].concat(R.bots.map(b => ({ name: b.name, wy: b.wy, end: b.end })));
+  return rows.sort((a, b) => (a.end && b.end) ? a.end - b.end : a.end ? -1 : b.end ? 1 : b.wy - a.wy);
+}
+function regattaPlace(){ return regattaStandings().findIndex(r => r.me) + 1; }
+// Наш финиш: кто ещё плывёт — досчитываем время по средней скорости.
+function regattaFinish(R){
+  const rows = [{ name: save.name || "ТЫ", me: true, frames: R.end }];
+  for (const b of R.bots){
+    let fr = b.end;
+    if (!fr){
+      const v = Math.max(0.5, (b.wy - R.startWy)/Math.max(1, R.f));
+      fr = R.f + Math.ceil((R.finWy - b.wy)/v);
+    }
+    rows.push({ name: b.name, frames: fr, style: b.style });
+  }
+  rows.sort((a, b) => a.frames - b.frames || (a.me ? -1 : 1));
+  rows.forEach((r, i) => r.place = i + 1);
+  R.result = { rows, place: rows.find(r => r.me).place, track: R.bots.track };
+  if (R.bots.track.id !== "rnd"){
+    save.regatta = save.regatta || {};
+    const prev = save.regatta[R.bots.track.id];
+    if (!prev || R.result.place < prev) save.regatta[R.bots.track.id] = R.result.place;
+    commitSave();
+  }
+}
+function regattaResult(){ const R = raceOf(); return R && R.result || null; }
+function drwBots(R){
+  // Себя среди восьми лодок надо найти сразу: жёлтая подпись «ТЫ».
+  { const x = screenXOf(g.t, g.pwy), y = g.py;
+    cx.save(); cx.font = "7px " + F; cx.textAlign = "center";
+    cx.fillStyle = "rgba(0,0,0,0.6)"; cx.fillRect(x - 14, y - 44, 28, 11);
+    cx.fillStyle = "#ffd54f"; cx.fillText("ТЫ", x, y - 35); cx.restore(); }
+  const vis = [];
+  for (const b of R.bots){
+    const y = screenYOf(b.wy);
+    if (y < -60 || y > H + 60) continue;
+    vis.push([b, y]);
+  }
+  vis.sort((p, q) => p[1] - q[1]);
+  for (const [b, y] of vis){
+    const x = screenXOf(b.t, b.wy), sz = spriteSize("rower");
+    drawShadow(x, y + sz.h/2 - 3, sz.w);
+    if (b.stunT > 0 && Math.floor(g.frame/5) % 2) { cx.save(); cx.globalAlpha = 0.6; drawSprite("rower", x, y, b.variant); cx.restore(); }
+    else drawSprite("rower", x, y, b.variant);
+    if (b.boostT > 0 && g.frame % 6 === 0) spPt(x + (g.frame % 12 ? 18 : -18), y + 6, "#ffd54f", 2);
+    cx.save(); cx.font = "6px " + F; cx.textAlign = "center";
+    cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(x - 28, y - 40, 56, 9);
+    cx.fillStyle = b.style === "bully" ? "#ff8a80" : "#e0e0e0"; cx.fillText(b.name, x, y - 33);
+    cx.restore();
+  }
+}
+
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
