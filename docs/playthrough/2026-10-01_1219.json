@@ -1,0 +1,559 @@
+{
+  "date": "01.10.2026 12:19",
+  "commit": "f4f8f15",
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "summary": [
+    {
+      "day": 1,
+      "done": "3/3",
+      "hits": 0.3,
+      "deaths": 0,
+      "sec": 102,
+      "errors": 0
+    },
+    {
+      "day": 2,
+      "done": "3/3",
+      "hits": 1.7,
+      "deaths": 0.3,
+      "sec": 105,
+      "errors": 0
+    },
+    {
+      "day": 3,
+      "done": "3/3",
+      "hits": 1.7,
+      "deaths": 0,
+      "sec": 126,
+      "errors": 0
+    },
+    {
+      "day": 4,
+      "done": "3/3",
+      "hits": 2,
+      "deaths": 0,
+      "sec": 126,
+      "errors": 0
+    },
+    {
+      "day": 5,
+      "done": "3/3",
+      "hits": 3,
+      "deaths": 0.3,
+      "sec": 139,
+      "errors": 0
+    },
+    {
+      "day": 6,
+      "done": "3/3",
+      "hits": 7.7,
+      "deaths": 2,
+      "sec": 159,
+      "errors": 0
+    },
+    {
+      "day": 7,
+      "done": "3/3",
+      "hits": 6,
+      "deaths": 1,
+      "sec": 165,
+      "errors": 0
+    },
+    {
+      "day": 8,
+      "done": "3/3",
+      "hits": 10,
+      "deaths": 2,
+      "sec": 171,
+      "errors": 0
+    },
+    {
+      "day": 9,
+      "done": "3/3",
+      "hits": 8,
+      "deaths": 1.7,
+      "sec": 170,
+      "errors": 0
+    }
+  ],
+  "runs": [
+    {
+      "day": 1,
+      "seed": 1,
+      "done": true,
+      "len": 800,
+      "dist": 799,
+      "sec": 101,
+      "hits": 1,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 0,
+      "hitBy": {
+        "chkCl · log": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 1,
+      "seed": 2,
+      "done": true,
+      "len": 800,
+      "dist": 799,
+      "sec": 100,
+      "hits": 0,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 0,
+      "hitBy": {},
+      "errors": []
+    },
+    {
+      "day": 1,
+      "seed": 3,
+      "done": true,
+      "len": 800,
+      "dist": 799,
+      "sec": 105,
+      "hits": 0,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 0,
+      "hitBy": {},
+      "errors": []
+    },
+    {
+      "day": 2,
+      "seed": 1,
+      "done": true,
+      "len": 800,
+      "dist": 799,
+      "sec": 102,
+      "hits": 0,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 0,
+      "hitBy": {},
+      "errors": []
+    },
+    {
+      "day": 2,
+      "seed": 2,
+      "done": true,
+      "len": 800,
+      "dist": 799,
+      "sec": 101,
+      "hits": 1,
+      "deaths": 1,
+      "cuts": 0,
+      "parries": 0,
+      "hitBy": {
+        "? · barge": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 2,
+      "seed": 3,
+      "done": true,
+      "len": 800,
+      "dist": 799,
+      "sec": 112,
+      "hits": 4,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 0,
+      "hitBy": {
+        "chkCl · log": 3,
+        "chkCl · rock": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 3,
+      "seed": 1,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 127,
+      "hits": 2,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 7,
+      "hitBy": {
+        "chkCl · злой гребец": 2
+      },
+      "errors": []
+    },
+    {
+      "day": 3,
+      "seed": 2,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 130,
+      "hits": 2,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 4,
+      "hitBy": {
+        "chkCl · rock": 2
+      },
+      "errors": []
+    },
+    {
+      "day": 3,
+      "seed": 3,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 122,
+      "hits": 1,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 13,
+      "hitBy": {
+        "chkCl · -": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 4,
+      "seed": 1,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 124,
+      "hits": 2,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 4,
+      "hitBy": {
+        "chkCl · -": 1,
+        "chkCl · rock": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 4,
+      "seed": 2,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 129,
+      "hits": 3,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 14,
+      "hitBy": {
+        "chkCl · snag": 3
+      },
+      "errors": []
+    },
+    {
+      "day": 4,
+      "seed": 3,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 124,
+      "hits": 1,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 13,
+      "hitBy": {
+        "chkCl · -": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 5,
+      "seed": 1,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 137,
+      "hits": 4,
+      "deaths": 1,
+      "cuts": 1,
+      "parries": 4,
+      "hitBy": {
+        "chkBridges · -": 2,
+        "chkCl · rock": 1,
+        "chkCl · -": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 5,
+      "seed": 2,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 136,
+      "hits": 2,
+      "deaths": 0,
+      "cuts": 1,
+      "parries": 11,
+      "hitBy": {
+        "chkCl · гребец": 1,
+        "chkCl · rock": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 5,
+      "seed": 3,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 145,
+      "hits": 3,
+      "deaths": 0,
+      "cuts": 1,
+      "parries": 1,
+      "hitBy": {
+        "chkCl · rock": 1,
+        "chkBridges · гребец": 1,
+        "chkBridges · log": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 6,
+      "seed": 1,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 157,
+      "hits": 7,
+      "deaths": 2,
+      "cuts": 1,
+      "parries": 1,
+      "hitBy": {
+        "chkCl · гребец": 1,
+        "chkBridges · -": 3,
+        "chkCl · rock": 1,
+        "chkCl · log": 1,
+        "chkCl · -": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 6,
+      "seed": 2,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 157,
+      "hits": 8,
+      "deaths": 2,
+      "cuts": 1,
+      "parries": 5,
+      "hitBy": {
+        "chkCl · log": 1,
+        "chkCl · -": 1,
+        "chkCl · гребец": 1,
+        "chkCl · boat": 2,
+        "chkBridges · branch": 1,
+        "chkCl · rock": 1,
+        "chkBridges · -": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 6,
+      "seed": 3,
+      "done": true,
+      "len": 1000,
+      "dist": 999,
+      "sec": 162,
+      "hits": 8,
+      "deaths": 2,
+      "cuts": 1,
+      "parries": 1,
+      "hitBy": {
+        "chkCl · rock": 2,
+        "chkBridges · гребец": 1,
+        "chkCl · гребец": 2,
+        "chkCl · -": 1,
+        "chkCl · log": 1,
+        "chkCl · злой гребец": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 7,
+      "seed": 1,
+      "done": true,
+      "len": 1200,
+      "dist": 1199,
+      "sec": 167,
+      "hits": 11,
+      "deaths": 2,
+      "cuts": 0,
+      "parries": 4,
+      "hitBy": {
+        "chkCl · log": 1,
+        "chkCl · rock": 2,
+        "chkCl · -": 2,
+        "chkCl · гребец": 4,
+        "chkCl · злой гребец": 1,
+        "chkCl · branch": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 7,
+      "seed": 2,
+      "done": true,
+      "len": 1200,
+      "dist": 1199,
+      "sec": 167,
+      "hits": 4,
+      "deaths": 1,
+      "cuts": 0,
+      "parries": 2,
+      "hitBy": {
+        "chkCl · гребец": 2,
+        "chkCl · log": 2
+      },
+      "errors": []
+    },
+    {
+      "day": 7,
+      "seed": 3,
+      "done": true,
+      "len": 1200,
+      "dist": 1199,
+      "sec": 161,
+      "hits": 3,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 4,
+      "hitBy": {
+        "chkCl · log": 1,
+        "chkCl · гребец": 1,
+        "chkCl · rock": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 8,
+      "seed": 1,
+      "done": true,
+      "len": 1200,
+      "dist": 1199,
+      "sec": 164,
+      "hits": 9,
+      "deaths": 2,
+      "cuts": 0,
+      "parries": 30,
+      "hitBy": {
+        "chkCl · log": 1,
+        "chkCl · rock": 6,
+        "chkCl · гребец": 2
+      },
+      "errors": []
+    },
+    {
+      "day": 8,
+      "seed": 2,
+      "done": true,
+      "len": 1200,
+      "dist": 1199,
+      "sec": 174,
+      "hits": 11,
+      "deaths": 3,
+      "cuts": 0,
+      "parries": 3,
+      "hitBy": {
+        "chkCl · гребец": 3,
+        "chkCl · log": 4,
+        "chkCl · rock": 3,
+        "chkCl · злой гребец": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 8,
+      "seed": 3,
+      "done": true,
+      "len": 1200,
+      "dist": 1199,
+      "sec": 174,
+      "hits": 10,
+      "deaths": 1,
+      "cuts": 0,
+      "parries": 3,
+      "hitBy": {
+        "chkCl · branch": 2,
+        "chkCl · rock": 3,
+        "chkCl · -": 1,
+        "chkCl · гребец": 2,
+        "chkCl · log": 2
+      },
+      "errors": []
+    },
+    {
+      "day": 9,
+      "seed": 1,
+      "done": true,
+      "len": 1200,
+      "dist": 1199,
+      "sec": 170,
+      "hits": 1,
+      "deaths": 0,
+      "cuts": 0,
+      "parries": 25,
+      "hitBy": {
+        "chkCl · log": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 9,
+      "seed": 2,
+      "done": true,
+      "len": 1200,
+      "dist": 1199,
+      "sec": 168,
+      "hits": 12,
+      "deaths": 2,
+      "cuts": 0,
+      "parries": 32,
+      "hitBy": {
+        "chkCl · rock": 5,
+        "chkCl · log": 2,
+        "chkCl · корова": 1,
+        "chkCl · гребец": 3,
+        "chkCl · злой гребец": 1
+      },
+      "errors": []
+    },
+    {
+      "day": 9,
+      "seed": 3,
+      "done": true,
+      "len": 1200,
+      "dist": 1199,
+      "sec": 172,
+      "hits": 11,
+      "deaths": 3,
+      "cuts": 0,
+      "parries": 24,
+      "hitBy": {
+        "chkCl · branch": 1,
+        "chkCl · гребец": 2,
+        "chkCl · log": 1,
+        "chkCl · -": 1,
+        "chkCl · rock": 5,
+        "chkCl · злой гребец": 1
+      },
+      "errors": []
+    }
+  ]
+}
