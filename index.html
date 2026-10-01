@@ -60,6 +60,7 @@ canvas { display:block;margin:0 auto; }
 .edpal button { width:44px;height:44px;padding:0;background:#12202e;border:2px solid #2c3b47;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:12px;color:#ff5252; }
 .edpal button.bn { border-color:#6b5a1f; }
 .edpal button.on { border-color:#ffd54f;background:#2a3a1a; }
+.gpf { outline:3px solid #ffd54f;outline-offset:2px;box-shadow:0 0 0 5px rgba(255,213,79,0.25); }
 .recnav { display:flex;align-items:center;gap:10px;margin-bottom:6px; }
 .recnav .place { margin:0;min-width:200px; }
 .finrun { font-family:"Press Start 2P",monospace;font-size:8px;line-height:2;color:#ddd;text-align:center;margin:6px 0; }
@@ -118,6 +119,7 @@ canvas { display:block;margin:0 auto; }
       <p><span class="key">← →</span> руль &nbsp; <span class="key">↑ ↓</span> вперёд и назад</p>
       <p><span class="key">пробел</span> удар веслом &nbsp; <span class="key">Esc</span> пауза &nbsp; <span class="key">M</span> музыка</p>
       <p><span class="key">тач</span> — веди пальцем, двойной тап — удар</p>
+      <p><span class="key">геймпад</span> стик руль · A гребок · B удар · Start пауза</p>
     </div>
   </div>
 </div>
@@ -4559,8 +4561,8 @@ const STAM_MAX = 100, STAM_DRAIN = 0.55, STAM_REGEN = 0.30;
 
 function rowInput(){
   let f = 0;
-  if (keys["ArrowUp"]   || keys["w"] || keys["W"] || keys["ц"] || keys["Ц"] || g.btnFwd)  f += 1;
-  if (keys["ArrowDown"] || keys["s"] || keys["S"] || keys["ы"] || keys["Ы"] || g.btnBack) f -= 1;
+  if (keys["ArrowUp"]   || keys["w"] || keys["W"] || keys["ц"] || keys["Ц"] || keys["z"] || keys["Z"] || keys["я"] || keys["Я"] || g.btnFwd || gpState.fwd)  f += 1;
+  if (keys["ArrowDown"] || keys["s"] || keys["S"] || keys["ы"] || keys["Ы"] || keys["c"] || keys["C"] || keys["с"] || keys["С"] || g.btnBack || gpState.back) f -= 1;
   // Мобильная версия без кнопок: скорость задаётся вертикальной зоной экрана
   // (палец вверху = вперёд, внизу = табань, середина = по инерции).
   if (g.mSpeed !== null && g.mSpeed !== undefined) f += g.mSpeed;
@@ -4943,6 +4945,7 @@ addEventListener("keydown",e=>{
   // только одиночные нажатия.
   if(e.repeat&&(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь"||
      e.key=="Escape"||e.key=="p"||e.key=="P"||e.key=="з"||e.key=="З"||e.key==" "))return;
+  if(g.s!=="playing"&&g.s!=="cutscene"&&menuKey(e))return;        // стрелки, Enter, Esc в меню
   keys[e.key]=true;
   if(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь")toggleMusic();
   if(g.s=="cutscene"){ e.preventDefault(); endCut(); return; }
@@ -4951,7 +4954,7 @@ addEventListener("keydown",e=>{
   if(e.key=="p"||e.key=="P"||e.key=="з"||e.key=="З"){downloadShot();}
   // Во время игры пробел и стрелка вверх — удар веслом; на экранах — старт.
   if(g.s=="playing"){
-    if(e.key==" "){e.preventDefault();paddleStrike();}
+    if(e.key==" "||e.key=="x"||e.key=="X"||e.key=="ч"||e.key=="Ч"){e.preventDefault();paddleStrike();}
     if(e.key=="ArrowUp"||e.key=="ArrowDown")e.preventDefault();
   } else if(e.key==" "||e.key=="Enter"){
     if(g.s=="finish"){
@@ -4967,6 +4970,132 @@ addEventListener("keydown",e=>{
 addEventListener("keyup",e=>{keys[e.key]=false;});
 // Потеря фокуса (Alt+Tab, другое окно) — клавиши не должны «залипать».
 addEventListener("blur",()=>{for(const k in keys)keys[k]=false;});
+/* ===== Геймпад, пульт эмулятора и меню с клавиатуры ===== */
+// Меню листается стрелками / крестовиной / стиком, OK — Enter, пробел, Z или кнопка A,
+// «назад» — Esc, Backspace, X или кнопка B. В заплыве: стик или крестовина — руль,
+// A (или Z, правый триггер, стик вверх) — гребок вперёд, X-кнопка (или C, стик вниз) —
+// табанить, B / правый бампер (или X на клавиатуре) — удар, Start — пауза, Select — музыка.
+const GP_DEAD = 0.28, GP_REPEAT = 18;
+const MENU_SCREENS = ["startScreen","mapScreen","campScreen","finishScreen","failScreen","diaryScreen","recordsScreen",
+                      "editScreen","customEnd","pauseScreen","continueScreen","endScreen"];
+// Кнопка «назад» на экранах, где она есть.
+const MENU_BACK = { pauseScreen:"resumeBtn", diaryScreen:"diaryBack", recordsScreen:"recBack", editScreen:"edBack",
+                    customEnd:"ceMenu", endScreen:"endMapBtn", failScreen:"toMapBtn" };
+let menuIdx = 0, menuActive = false;
+// Разбор геймпада со стандартной раскладкой (Xbox/PlayStation/пульт эмулятора в режиме gamepad).
+function gpRead(pad){
+  const ax = (pad && pad.axes) || [];
+  const b = i => { const x = pad && pad.buttons && pad.buttons[i]; return !!x && (x.pressed === true || x.value > 0.5); };
+  const dz = v => Math.abs(v) < GP_DEAD ? 0 : (v - Math.sign(v)*GP_DEAD)/(1 - GP_DEAD);
+  const lx = dz(ax[0] || 0), ly = ax[1] || 0;
+  const btn = []; for (let i = 0; i < 16; i++) btn.push(b(i));
+  const up = b(12) || ly < -0.6, down = b(13) || ly > 0.6, left = b(14) || (ax[0] || 0) < -0.6, right = b(15) || (ax[0] || 0) > 0.6;
+  return { btn, steer: b(14) ? -1 : b(15) ? 1 : lx,
+           fwd: b(0) || b(7) || up, back: b(2) || b(6) || down,
+           navPrev: up || left, navNext: down || right };
+}
+// Что делает клавиша в меню: сдвиг фокуса, OK или «назад» (чистая функция — её держит проба).
+function menuKeyAction(key){
+  if (key === "ArrowUp" || key === "ArrowLeft") return { move: -1 };
+  if (key === "ArrowDown" || key === "ArrowRight") return { move: 1 };
+  if (key === "Enter" || key === " " || key === "z" || key === "Z" || key === "я" || key === "Я") return { ok: true };
+  if (key === "Escape" || key === "Backspace" || key === "x" || key === "X" || key === "ч" || key === "Ч") return { back: true };
+  return null;
+}
+function menuStep(n, idx, dir){ return n ? ((idx + dir) % n + n) % n : 0; }
+function menuButtons(){
+  const out = [];
+  if (typeof document === "undefined") return out;
+  for (const id of MENU_SCREENS){
+    const el = document.getElementById(id);
+    if (!el || !el.classList || el.classList.contains("hidden") || !el.querySelectorAll) continue;
+    for (const bt of el.querySelectorAll("button")){
+      if (bt.disabled || (bt.classList && bt.classList.contains("hidden"))) continue;
+      const row = bt.parentElement;
+      if (row && row.classList && row.classList.contains("hidden")) continue;
+      out.push(bt);
+    }
+  }
+  return out;
+}
+function menuPaint(list, idx){
+  list.forEach((bt, i) => { if (bt.classList) bt.classList[i === idx ? "add" : "remove"]("gpf"); });
+  const cur = list[idx];
+  if (cur && cur.scrollIntoView) cur.scrollIntoView({ block:"nearest" });
+}
+function menuMove(dir){
+  const list = menuButtons();
+  if (!list.length) return false;
+  menuIdx = menuActive ? menuStep(list.length, menuIdx, dir) : 0;
+  menuActive = true;
+  menuPaint(list, menuIdx);
+  return true;
+}
+function menuOk(){
+  const list = menuButtons();
+  if (!list.length) return false;
+  if (!menuActive){ menuActive = true; menuIdx = 0; menuPaint(list, 0); return true; }
+  const cur = list[Math.min(menuIdx, list.length - 1)];
+  if (cur && cur.click) cur.click();
+  menuActive = false;                                // экран сменится — фокус начнётся заново
+  return true;
+}
+function menuBack(){
+  for (const id of MENU_SCREENS){
+    const el = document.getElementById(id);
+    if (!el || !el.classList || el.classList.contains("hidden") || !MENU_BACK[id]) continue;
+    const bt = document.getElementById(MENU_BACK[id]);
+    if (bt && bt.click){ bt.click(); return true; }
+  }
+  return false;
+}
+// Клавиша в меню. true — обработана (дальше игра её не трогает).
+function menuKey(e){
+  const a = menuKeyAction(e.key);
+  if (!a) return false;
+  if (a.move){ if (menuMove(a.move)){ e.preventDefault(); return true; } return false; }
+  if (a.ok){
+    // Пока фокус не трогали, Enter и пробел работают как раньше («дальше», старт).
+    if (!menuActive) return false;
+    if (menuOk()){ e.preventDefault(); return true; }
+    return false;
+  }
+  if (a.back && menuBack()){ e.preventDefault(); return true; }
+  return false;
+}
+const gpState = { steer:0, fwd:false, back:false };
+let gpPrev = null, gpSeen = false, gpHold = 0;
+function pollGamepad(){
+  gpState.steer = 0; gpState.fwd = false; gpState.back = false;
+  if (typeof navigator === "undefined" || !navigator.getGamepads) return;
+  let pad = null;
+  for (const p of navigator.getGamepads() || []) if (p && p.connected){ pad = p; break; }
+  if (!pad){ gpPrev = null; return; }
+  const s = gpRead(pad);
+  if (!gpSeen){ gpSeen = true; if (typeof campToast === "function") campToast("ГЕЙМПАД ПОДКЛЮЧЁН"); }
+  const edge = k => s.btn[k] && !(gpPrev && gpPrev.btn[k]);
+  if (g.s === "playing"){
+    gpState.steer = s.steer; gpState.fwd = s.fwd; gpState.back = s.back;
+    if (edge(1) || edge(5)) paddleStrike();
+    if (edge(9)) togglePause();
+  } else if (g.s === "cutscene"){
+    if (edge(0) || edge(1) || edge(2) || edge(3) || edge(9)) endCut();
+  } else {
+    // Меню (и пауза): крестовина или стик листают с автоповтором, A — OK, B — назад, Start — OK / снять паузу.
+    if (g.s === "paused" && edge(9)){ togglePause(); }
+    else {
+      const dir = s.navPrev ? -1 : s.navNext ? 1 : 0;
+      if (dir && (!(gpPrev && (gpPrev.navPrev || gpPrev.navNext)) || ++gpHold % GP_REPEAT === 0)) menuMove(dir);
+      if (!dir) gpHold = 0;
+      if (edge(0)){ if (g.s === "start" && !menuActive) hs(); else menuOk(); }
+      else if (edge(9)){ if (g.s === "start") hs(); else menuOk(); }
+      if (edge(1)) menuBack();
+      if (edge(2) && g.s === "finish"){ recordFinish(); nextDay(); }
+    }
+  }
+  if (edge(8)) toggleMusic();
+  gpPrev = s;
+}
 // Решает, можно ли считать прикосновение коротким тапом (а не ведением).
 // Отдельная функция, чтобы тап был тестируемым, а не зашитым в обработчик.
 function isStrikeTap(ms, dx, dy){
@@ -8401,6 +8530,7 @@ function hideAllScreens(){
   document.getElementById("pauseScreen").classList.add("hidden");
   document.getElementById("pauseBtn").classList.add("hidden");
   showMobileHint(false);   // подсказка про тапы — только в самом заплыве
+  menuActive = false;      // фокус меню начинается заново на каждом экране
 }
 
 function sg(){
@@ -8820,6 +8950,7 @@ function upd(){
   let input = 0;
   if (keys["ArrowLeft"] || keys["a"] || keys["A"] || keys["ф"] || keys["Ф"]) input = -1;
   if (keys["ArrowRight"] || keys["d"] || keys["D"] || keys["в"] || keys["В"]) input = 1;
+  if (!input && gpState.steer) input = gpState.steer;     // геймпад: стик даёт плавный руль
   if (mt !== null){
     const px = screenXOf(g.t, g.pwy);
     if (Math.abs(mt - px) > 4) input = Math.sign(mt - px);
@@ -9268,6 +9399,7 @@ function lp(t){
   if (_lpLast === 0) _lpLast = now;
   let dt = now - _lpLast;
   _lpLast = now;
+  pollGamepad();
   if (g.s === "paused"){ _lpAcc = 0; rndr(); requestAnimationFrame(lp); return; }
   const plan = simPlan(dt, _lpAcc);
   _lpAcc = plan.acc;
@@ -9581,7 +9713,7 @@ globalThis.__KAYAK__ = { G: g, PY, centerAt, centerSines, baseWidthAt, widthAt, 
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, PASS_MIN, gapFor, keepPassage, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
