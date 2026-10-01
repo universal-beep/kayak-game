@@ -1276,6 +1276,45 @@ const SPR = {
     ".......kkk..............kyyk",
     ".........................kk.",
     "....................ffffffff"]},
+  // Перрон: фонарь и скамейка (финал).
+  lamp:{map:["..kkk..",
+    ".kgggk.",
+    "kyuuuyk",
+    "kyeeeyk",
+    "kyeeeyk",
+    "kyuuuyk",
+    ".kkgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    "..kgjk.",
+    ".kggggk",
+    ".kggggk"]},
+  bench:{map:[".kkkkkkkkkkkkkkkkkk.",
+    "kMMMMMMMMMMMMMMMMMMk",
+    "kDDDDDDDDDDDDDDDDDDk",
+    "kDDDDDDDDDDDDDDDDDDk",
+    "khhhhhhhhhhhhhhhhhhk",
+    "kDDDDDDDDDDDDDDDDDDk",
+    ".kggkkkkkkkkkkkkggk.",
+    ".kggk..........kggk.",
+    ".kggk..........kggk.",
+    "..kk............kk.."]},
   // Цапля (Медведица, вместо уток): серая, стоит на одной ноге у берега,
   // белая шея буквой S, чёрный хохол, длинный жёлтый клюв. Два кадра полёта:
   // шея втянута, ноги назад, крыло вверх / вниз. Смотрит вправо — к воде
@@ -2135,20 +2174,46 @@ const SPR = {
     ".....kKKKKKKKKKk.........................kKKKKKKKKKk.............kKKKKKKKKKk.........................kKKKKKKKKKk.............kKKKKKKKKKk.........................kKKKKKKKKKk.............kKKKKKKKKKk.........................kKKKKKKKKKk........",
     "......kKKkkKKkk...........................kKKkkKKkk...............kKKkkKKkk...........................kKKkkKKkk...............kKKkkKKkk...........................kKKkkKKkk...............kKKkkKKkk...........................kKKkkKKkk.........",
     "......kKKkkKKk............................kKKkkKKk................kKKkkKKk............................kKKkkKKk................kKKkkKKk............................kKKkkKKk................kKKkkKKk............................kKKkkKKk.........."]},
-  station:{map:[
-    "......kkkkkkkkkkkkkkkk......",
-    ".....kGGGGGGGGGGGGGGGGk.....",
-    "....kGGGGGGGGGGGGGGGGGGk....",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkk",
-    "kWWWWWWWWWWWWWWWWWWWWWWWWWWk",
-    "kWWkkkkWWWWkkkkWWWWkkkkWWWWk",
-    "kWWkzzkWWWWkzzkWWWWkzzkWWWWk",
-    "kWWkkkkWWWWkkkkWWWWkkkkWWWWk",
-    "kWWWWWWWWWWWWWWWWWWWWWWWWWWk",
-    "kWWWWWWWWkkkkkkWWWWWWWWWWWWk",
-    "kWWWWWWWWkOOOOkWWWWWWWWWWWWk",
-    "kWWWWWWWWkOOOOkWWWWWWWWWWWWk",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkk"]},
+  station:{map:["..............................kVVNNNNNNVVk..............................",
+    "..............................kVVNNNNNNVVk..............................",
+    "..............................kswwwwwwwwsk..............................",
+    "..............................ksweekeeewsk..............................",
+    "..............................ksweekeeewsk..............................",
+    "..............................ksweekkkewsk..............................",
+    "..............................ksweeeeeewsk..............................",
+    "..............................ksweeeeeewsk..............................",
+    ".............................kwswwwwwwwwswk.............................",
+    "....................kkkkkkkkkwwsssssssssswwkkkkkkkkk....................",
+    "...................kSSSSSSSSwwwwwwwwwwwwwwwwSSSSSSSSk...................",
+    "...................kSSSSwwwwwwwwwwwwwwwwwwwwwwwwSSSSk...................",
+    "...................kssssNNNNNNNNNNNNNNNNNNNNNNNNssssk...................",
+    "...................kssssVVwwwVwwVVwwwVwwVVwVVVVVssssk...................",
+    "...................kssssVVVwVVwVwVwVVVwVwVwVVVVVssssk...................",
+    "kkkkkkkkkkkkkkkkkkkkssssVVVwVVwwVVwwVVwwVVwwVVVVsssskkkkkkkkkkkkkkkkkkkk",
+    "NNNNNNNNNNNNNNNNNNNNssssVVVwVVwVwVwVVVwVVVwVwVVVssssNNNNNNNNNNNNNNNNNNNN",
+    "VVVVVVVVVVVVVVVVVVVVssssVVVwVVwwVVwwwVwVVVwwVVVVssssVVVVVVVVVVVVVVVVVVVV",
+    "VVVVVVVVVVVVVVVVVVVVssssVVVVVVVVVVVVVVVVVVVVVVVVssssVVVVVVVVVVVVVVVVVVVV",
+    "VVVVVVVVVVVVVVVVVVVVssssNNNNNNNNNNNNNNNNNNNNNNNNssssVVVVVVVVVVVVVVVVVVVV",
+    "SSSSSSSSSSSSSSSSSSSSsswWsssswWssssssssssssswWsssswWsSSSSSSSSSSSSSSSSSSSS",
+    "SSSSSSSSSSSSSSSSSSSSsswWsssswWssssssssssssswWsssswWsSSSSSSSSSSSSSSSSSSSS",
+    "sssssssssssssssssssssswWsssswWssssssssssssswWsssswWsssssssssssssssssssss",
+    "sssssssssssssssssssssswWsssswWssssssssssssswWsssswWsssssssssssssssssssss",
+    "sssssssssssssssssssssswWsssswWssssssssssssswWsssswWsssssssssssssssssssss",
+    "sssswZZwssswZZwssssssswWsssswWswwwwwwwwwwsswWsssswWssssswZZwssswZZwsssss",
+    "sssszzzzssszzzzssssssswWsssswWssDDDDDDDDssswWsssswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszZZzssszZZzssssssswWzzsswWssDOODDOODssswWzzsswWssssszZZzssszZZzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssszzzzssszzzzssssssswWzzsswWssDOODDOODssswWzzsswWssssszzzzssszzzzsssss",
+    "sssssssssssssssssssssswWsssswWssDOODDOODssswWsssswWsssssssssssssssssssss",
+    "sssssssssssssssssssssswWsssswWssDOODDOODssswWsssswWsssssssssssssssssssss",
+    "jjjjjjjjjjjjjjjjjjjjsswWsssswWssDOODDOODssswWsssswWsjjjjjjjjjjjjjjjjjjjj",
+    "GGGGGGGGGGGGGGGGGGGGssssssssWWWWWWWWWWWWWWWWssssssssGGGGGGGGGGGGGGGGGGGG",
+    "GGGGGGGGGGGGGGGGGGGGssssssGGGGGGGGGGGGGGGGGGGGssssssGGGGGGGGGGGGGGGGGGGG",
+    "GGGGGGGGGGGGGGGGGGGGssssjjjjjjjjjjjjjjjjjjjjjjjjssssGGGGGGGGGGGGGGGGGGGG"]},
   fish:{map:["..kkkkkk..k.",
     ".kjjjGjjkkGk",
     "kWKWWWWWWGGk",
@@ -2203,18 +2268,18 @@ const SPR = {
     "..kZZZZZZk..","..kZZZZZZk..","...kZZkZZ...","...kZZkZZ...","...kZZkZZ...",
     ".kOOkkkkOOk.",".kkkkkkkkkk."],noOutline:true},
   // Чайка-силуэт, два кадра маха (вверх/вниз) — цикл `cycle` в катсценах.
-  bird0:{map:["kk........kk",
-    ".kKk....kKk.",
-    "..kKk..kKk..",
-    "...kKkkKk...",
-    "....kKKk....",
+  bird0:{map:["k..........k",
+    "kk........kk",
+    ".kk..kk..kk.",
+    "..kkkkkkkk..",
+    "....kkkk....",
     ".....kk.....",
     "............"],noOutline:true},
   bird1:{map:["............",
-    ".kk......kk.",
-    "kKKkkkkkkKKk",
-    "kKKKKKKKKKKk",
-    ".kkkkKKkkkk.",
+    "............",
+    "kkk......kkk",
+    "..kkk..kkk..",
+    "....kkkk....",
     ".....kk.....",
     "............"],noOutline:true},
   // Летящие утки (два кадра маха) для разлёта у берега: светлое брюшко,
@@ -2288,62 +2353,62 @@ const SPR = {
   // Мост — ЕДИНЫЙ рисунок всей конструкции (вместо кучи разрозненных
   // pier+deck+truss-актёров): настил сверху, под ним ферма-решётка, по краям
   // две опоры, уходящие в воду. Проезжает над лодкой как одно целое.
-  bridge:{map:["..............................................................................................................",
-    "..............................................................................................................",
-    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
-    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
-    "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
-    "kkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkk",
-    "..I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I....I..",
-    "kkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkkkkIkk",
-    "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
-    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
-    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-    "IIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIIIIIIiIIIIIII",
-    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-    "IjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkggjggkkkkkkkIjkkkkkkkkg",
-    "jjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kgg",
-    "jjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kgg",
-    "jjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggk",
-    "jjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggk.",
-    "jjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk..",
-    "jjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk.kjjk..kggk..",
-    "jjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk..kjjk...kggkkjjk.kggk...",
-    "jjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk...kjjk....kggkjjkkggk....",
-    "jjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk.....",
-    "jjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk....kjjk.....kggjjkggk.....",
-    "jjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkkjjkkkkkkkkggjggkkkkkkk",
-    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-    "gggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggggggWggggggg",
-    "kkkkIIIIIIIIIIIIIIIIIIkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkIIIIIIIIIIIIIIIIIIkkkk",
-    "...kIIIIIIIIIIIIIIIIIIk................................................................kIIIIIIIIIIIIIIIIIIk...",
-    "...kIIIIIIIIIIIIIIIIIIk................................................................kIIIIIIIIIIIIIIIIIIk...",
-    "...kjjjjjjjjjjjjjjjjjjk................................................................kjjjjjjjjjjjjjjjjjjk...",
-    "....kkWGgGGGGgGGGjjjkk..................................................................kkWGgGGGGgGGGjjjkk....",
-    ".....kWWgGGGGgGGGgjjk....................................................................kWWgGGGGgGGGgjjk.....",
-    ".....kWGgggggggggjjjk....................................................................kWGgggggggggjjjk.....",
-    ".....kWWGGGgGGGGggjjk....................................................................kWWGGGgGGGGggjjk.....",
-    ".....kWGGGGgGGGGgjjjk....................................................................kWGGGGgGGGGgjjjk.....",
-    ".....kWWggggggggggjjk....................................................................kWWggggggggggjjk.....",
-    ".....kWGgGGGGgGGGjjjk....................................................................kWGgGGGGgGGGjjjk.....",
-    ".....kWWgGGGGgGGGgjjk....................................................................kWWgGGGGgGGGgjjk.....",
-    ".....kWGgggggggggjjjk....................................................................kWGgggggggggjjjk.....",
-    ".....kWWGGGgGGGGggjjk....................................................................kWWGGGgGGGGggjjk.....",
-    ".....kWGGGGgGGGGgjjjk....................................................................kWGGGGgGGGGgjjjk.....",
-    ".....kWWggggggggggjjk....................................................................kWWggggggggggjjk.....",
-    ".....kWGgNGGGgNGGjjNk....................................................................kWGgGNGGgGNGjjjk.....",
-    ".....kWWgGNGGgGNGgjjk....................................................................kNWgGGNGgGGNgjjk.....",
-    "....kkNGgggNggggNjjjkk..................................................................kkWNggggNggggNjjkk....",
-    "...kWWGNGgGGNGgGGNGgjjk................................................................kWWGGNgGGGNgGGGNgjjk...",
-    "...kWGGGNgGGGNgGGGNjjjk................................................................kNGGGGNGGGGNGGGGNjjk...",
-    "...kNWgggNggggNggggNjjk................................................................kWNggggNggggNggggNjk...",
-    "...kWNgGGGNgGGGNgGGjNjk................................................................kWGNGGGGNGGGGNGGjjNk...",
-    "...kWWNGGGGNGGGGNGGgjNk................................................................kWWgNGGGgNGGGgNGgjjk...",
-    "...kWGgNggggNggggNgjjjk................................................................kWGggNggggNggggNjjjk...",
-    "...kWWGGNgGGGNgGGGNgjjk................................................................kNWGGGNGGGGNGGGGNjjk...",
-    "...kNGGGGNGGGGNGGGGNjjk................................................................kWNGGGgNGGGgNGGGjNjk...",
-    "...kWNggggNggggNggggNjk................................................................kWWNggggNggggNgggjNk..."]},
+  bridge:{map:["....................................................................................",
+    "....................................................................................",
+    "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+    "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "kkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkk",
+    "..I.....I.....I.....I.....I.....I.....I.....I.....I.....I.....I.....I.....I.....I...",
+    "kkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkkkkIkkk",
+    "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+    "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IIIiIIIIIIIIIIIIIiIIIIIIIIIIIIIiIIIIIIIIIIIIIiIIIIIIIIIIIIIiIIIIIIIIIIIIIiIIIIIIIIII",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "IjggkkkkkkkkkkIjkkkkkkkkkkkggjggkkkkkkkkkkIjkkkkkkkkkkkggjggkkkkkkkkkkIjkkkkkkkkkkkg",
+    "jjkggk.......kjjk........kggjjkggk.......kjjk........kggjjkggk.......kjjk........kgg",
+    "jjkkggk......kjjk.......kggkjjkkggk......kjjk.......kggkjjkkggk......kjjk.......kggk",
+    "jjk.kggk.....kjjk......kggkkjjk.kggk.....kjjk......kggkkjjk.kggk.....kjjk......kggk.",
+    "jjk..kggk....kjjk.....kggk.kjjk..kggk....kjjk.....kggk.kjjk..kggk....kjjk.....kggk..",
+    "jjk...kggk...kjjk....kggk..kjjk...kggk...kjjk....kggk..kjjk...kggk...kjjk....kggk...",
+    "jjk....kggk..kjjk...kggk...kjjk....kggk..kjjk...kggk...kjjk....kggk..kjjk...kggk....",
+    "jjk.....kggk.kjjk..kggk....kjjk.....kggk.kjjk..kggk....kjjk.....kggk.kjjk..kggk.....",
+    "jjk......kggkkjjk.kggk.....kjjk......kggkkjjk.kggk.....kjjk......kggkkjjk.kggk......",
+    "jjk.......kggkjjkkggk......kjjk.......kggkjjkkggk......kjjk.......kggkjjkkggk.......",
+    "jjk........kggjjkggk.......kjjk........kggjjkggk.......kjjk........kggjjkggk........",
+    "jjkkkkkkkkkkkggjggkkkkkkkkkkjjkkkkkkkkkkkggjggkkkkkkkkkkjjkkkkkkkkkkkggjggkkkkkkkkkk",
+    "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+    "gggWgggggggggggggWgggggggggggggWgggggggggggggWgggggggggggggWgggggggggggggWgggggggggg",
+    "IIIIIIIkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkIIIIIII",
+    "IIIIIIIk....................................................................kIIIIIII",
+    "IIIIIIIk....................................................................kIIIIIII",
+    "jjjjjjjk....................................................................kjjjjjjj",
+    "GGgGGgjk....................................................................kWGgGGGG",
+    "GGgGGjjk....................................................................kWWgGGGG",
+    "ggggggjk....................................................................kWGggggg",
+    "gGGGGjjk....................................................................kWWGGGgG",
+    "gGGGGgjk....................................................................kWGGGGgG",
+    "gggggjjk....................................................................kWWggggg",
+    "GGgGGgjk....................................................................kWGgGGGG",
+    "GGgGGjjk....................................................................kWWgGGGG",
+    "ggggggjk....................................................................kWGggggg",
+    "gGGGGjjk....................................................................kWWGGGgG",
+    "gGGGGgjk....................................................................kWGGGGgG",
+    "gggggjjk....................................................................kWWggggg",
+    "GGgGNgjk....................................................................kWGNGGGG",
+    "NGgGGNjk....................................................................kWWgNGGG",
+    "gNggggNk....................................................................kWGggNgg",
+    "gGNGGjjk....................................................................kNWGGGNG",
+    "gGGNGgjk....................................................................kWNGGGgN",
+    "ggggNjjk....................................................................kWWNgggg",
+    "NGgGGNjk....................................................................kWGgNGGG",
+    "GNgGGjNk....................................................................kWWgGNGG",
+    "ggNgggjk....................................................................kNGgggNg",
+    "gGGNGjjk....................................................................kWNGGGgN",
+    "gGGGNgjk....................................................................kWGNGGgG",
+    "NggggNjk....................................................................kWWgNggg"]},
   bush:{map:["...kkkk...","..kvvvvk..",".kvvvvvvk.","kvvvVvvvvk","kvvVvvvvVk",
     ".kvvvvvvk.","..kVVVVk..","...kkkk..."]},
   tree:{map:["......kk..........",
@@ -3523,29 +3588,44 @@ const CUTS = {
   drive1: driveCountry(),
   drive2: driveHighway(),
   drive3: driveDirt(),
-  finale: { sky:"evening", ground:"#3a3f45", caption:"Вокзал в Твери. Домой, в Москву",
+  finale: { sky:"evening", ground:"#3a3f45", len:480,
+    caption:"Вокзал в Твери. Домой, в Москву",
+    captions:[[0.66, "Спасибо за поход! До новых сплавов"]],
     actors:[
-      // Вокзал — ближе и больше: scl=2 (26×13 арт → 52×26 арт, ~156×78 экран), стоит на перроне
-      // (низ = y 292 + 26*2 = 344). Находится ЗА путями (поезд проходит перед ним).
-      { spr:"station", keys:[[0,210,320,2,1],[1,210,320,2,1]] },
-      // Деревья вокруг вокзала — фон (y<320, ниже перрона, без тени), чтобы не пусто.
-      // Стоят ЗА путями, как и вокзал, поезд проходит перед ними.
-      { spr:"ctree", keys:[[0,58,300,1,1],[1,58,300,1,1]] },
-      { spr:"ctree", keys:[[0,382,302,1.15,1],[1,382,302,1.15,1]] },
-      { spr:"ctree", keys:[[0,34,296,0.8,1],[1,34,296,0.8,1]] },
-      // Поезд: в t=0 далеко за кадром слева (перрон пуст — «секунда пустоты»), подъезжает к 0.45
-      // и ОСТАНАВЛИВАЕТСЯ на center=484 (0.45..0.6): вагон 3 = [268..340], вагон 4 = [340..412] —
-      // у места человека оказывается стык 3-4 вагона. Низ поезда y=372 — колёса на рельсах
-      // (ж/д пути в evening-блоке), ниже перрона (люди на 344). В 0.6 отправляется вправо (center→840).
-      { spr:"train",   keys:[[0,-760,372,1,1],[0.45,484,372,1,1],[0.6,484,372,1,1],[1,840,372,1,1]] },
-      // Пассажиры на перроне ПЕРЕД вагонами (перрон — полоса y 384…428 у нижнего края: стоят ногами на нём, на y=410;
-      // поезд — позади, за перроном, на пути y=372). В начале (секунда пустоты) поезда
-      // нет, пассажиры видны у вокзала. В 0.6 при отправлении ВСЕ садятся и исчезают (al→0).
-      // Одежда разная (var), рост почти одинаковый — герой (var 0, scl=1) лишь на ~6-8% крупнее.
-      { spr:"person",  keys:[[0,340,410,1,1],[0.6,340,410,1,1],[0.63,340,410,1,0],[1,340,410,1,0]] },
-      { spr:"person", var:1, keys:[[0,150,410,0.94,1],[0.6,150,410,0.94,1],[0.63,150,410,0.94,0],[1,150,410,0.94,0]] },
-      { spr:"person", var:2, keys:[[0,245,410,0.92,1],[0.6,245,410,0.92,1],[0.63,245,410,0.92,0],[1,245,410,0.92,0]] },
-      { spr:"person", var:3, keys:[[0,395,410,0.95,1],[0.6,395,410,0.95,1],[0.63,395,410,0.95,0],[1,395,410,0.95,0]] }
+      // Вокзал (72×40 арт, ×1.2 = 259 px): башня с часами, вывеска «ТВЕРЬ», колонны и арочные
+      // окна; стоит на площади, низ — y=336 (горизонт города).
+      { spr:"station", keys:[[0,210,336,1.2,1],[1,210,336,1.2,1]] },
+      { spr:"ctree", keys:[[0,52,334,1.05,1],[1,52,334,1.05,1]] },
+      { spr:"ctree", keys:[[0,30,330,0.8,1],[1,30,330,0.8,1]] },
+      { spr:"ctree", keys:[[0,392,336,1.15,1],[1,392,336,1.15,1]] },
+      // Птицы в закатном небе (взмах крыльев — два кадра) и облачко.
+      { spr:"bird0", cycle:{ per:14, spr:["bird0","bird1"] }, keys:[[0,470,190,0.9,1],[1,-60,150,0.9,1]] },
+      { spr:"bird0", cycle:{ per:17, spr:["bird0","bird1"] }, keys:[[0.1,500,214,0.7,1],[1,-30,176,0.7,1]] },
+      { spr:"bird0", cycle:{ per:15, spr:["bird0","bird1"] }, keys:[[0.25,520,160,0.6,1],[1,40,128,0.6,1]] },
+      // Электричка стоит на пути (колёса на рельсах y=420, за перроном). В t=0 путь пуст,
+      // подъезжает к 0.36 и останавливается на center=484: двери вагонов на x=136, 277, 316 (пассажиры
+      // идут именно к ним); в 0.66 отправляется вправо.
+      { spr:"train", keys:[[0.08,-760,420,1,1],[0.36,484,420,1,1],[0.66,484,420,1,1],[1,980,420,1,1]] },
+      // Фонари вдоль перрона и скамейки ближе к зрителю.
+      { spr:"lamp", keys:[[0,70,468,1,1],[1,70,468,1,1]] },
+      { spr:"lamp", keys:[[0,215,468,1,1],[1,215,468,1,1]] },
+      { spr:"lamp", keys:[[0,360,468,1,1],[1,360,468,1,1]] },
+      { spr:"bench", keys:[[0,120,528,1.3,1],[1,120,528,1.3,1]] },
+      { spr:"bench", keys:[[0,305,528,1.3,1],[1,305,528,1.3,1]] },
+      // Пассажиры (вся компания) стоят у края перрона; в 0.40 идут к дверям (ходьба — два кадра),
+      // у двери (чуть выше по кадру) садятся и исчезают. Герой в красной куртке — второй слева.
+      { spr:"person", var:0, keys:[[0,100,470,1.18,1],[0.399,100,470,1.18,1],[0.4,100,470,1.18,0]] },
+      { spr:"person", var:0, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,100,470,1.18,0],[0.4,100,470,1.18,1],[0.52,136,456,1.18,1],[0.545,136,444,1.18,0]] },
+      { spr:"person", var:2, keys:[[0,150,478,1.12,1],[0.399,150,478,1.12,1],[0.4,150,478,1.12,0]] },
+      { spr:"person", var:2, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,150,478,1.12,0],[0.4,150,478,1.12,1],[0.52,136,464,1.12,1],[0.545,136,452,1.12,0]] },
+      { spr:"girl", keys:[[0,205,472,1.1,1],[0.399,205,472,1.1,1],[0.4,205,472,1.1,0]] },
+      { spr:"girl", cycle:{ per:10, spr:["girl","girl_w1"] }, keys:[[0.399,205,472,1.1,0],[0.4,205,472,1.1,1],[0.52,277,458,1.1,1],[0.545,277,446,1.1,0]] },
+      { spr:"person", var:1, keys:[[0,250,480,1.12,1],[0.399,250,480,1.12,1],[0.4,250,480,1.12,0]] },
+      { spr:"person", var:1, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,250,480,1.12,0],[0.4,250,480,1.12,1],[0.52,277,466,1.12,1],[0.545,277,454,1.12,0]] },
+      { spr:"person", var:3, keys:[[0,300,468,1.14,1],[0.399,300,468,1.14,1],[0.4,300,468,1.14,0]] },
+      { spr:"person", var:3, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,300,468,1.14,0],[0.4,300,468,1.14,1],[0.52,316,454,1.14,1],[0.545,316,442,1.14,0]] },
+      { spr:"person", var:4, keys:[[0,352,476,1.1,1],[0.399,352,476,1.1,1],[0.4,352,476,1.1,0]] },
+      { spr:"person", var:4, cycle:{ per:10, spr:["person","person_w1"] }, keys:[[0.399,352,476,1.1,0],[0.4,352,476,1.1,1],[0.52,316,462,1.1,1],[0.545,316,450,1.1,0]] },
     ] },
   // Первый чистый пролёт моста за день: байдарка ПЛЫВЁТ под мостом — видна река
   // (water), весь мост ЕДИНЫМ спрайтом (настил+ферма+опоры) проезжает над
@@ -3556,13 +3636,23 @@ const CUTS = {
       // Облака — небо не пустое.
       { spr:"cloud", keys:[[0,420,86,1.6,0.9],[1,-120,86,1.6,0.9]] },
       { spr:"cloud", keys:[[0,560,150,1.1,0.8],[1,60,150,1.1,0.8]] },
-      // Мост одним объектом (bridge: ферма на каменных опорах 330×168 px): низ пояса
-      // над головой гребца, опоры стоят в воде, мост проезжает через кадр; в t=0.5
-      // пролёт ровно над лодкой. Мост рисуется ДО лодки.
+      // Мост — сплошная лента из семи одинаковых пролётов по 252 px (спрайт bridge: ферма
+      // и по полуопоре на краях, в стыке — целая опора). Лента длиннее кадра с запасом в обе
+      // стороны, поэтому концов моста не видно и настил всегда под машинами. Все пролёты едут
+      // одним ходом; в t=0.5 центр среднего пролёта ровно над лодкой (опоры по краям кадра).
+      // Мост рисуется ДО лодки: опоры проносятся за ней.
+      { spr:"bridge", keys:[[0,-996,356,1,1],[0.12,-686,356,1,1],[0.5,-546,356,1,1],[0.88,-406,356,1,1],[1,-96,356,1,1]] },
+      { spr:"bridge", keys:[[0,-744,356,1,1],[0.12,-434,356,1,1],[0.5,-294,356,1,1],[0.88,-154,356,1,1],[1,156,356,1,1]] },
+      { spr:"bridge", keys:[[0,-492,356,1,1],[0.12,-182,356,1,1],[0.5,-42,356,1,1],[0.88,98,356,1,1],[1,408,356,1,1]] },
       { spr:"bridge", keys:[[0,-240,356,1,1],[0.12,70,356,1,1],[0.5,210,356,1,1],[0.88,350,356,1,1],[1,660,356,1,1]] },
-      // По мосту едут машины (низ колёс на настиле, y=212): едут вдоль моста.
-      { spr:"car",       keys:[[0.12,-60,212,1,0],[0.18,-30,212,1,1],[0.46,160,212,1,1],[0.52,205,212,1,0]] },
-      { spr:"car_red_r", keys:[[0.5,335,212,1,0],[0.55,330,212,1,1],[0.85,295,212,1,1],[0.88,285,212,1,0]] },
+      { spr:"bridge", keys:[[0,12,356,1,1],[0.12,322,356,1,1],[0.5,462,356,1,1],[0.88,602,356,1,1],[1,912,356,1,1]] },
+      { spr:"bridge", keys:[[0,264,356,1,1],[0.12,574,356,1,1],[0.5,714,356,1,1],[0.88,854,356,1,1],[1,1164,356,1,1]] },
+      { spr:"bridge", keys:[[0,516,356,1,1],[0.12,826,356,1,1],[0.5,966,356,1,1],[0.88,1106,356,1,1],[1,1416,356,1,1]] },
+      // По настилу (верх на y=212, колёса стоят на нём) едут две машины: одна вправо
+      // до середины мульта, потом, когда она ушла, навстречу вторая. Обе заходят и уходят
+      // за краями кадра — на обрыв не выезжают, настил под ними сплошной.
+      { spr:"car",       keys:[[0.04,-70,212,1,1],[0.58,520,212,1,1]] },
+      { spr:"car_red_r", keys:[[0.6,520,212,1,1],[0.96,-80,212,1,1]] },
       // Тени моста и опор на воде — смещаются с тем же течением, что и река.
       { spr:"shadow", keys:[[0,430,376,1,0.38],[1,-380,376,1,0.15]] },
       { spr:"shadow", keys:[[0,1130,384,1,0.3],[1,320,384,1,0.12]] },
@@ -4098,6 +4188,81 @@ function cutFade(sc, t){
 // Небо на весь экран, земля прижата к низу, актёры — по сцене, подпись — по
 // центру нижней полосы. Разные пропорции окна не ломают композицию: ширина
 // раскрывается за край канваса (деревья проезжают через весь экран).
+// Вокзал в сумерках (финал): закат с солнцем и облаками, силуэт города с огнями, площадь,
+// путь с электричкой, перрон с фонарями (тёплый свет), ближние пути. Всё в арт-координатах
+// 420×720; вокзал, поезд, люди, фонари, скамейки и птицы — актёры поверх.
+const STATION = { hz:336, trackY:420, platTop:430, platBot:540, near:[575, 615, 655] };
+function drwRails(y, wd, rs, s, yf, cw){
+  const yy = yf(y);
+  cx.fillStyle = "#1c1f23"; cx.fillRect(0, yy - wd*s/2, cw, wd*s);                       // балласт
+  cx.fillStyle = "#2b2d31";
+  for (let tx = 6*s; tx < cw; tx += 18*s) cx.fillRect(tx, yy - wd*s/2 + 1*s, 4*s, wd*s - 2*s);   // шпалы
+  cx.fillStyle = "#aab0b6";
+  cx.fillRect(0, yy - wd*s/2 - 1*s, cw, rs*s); cx.fillRect(0, yy + wd*s/2, cw, rs*s);    // рельсы
+}
+function drwStationBg(sc, s, xf, yf, cw, ch){
+  const hz = STATION.hz, fr = g.frame;
+  // Небо закатом: от тёмно-синего вверху до жёлтого у горизонта.
+  const sk = cx.createLinearGradient(0, yf(0), 0, yf(hz));
+  sk.addColorStop(0, "#1d1b4a"); sk.addColorStop(0.42, "#6f3a7c"); sk.addColorStop(0.72, "#e2735a"); sk.addColorStop(1, "#ffc980");
+  cx.fillStyle = sk; cx.fillRect(0, 0, cw, yf(hz));
+  // Звёзды в тёмной части.
+  cx.fillStyle = "rgba(255,255,255,0.75)";
+  for (let i = 0; i < 40; i++){ const x = (i*97 + 31) % 420, y = (i*53 + 11) % 130; if ((fr + i*7) % 80 < 62) cx.fillRect(xf(x), yf(y), 2*s, 2*s); }
+  // Солнце садится за город: диск и тёплые кольца.
+  const sx = xf(322), sy = yf(312);
+  for (const [r, col] of [[96, "rgba(255,200,120,0.14)"], [70, "rgba(255,190,110,0.22)"], [46, "rgba(255,214,140,0.38)"], [30, "#ffe9a8"]]){
+    cx.fillStyle = col; cx.beginPath(); cx.arc(sx, sy, r*s, Math.PI, 0); cx.fill();
+  }
+  // Облака: розовые полосы, неспешно плывут.
+  for (let i = 0; i < 6; i++){
+    const w = (90 + (i*37)%70)*s, y = yf(70 + i*30 + (i%2)*12), x = (((i*131 + fr*0.12*(0.6 + i*0.15)) % (420 + 160)) - 80)*s + (cw - 420*s)/2;
+    cx.fillStyle = "rgba(255," + (170 + i*8) + "," + (150 + i*6) + "," + (0.30 - i*0.02) + ")";
+    cx.beginPath(); cx.ellipse(x, y, w/2, 6*s, 0, 0, Math.PI*2); cx.fill();
+    cx.beginPath(); cx.ellipse(x + w*0.18, y - 5*s, w*0.28, 5*s, 0, 0, Math.PI*2); cx.fill();
+  }
+  // Город: силуэты домов с жёлтыми окнами и тёмная зелень.
+  const zBase = hz - 6;
+  cx.fillStyle = "#23321f";
+  cx.beginPath(); cx.moveTo(0, yf(zBase));
+  for (let i = 0; i <= 42; i++) cx.lineTo(xf(i*10), yf(zBase - 8 - ((i*13)%7)));
+  cx.lineTo(cw, yf(zBase)); cx.lineTo(cw, yf(hz)); cx.lineTo(0, yf(hz)); cx.closePath(); cx.fill();
+  for (let i = 0; i < 42; i++){
+    const h = 12 + ((i*37) % 22), wt = 11 + ((i*53) % 9), x0 = i*10;
+    cx.fillStyle = "#241f2e"; cx.fillRect(xf(x0), yf(zBase - h), wt*s, h*s);
+    cx.fillStyle = "rgba(255,214,120,0.6)";
+    for (let wy = zBase - h + 3; wy < zBase - 2; wy += 4) for (let wx = x0 + 2; wx < x0 + wt - 2; wx += 3)
+      if ((wx*7 + wy*13 + i) % 5 === 0) cx.fillRect(xf(wx), yf(wy), 2*s, 2*s);
+  }
+  // Привокзальная площадь и низкий заборчик.
+  cx.fillStyle = "#3a3f45"; cx.fillRect(0, yf(hz), cw, (STATION.trackY - hz - 20)*s);
+  cx.fillStyle = "#4d535a"; cx.fillRect(0, yf(hz + 10), cw, 2*s);
+  for (let x = 0; x < 440; x += 14){ cx.fillStyle = "#2b2f34"; cx.fillRect(xf(x), yf(hz + 12), 2*s, 10*s); }
+  // Путь с электричкой.
+  cx.fillStyle = "#2a2e33"; cx.fillRect(0, yf(STATION.trackY - 22), cw, 56*s);
+  drwRails(STATION.trackY - 2, 22, 2.2, s, yf, cw);
+  // Перрон: плитка со швами, жёлтая линия у края путей, скруглённый край и тень вниз.
+  const pt = yf(STATION.platTop), pb = yf(STATION.platBot);
+  cx.fillStyle = "#b9bcc4"; cx.fillRect(0, pt, cw, pb - pt);
+  cx.fillStyle = "#c9ccd3"; cx.fillRect(0, pt, cw, 6*s);
+  cx.fillStyle = "#a2a6af";
+  for (let p = 0; p < 460; p += 22) cx.fillRect(xf(p), pt + 6*s, 2*s, pb - pt - 6*s);
+  for (let y = STATION.platTop + 38; y < STATION.platBot; y += 38) cx.fillRect(0, yf(y), cw, 2*s);
+  cx.fillStyle = "#e0b83a"; cx.fillRect(0, pt + 3*s, cw, 4*s);
+  cx.fillStyle = "#7a7e86"; cx.fillRect(0, pb, cw, 5*s);
+  cx.fillStyle = "#2b2f34"; cx.fillRect(0, pb + 5*s, cw, 9*s);
+  // Ближние пути и тёмная трава внизу.
+  cx.fillStyle = "#1f2a1f"; cx.fillRect(0, pb + 14*s, cw, ch - pb);
+  for (const y of STATION.near) drwRails(y, 22, 2.2, s, yf, cw);
+  // Тёплый свет от фонарей на перроне (подслой — сами фонари рисуются актёрами).
+  for (const lx of [70, 215, 360]){
+    const gx = xf(lx), gy2 = yf(STATION.platTop + 6), rr = 118*s;
+    const gd = cx.createRadialGradient(gx, gy2, 0, gx, gy2, rr);
+    gd.addColorStop(0, "rgba(255,200,110,0.42)"); gd.addColorStop(1, "rgba(255,200,110,0)");
+    cx.fillStyle = gd; cx.fillRect(gx - rr, gy2 - rr, rr*2, rr*2);
+  }
+}
+
 function drwCut(){
   const sc = CUTS[g.cut.name];
   const cw = c.width, ch = c.height;
@@ -4228,68 +4393,7 @@ function drwCut(){
     cx.fillRect(xf(sm.x)-rad, yf(sm.y)-rad, rad*2, rad*2);
     cx.restore();
   }
-  if (sc.sky === "evening"){                 // перрон
-    // Город за вокзалом: зелень (тёмные кроны) + силуэты зданий с жёлтыми окнами.
-    // Вдалеке, выше перрона; вокзал и поезд рисуются позже поверх нижней части.
-    const zBase = 262;                       // арт-основание застройки (line горизонта города)
-    // кромка зелени — волнистый силуэт холмов/деревьев позади зданий
-    cx.fillStyle = "#23321f";
-    cx.beginPath(); cx.moveTo(0, yf(zBase));
-    for (let i = 0; i <= 42; i++){ const xx = i*10; cx.lineTo(xf(xx), yf(zBase - 8 - ((i*13)%7))); }
-    cx.lineTo(cw, yf(zBase)); cx.lineTo(cw, ch); cx.lineTo(0, ch); cx.closePath(); cx.fill();
-    // здания: детерминированный ряд (хеш-константы), верхняя часть будет видна над вокзалом
-    for (let i = 0; i < 42; i++){
-      const h = 12 + ((i*37) % 20);          // высота 12..31 арт
-      const wt = 11 + ((i*53) % 9);          // ширина 11..19 арт
-      const x0 = i*10;
-      cx.fillStyle = "#241f2e";
-      cx.fillRect(xf(x0), yf(zBase - h), wt*s, h*s);
-      // светящиеся окна (жёлтые) — редкие, детерминированные
-      cx.fillStyle = "rgba(255,214,120,0.55)";
-      for (let wy = zBase - h + 3; wy < zBase - 2; wy += 4)
-        for (let wx = x0 + 2; wx < x0 + wt - 2; wx += 3)
-          if ((wx*7 + wy*13 + i) % 5 === 0) cx.fillRect(xf(wx), yf(wy), 2*s, 2*s);
-    }
-    cx.fillStyle = "#5a5f66"; cx.fillRect(0, gy + 24*s, cw, 10*s);
-    // Тротуар-плитка перед вокзалом: светлая дорожка, по которой гуляют пассажиры,
-    // со швами между плитами. Ложится поверх платформы, вокзал рисуется позже (актёр)
-    // поверх его верхней границы.
-    const twY0 = 344, twY1 = 360;            // арт-границы тротуара (под ногами, y=344)
-    cx.fillStyle = "#c7cad1"; cx.fillRect(xf(118), yf(twY0), (344-118)*s, (twY1-twY0)*s);
-    cx.fillStyle = "#a9adb6";                // швы между плитами (через шаг, детерминированно)
-    for (let p = 118; p < 344; p += 16)
-      cx.fillRect(xf(p), yf(twY0+1), 2*s, (twY1-twY0-2)*s);
-    cx.fillStyle = "#8f939b"; cx.fillRect(xf(118), yf(twY0), (344-118)*s, 1.5*s);   // кромка у здания
-    cx.fillStyle = "#6f737a"; cx.fillRect(xf(118), yf(twY1-1), (344-118)*s, 1*s);     // кромка у перрона
-    cx.fillStyle = "#2b2f34"; cx.fillRect(0, gy + 34*s, cw, 8*s);
-
-    // Ж/д пути в нижней пустой зоне: 6 рядов путей (шпалы + рельсы), с зазором между колеями.
-    // Балластный слой, светлые рельсы по краям, тёмные шпалы-бруски через шаг.
-    // Между нижними путями (1-я y=412 и 2-я y=464) — полоса зелени с отступом.
-    cx.fillStyle = "#234a26";
-    cx.fillRect(0, yf(412) + 13*s, cw, (464 - 412 - 26)*s); // трава между 412 и 464
-    for (const rw of [ { y: 528, w: 26, rs: 2.6 }, { y: 496, w: 24, rs: 2.4 },
-                       { y: 464, w: 22, rs: 2.2 }, { y: 412, w: 20, rs: 2.0 },
-                       { y: 388, w: 18, rs: 1.8 }, { y: 372, w: 16, rs: 1.6 } ]){
-      const yy = yf(rw.y), wd = rw.w * s;
-      cx.fillStyle = "#1c1f23"; cx.fillRect(0, yy - wd/2, cw, wd);       // балласт
-      cx.fillStyle = "#2b2d31";                                           // шпалы
-      for (let tx = 6*s; tx < cw; tx += 18*s){
-        cx.fillRect(tx, yy - wd/2 + 1*s, 4*s, wd - 2*s);
-      }
-      cx.fillStyle = "#aab0b6";
-      cx.fillRect(0, yy - wd/2 - 1*s, cw, rw.rs*s);                       // верхний рельс
-      cx.fillRect(0, yy + wd/2, cw, rw.rs*s);                             // нижний рельс
-    }
-    // Перрон у нижнего края: светлая плитка, жёлтая линия безопасности вдоль края путей, тень.
-    // Люди стоят на нём ногами (y≈410), поезд — позади на пути y=372.
-    cx.fillStyle = "#4a4f57"; cx.fillRect(0, yf(381), cw, 4*s);
-    cx.fillStyle = "#b9bcc4"; cx.fillRect(0, yf(385), cw, 44*s);
-    cx.fillStyle = "#e0b83a"; cx.fillRect(0, yf(386), cw, 3*s);
-    cx.fillStyle = "#a2a6af";
-    for (let p = 0; p < 460; p += 22) cx.fillRect(xf(p), yf(390), 2*s, 39*s);
-    cx.fillStyle = "#7a7e86"; cx.fillRect(0, yf(428), cw, 3*s);
-  }
+  if (sc.sky === "evening") drwStationBg(sc, s, xf, yf, cw, ch);
   for (const a of sc.actors){
     const st = cutState(a, g.cut.t);
     const spr = SPR[cutWear(sc, st.spr)];
@@ -4340,7 +4444,9 @@ function drwCut(){
   cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(0, capY, cw, capH);
   cx.fillStyle = "#fff"; cx.font = Math.max(9, Math.round(9*s)) + "px " + F;
   cx.textAlign = "center";
-  cx.fillText(sc.caption, cw/2, capY + Math.max(16, Math.round(22*s)));
+  let cap = sc.caption;
+  if (sc.captions) for (const [ct, tx] of sc.captions) if (g.cut.t >= ct*(g.cut.len || CUT_LEN)) cap = tx;       // подписи по времени (доли длины)
+  cx.fillText(cap, cw/2, capY + Math.max(16, Math.round(22*s)));
   cx.textAlign = "left";
   // Плавное затемнение в финале сцены (только если задан fadeOut) — поверх всего,
   // включая подпись, чтобы переход к следующей сцене был мягким чёрным кадром.
