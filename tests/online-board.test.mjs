@@ -135,7 +135,7 @@ test("клиент: отправка очереди — успех очищае�
 test("клиент: без адреса сервера ничего не отправляется и не падает", async () => {
   const { K } = loadGame(); K.resetSave();
   const st = store();
-  assert.equal(await K.onlineReport(1, "а", 5, { store: st, fetch: async () => { throw new Error("не должно"); } }), null);
+  assert.equal(await K.onlineReport(1, "а", 5, { store: st, url: "", fetch: async () => { throw new Error("не должно"); } }), null);
   assert.equal(K.outboxLoad(st).length, 0);
 });
 
@@ -152,4 +152,9 @@ test("клиент: таблица игроков — строки, пустая
   const down = await K.onlineTop(3, { fetch: async () => { throw new Error("x"); }, url: URL_ });
   assert.equal(down.ok, false);
   assert.equal(await K.onlineTop(3, {}), null, "без адреса — null");
+});
+
+test("клиент: по умолчанию — развёрнутый сервер на workers.dev", () => {
+  const { K } = loadGame();
+  assert.match(K.ONLINE_DEFAULT_URL, /^https:\/\/kayak-board\.[a-z0-9-]+\.workers\.dev$/);
 });

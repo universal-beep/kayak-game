@@ -968,7 +968,7 @@
   {
     "date": "01.10.2026",
     "ask": "Найти бесплатное решение для таблицы результатов",
-    "status": "wait",
-    "result": "Готов Cloudflare Worker + KV (server/), бесплатно, без карты. Нужна регистрация Максима на Cloudflare; дальше разверну сам."
+    "status": "done",
+    "result": "Cloudflare Workers + KV развёрнут: https://kayak-board.kayak-splav.workers.dev, адрес в игре, таблица «Все игроки» работает."
   }
 ]

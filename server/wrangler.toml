@@ -1,0 +1,8 @@
+name = "kayak-board"
+main = "leaderboard-worker.mjs"
+compatibility_date = "2026-09-01"
+
+# Хранилище таблиц рекордов (KV). id — пространство kayak-board в аккаунте Cloudflare.
+[[kv_namespaces]]
+binding = "BOARD"
+id = "629f3e793e6246abb66b3e61bacaed30"

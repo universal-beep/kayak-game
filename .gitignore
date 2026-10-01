@@ -1,0 +1,3 @@
+# Kesh wrangler (Cloudflare) i sekrety
+.wrangler/
+.env

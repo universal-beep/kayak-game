@@ -6618,7 +6618,7 @@ function renderBoard(dayNo, run, prevBest){
 // (Cloudflare Worker из server/README.md) — результаты уходят на него, а на
 // экранах «Дошли» и «Рекорды» показываются все игроки. Результат, который не
 // ушёл (нет сети), лежит в очереди (localStorage) и уходит при следующем случае.
-const ONLINE_DEFAULT_URL = "";                // адрес Worker; пусто — онлайн выключен
+const ONLINE_DEFAULT_URL = "https://kayak-board.kayak-splav.workers.dev";   // общая таблица (server/, Cloudflare Workers + KV); пусто — онлайн выключен
 const OUTBOX_KEY = "kayak_outbox", ONLINE_URL_KEY = "kayak_board_url";
 function onlineUrl(){
   try {
@@ -6640,7 +6640,8 @@ function playerId(){
 // Спрятать/показать элемент (classList.toggle с флагом нет в мок-DOM пробы).
 function setHidden(el, hide){ el.classList[hide ? "add" : "remove"]("hidden"); }
 // Адрес сервера: из настроек пробы (deps.url) или из браузера.
-function onlineBase(deps){ return (deps && deps.url) || onlineUrl(); }
+// url в deps — явный адрес; пустая строка — онлайн выключен (так проверяется работа без сервера).
+function onlineBase(deps){ return deps && "url" in deps ? deps.url : onlineUrl(); }
 function onlineStore(){ try { return localStorage; } catch(e){ return null; } }
 function outboxLoad(store){
   try { const v = JSON.parse((store || onlineStore()).getItem(OUTBOX_KEY)); return Array.isArray(v) ? v : []; } catch(e){ return []; }
