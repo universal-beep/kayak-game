@@ -44,7 +44,9 @@ test("колея — это дорога: сплошное земляное по
   const rects = [];
   const orig = ctx.fillRect;
   ctx.fillRect = function (x, y, w, h) { rects.push({ w, h, c: this.fillStyle }); };
-  K.drwBev({ type: "cyclists", side: 1, wy: 1400, phase: 0, f0: 0 });
+  // Дорога рисуется слоем земли (drwCycRoads), отдельно от ездоков.
+  K.G.bev = [{ type: "cyclists", side: 1, wy: 1400, phase: 0, f0: 0 }];
+  K.drwCycRoads();
   ctx.fillRect = orig;
   const bed = rects.filter(r => r.w >= 40);
   assert.ok(bed.length > 10, "полотно дороги: широких полос " + bed.length);

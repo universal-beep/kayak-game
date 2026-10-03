@@ -5990,6 +5990,45 @@ function farBlock(vwx, side, x){
   }
   return false;
 }
+// Место дальнего декора (слот vwx, ряд r вглубь, берег side) — чистая функция
+// от мира: что стоит, где, какого размера и приоритет при споре за место.
+function deepCand(vwx, r, side){
+  const h = hsh(vwx*41 + r*13 + side*7), h2 = hsh(vwx*23 + r*29 + side*5);
+  if (h < DEEP_SKIP[level().river]) return null;
+  const swy = vwx*13, list = deepDecor();
+  const name = deepPick(list[Math.floor(h2*list.length) % list.length], swy, side, vwx*41 + r), sz = spriteSize(name);
+  const x = side < 0 ? -(r*DEEP_DX) - 8 - h*14 : W + r*DEEP_DX + 8 + h*14;
+  return { name, x, w: sz.w, h: sz.h, swy, pri: hsh(vwx*7 + r*3 + side*11 + 1) };
+}
+// Заметное наложение: больше 40% ширины и 30% высоты меньшего.
+function deepOverlap(a, b){
+  const ox = Math.min(a.x + a.w/2, b.x + b.w/2) - Math.max(a.x - a.w/2, b.x - b.w/2);
+  const oy = Math.min(a.swy + a.h, b.swy + b.h) - Math.max(a.swy, b.swy);
+  return ox > 0.4*Math.min(a.w, b.w) && oy > 0.3*Math.min(a.h, b.h);
+}
+// Что рисовать в слоте: не на воде, не на дорогах и дальних сценах, и не
+// поверх соседа с бо́льшим приоритетом (раньше деревья наваливались кучей).
+// Решение зависит только от мира — от кадра к кадру не мигает.
+function deepItems(vwx, side, x0, x1){
+  if (vwx % 3 !== 1) return [];
+  const reach = side < 0 ? -x0 : x1 - W, out = [];
+  const swy = vwx*13, c = centerAt(swy), hw = widthAt(swy)/2, L = c - hw, R = c + hw;
+  for (let r = 0; r*DEEP_DX < reach + 20; r++){
+    const it = deepCand(vwx, r, side);
+    if (!it) continue;
+    if (it.x + it.w/2 > L - 12 && it.x - it.w/2 < R + 12) continue;
+    if (nearRoad(swy, it.h) || farBlock(vwx, side, it.x) || onCycRoad(it.x, swy, it.w/2)) continue;
+    let blocked = false;
+    for (let k = vwx - 6; k <= vwx + 6 && !blocked; k += 3)
+      for (let rr = Math.max(0, r - 1); rr <= r + 1 && !blocked; rr++){
+        if (k === vwx && rr === r) continue;
+        const o = deepCand(k, rr, side);
+        if (o && o.pri > it.pri && deepOverlap(it, o)) blocked = true;
+      }
+    if (!blocked) out.push(it);
+  }
+  return out;
+}
 function deepDecor(){
   const r = Math.min(level().river, DEEP_SETS.length - 1);
   // Церкви по бокам не рисуем: церковь — только финиш Волги дня 2 (просьба Максима).
@@ -6053,6 +6092,7 @@ function drwBg(x0, x1){
   if (x0 === undefined){ x0 = VX0; x1 = VX1; }
   const wide = x0 < 0 || x1 > W;
   farQueue = [];
+  const decorQ = [];                                   // декор рисуется после травы и дорог
   // Даль смазывается туманом: чем выше на экране (дальше по реке), тем сильнее
   // трава и вода светлеют к цвету неба. Так возникает мягкий горизонт без рамки,
   // и сцена читается как «плыву вперёд», а не «мотор вверх».
@@ -6136,7 +6176,7 @@ function drwBg(x0, x1){
     // Вдали декор выплывает из тумана: прозрачный у fy=0.85 и полностью
     // видимый к fy=0.45. Раньше он рисовался только ниже fy=0.45 и сразу
     // целиком — дерево в 63 px «вырастало» на глазах.
-    if (fy < 0.85 && (wy % 13) < BAND){
+    if (fy < 0.85 && (wy % 13) < BAND) decorQ.push(() => {
       cx.globalAlpha = Math.min(1, (0.85 - fy) / 0.4);
       const vwx = Math.floor(wy/13);
       const s1 = hsh(vwx*7+3), s2 = hsh(vwx*13+9), s3 = hsh(vwx*17+5);
@@ -6189,18 +6229,8 @@ function drwBg(x0, x1){
         }
       }
       // Боковые зоны десктопа (wide): лес/деревня уходят вглубь за край поля, у каждой реки свой набор.
-      if (wide && vwx % 3 === 1) for (const side of [-1, 1]){
-        const reach = side < 0 ? -x0 : x1 - W;
-        for (let r = 0; r*DEEP_DX < reach + 20; r++){
-          const h = hsh(vwx*41 + r*13 + side*7), h2 = hsh(vwx*23 + r*29 + side*5);
-          if (h < DEEP_SKIP[level().river]) continue;
-          const list = deepDecor(), name = deepPick(list[Math.floor(h2*list.length) % list.length], wy, side, vwx*41 + r), sz = spriteSize(name);
-          const x = side < 0 ? -(r*DEEP_DX) - 8 - h*14 : W + r*DEEP_DX + 8 + h*14;
-          if (x + sz.w/2 > L - 12 && x - sz.w/2 < R + 12) continue;       // не на воде
-          if (nearRoad(swy, sz.h) || farBlock(vwx, side, x) || onCycRoad(x, swy, sz.w/2)) continue;   // дороги, дальняя сцена
-          drawSprite(name, x, foot - sz.h/2);
-        }
-      }
+      if (wide && vwx % 3 === 1) for (const side of [-1, 1])
+        for (const it of deepItems(vwx, side, x0, x1)) drawSprite(it.name, it.x, foot - it.h/2);
       // Дальние сцены — только на десктопе: там, куда телефонный экран не достаёт.
       if (wide){
         const fs = farScene(vwx, level().river);
@@ -6215,8 +6245,11 @@ function drwBg(x0, x1){
         cx.fillRect(L - 4 + (s2 > 0.5 ? 1 : 0), y - 6, 1, 8);
       }
       cx.globalAlpha = 1;
-    }
+    });
   }
+  // Слои: трава уже лежит; дальше велодороги (на земле, под всем), потом декор, потом дальние сцены.
+  drwCycRoads();
+  for (const f of decorQ) f();
   drwFarQueue(x0, x1);
 }
 // Соответствие внутренних типов препятствий именам спрайтов.
@@ -6419,6 +6452,42 @@ function bearRoam(e){
 const VILLAGE_CHURCH = false;
 const CAMP_WALK = 0.25;                       // px за кадр — шаг пары к палатке
 function campWalkSpeed(e){ return CAMP_WALK; }
+// Велодороги — слоем земли: после травы, до любого декора и жителей. Раньше
+// дорога рисовалась вместе с жителями и перекрывала охотника, медведя, деревья.
+function drwCycRoads(){
+  for (const e of g.bev){
+    if (e.type !== "cyclists") continue;
+    const by = screenYOf(e.wy);
+    if (by < -CYC_REACH - 160 || by > H + CYC_REACH + 160) continue;
+    const edgAt = w => centerAt(w) + e.side*widthAt(w)/2;
+    if (!bankVisible(e.side, edgAt(e.wy))) continue;
+    // Полевая грунтовка: земляное полотно, две накатанные колеи темнее, между
+    // ними трава с проплешинами, края рвёт трава, камушки, изредка лужа в
+    // колее. Полосами по 6 px мира — дорога гнётся вместе с берегом.
+    const grass = g.rGrass || river().grass;
+    const RW = CYC_GAP + 11;
+    for (let w = e.wy - CYC_REACH; w <= e.wy + CYC_REACH; w += 6){
+      const sy = Math.round(screenYOf(w));
+      if (sy < -8 || sy > H + 8) continue;
+      const x = Math.round(edgAt(w) + e.side*cycRoadOff(w - e.wy)), n = Math.floor(w/6);
+      if (x < VX0 - RW - 10 || x > VX1 + RW + 10) continue;       // конец дороги ушёл за край видимой сцены
+      const r1 = hsh(n*17 + 3), r2 = hsh(n*29 + 11), r3 = hsh(n*41 + 7);
+      cx.fillStyle = "#a08354"; cx.fillRect(x - RW, sy, RW*2, 7);           // полотно
+      cx.fillStyle = "#7c6342";                                              // колеи
+      cx.fillRect(x - CYC_GAP - 4, sy, 9, 7); cx.fillRect(x + CYC_GAP - 4, sy, 9, 7);
+      if (r1 > 0.28){ cx.fillStyle = "#6e8a3f"; cx.fillRect(x - 4, sy, 8, 7); }   // трава посередине
+      cx.fillStyle = grass;                                                  // рваные края
+      cx.fillRect(x - RW, sy, 1 + Math.floor(r2*5), 7);
+      const rr = 1 + Math.floor(r3*5); cx.fillRect(x + RW - rr, sy, rr, 7);
+      if (r2 > 0.86){ cx.fillStyle = "#c9b082"; cx.fillRect(x - RW + 6 + Math.floor(r3*(RW*2 - 14)), sy + 2, 2, 2); }  // камушек
+      if (hsh(Math.floor(w/48)*7 + 1) > 0.86 && (n % 8) < 3){                // лужа в колее
+        const lx = hsh(Math.floor(w/48)*13) > 0.5 ? CYC_GAP : -CYC_GAP;
+        cx.fillStyle = "#6c86a0"; cx.fillRect(x + lx - 4, sy, 9, 7);
+        cx.fillStyle = "#a9c1d6"; cx.fillRect(x + lx - 2, sy + 2, 4, 1);
+      }
+    }
+  }
+}
 function drwBev(e){
   const ax = centerAt(e.wy), hw = widthAt(e.wy)/2;
   const by = screenYOf(e.wy);
@@ -6527,31 +6596,7 @@ function drwBev(e){
   if (e.type === "cyclists"){
     const edgAt = w => centerAt(w) + e.side*widthAt(w)/2;
     if (!bankVisible(e.side, edgAt(e.wy))) return;
-    // Полевая грунтовка: земляное полотно, две накатанные колеи темнее, между
-    // ними трава с проплешинами, края рвёт трава, камушки, изредка лужа в
-    // колее. Полосами по 6 px мира — дорога гнётся вместе с берегом.
-    const grass = g.rGrass || river().grass;
-    const RW = CYC_GAP + 11;
-    for (let w = e.wy - CYC_REACH; w <= e.wy + CYC_REACH; w += 6){
-      const sy = Math.round(screenYOf(w));
-      if (sy < -8 || sy > H + 8) continue;
-      const x = Math.round(edgAt(w) + e.side*cycRoadOff(w - e.wy)), n = Math.floor(w/6);
-      if (x < VX0 - RW - 10 || x > VX1 + RW + 10) continue;       // конец дороги ушёл за край видимой сцены
-      const r1 = hsh(n*17 + 3), r2 = hsh(n*29 + 11), r3 = hsh(n*41 + 7);
-      cx.fillStyle = "#a08354"; cx.fillRect(x - RW, sy, RW*2, 7);           // полотно
-      cx.fillStyle = "#7c6342";                                              // колеи
-      cx.fillRect(x - CYC_GAP - 4, sy, 9, 7); cx.fillRect(x + CYC_GAP - 4, sy, 9, 7);
-      if (r1 > 0.28){ cx.fillStyle = "#6e8a3f"; cx.fillRect(x - 4, sy, 8, 7); }   // трава посередине
-      cx.fillStyle = grass;                                                  // рваные края
-      cx.fillRect(x - RW, sy, 1 + Math.floor(r2*5), 7);
-      const rr = 1 + Math.floor(r3*5); cx.fillRect(x + RW - rr, sy, rr, 7);
-      if (r2 > 0.86){ cx.fillStyle = "#c9b082"; cx.fillRect(x - RW + 6 + Math.floor(r3*(RW*2 - 14)), sy + 2, 2, 2); }  // камушек
-      if (hsh(Math.floor(w/48)*7 + 1) > 0.86 && (n % 8) < 3){                // лужа в колее
-        const lx = hsh(Math.floor(w/48)*13) > 0.5 ? CYC_GAP : -CYC_GAP;
-        cx.fillStyle = "#6c86a0"; cx.fillRect(x + lx - 4, sy, 9, 7);
-        cx.fillStyle = "#a9c1d6"; cx.fillRect(x + lx - 2, sy + 2, 4, 1);
-      }
-    }
+    // Дорога нарисована раньше, в слое земли (drwCycRoads): ездоки — поверх всего.
     const cnt = e.count || cyclistCount(e);
     for (let i = 0; i < cnt; i++){
       const w = cyclistWy(e, i);
@@ -11536,7 +11581,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
