@@ -259,6 +259,7 @@ canvas { display:block;margin:0 auto; }
     <div class="maprow">
       <button class="btn small" id="ceAgain">ЕЩЁ РАЗ</button>
       <button class="btn small hidden" id="ceChallenge">ВЫЗВАТЬ ДРУГА</button>
+      <button class="btn small hidden" id="ceTracks">ДРУГАЯ ТРАССА</button>
       <button class="btn small ghost" id="ceEdit">В РЕДАКТОР</button>
       <button class="btn small ghost" id="ceMenu">В МЕНЮ</button>
     </div>
@@ -5910,7 +5911,6 @@ const FAR_SCENES = [
     { name:"hunt", chase:true, parts:[{ spr:"bear_run", dx:150 }, { spr:"dog_run", dx:210, dy:-4 }, { spr:"hunter", dx:262, dy:2 }] },
     { name:"mushrooms", parts:[{ spr:"mushroomer", dx:180 }, { spr:"mushrooms", dx:152, dy:-6 }, { spr:"grandpa", dx:252, dy:-20 }, { spr:"mushrooms", dx:228, dy:-14 }] } ],
   [ { name:"herd",  parts:[{ spr:"cow", dx:176 }, { spr:"cow", dx:214, dy:-16, v:1 }, { spr:"shepherd", dx:250, dy:-4 }] },
-    { name:"church", parts:[{ spr:"church", dx:210 }, { spr:"person", dx:262, dy:-6, v:1 }] },
     { name:"moosegraze", parts:[{ spr:"moose", dx:190 }, { spr:"moosecow", dx:226, dy:-12 }, { spr:"moosecalf", dx:254, dy:-4 }] } ],
   [ { name:"moose", parts:[{ spr:"moose", dx:186 }, { spr:"moosecow", dx:222, dy:-12 }, { spr:"moosecalf", dx:250, dy:-4 }] },
     { name:"forestfire", parts:[{ spr:"fire", dx:176 }, { spr:"sitter", dx:202, dy:-4 }, { spr:"tent2", dx:240, dy:-18 }] },
@@ -5992,8 +5992,8 @@ function farBlock(vwx, side, x){
 }
 function deepDecor(){
   const r = Math.min(level().river, DEEP_SETS.length - 1);
-  // День 6 — Торжок: церкви чаще (в наборе Тверцы она одна из десяти).
-  return level().day === 6 && r === 2 ? DEEP_SETS[2].concat(["church", "church"]) : DEEP_SETS[r];
+  // Церкви по бокам не рисуем: церковь — только финиш Волги дня 2 (просьба Максима).
+  return DEEP_SETS[r];
 }
 // Видимая ширина сцены в игровых px: на телефоне — поле 0…W, на десктопе —
 // всё окно (VX0 < 0, VX1 > W). Раньше поле рисовалось на своём холсте со всеми
@@ -6415,11 +6415,16 @@ function bearRoam(e){
   const edg = centerAt(e.wy) + e.side*widthAt(e.wy)/2, half = spriteSize("bear").w/2;
   return half + 3 + Math.max(0, bearRoamLand(e, edg) - 2*half - 6);
 }
+// В деревнях церквей нет: церковь — только финиш Волги дня 2.
+const VILLAGE_CHURCH = false;
+const CAMP_WALK = 0.25;                       // px за кадр — шаг пары к палатке
+function campWalkSpeed(e){ return CAMP_WALK; }
 function drwBev(e){
   const ax = centerAt(e.wy), hw = widthAt(e.wy)/2;
   const by = screenYOf(e.wy);
   // Дорога велосипедистов тянется далеко вверх и вниз от своей точки.
-  const cull = e.type === "cyclists" ? CYC_REACH + 160 : 160;
+  const flying = e.away && (e.type === "heron" || e.type === "ducks");
+  const cull = e.type === "cyclists" ? CYC_REACH + 160 : flying ? 5000 : 160;
   if (by < -cull || by > H + cull) return;
   const ph = e.phase || 0;
 
@@ -6611,7 +6616,7 @@ function drwBev(e){
     const items = [];
     for (let i = 0; i < n; i++){
       const [off, dy] = spots[i];
-      const church = i === 1 && h(2) < 0.35;
+      const church = VILLAGE_CHURCH && i === 1 && h(2) < 0.35;
       items.push([church ? "church" : "house", off, dy, church ? null : Math.floor(h(10 + i)*5)]);
     }
     items.push(["sbirch", 160, -10, null]);
@@ -6738,18 +6743,19 @@ function drwBev(e){
 
   // Палатка: пара подходит, заходит внутрь, дальше палатку потряхивает.
   if (e.type === "camp"){
-    const cyc = (g.frame*0.6 + ph*120) % 900;
-    if (cyc < 300){                            // подходят к палатке
-      const k = cyc/300;
-      // Подходят из-за края видимой сцены: на десктопе она шире, и из точки в
-      // 70 px от палатки пара возникала посреди луга «из воздуха».
-      const edgeX = e.side < 0 ? VX0 - 30 : VX1 + 30;
-      const fromX = bx + e.side*Math.max(70, Math.abs(edgeX - bx));
+    // Подходят из-за края видимой сцены (на десктопе она шире — из точки в
+    // 70 px пара возникала посреди луга) и шагом CAMP_WALK: путь длиннее —
+    // идут дольше (раньше путь любой длины проходили за одно время — бегом).
+    const edgeX = e.side < 0 ? VX0 - 30 : VX1 + 30;
+    const dist = Math.max(70, Math.abs(edgeX - bx)), walkF = dist/CAMP_WALK;
+    const cyc = (g.frame + ph*120) % (walkF + 100 + 600), fromX = bx + e.side*dist;
+    if (cyc < walkF){                          // подходят к палатке
+      const k = cyc/walkF;
       drawSprite("person", fromX + (bx - fromX)*k - 12, by + 4, 0);
       // Вторая в паре — девушка (длинные волосы, сарафан; через раз блондинка).
       drawSprite("girl", fromX + (bx - fromX)*k + 12, by + 4, Math.floor(ph*3) % 2);
       drawSprite("tent", bx, by);
-    } else if (cyc < 360){                     // заходят внутрь
+    } else if (cyc < walkF + 100){             // заходят внутрь
       drawSprite("tent", bx, by);
     } else {                                   // палатку потряхивает
       const sh = Math.sin(g.frame*0.55 + ph)*0.055;
@@ -7251,10 +7257,11 @@ function drwHUD(){
   // Тонкая полоса у самого края кадра: шире она закрывала правый берег.
   // С боковыми панелями не рисуем: там есть свой прогресс, а тёмная
   // полоска у края поля читалась как шов между полем и боковой зоной.
-  if (!panelsOn){
-    cx.fillStyle = "rgba(0,0,0,0.35)"; cx.fillRect(W-6, 100, 4, H-200);
-    cx.fillStyle = "#7fd67f"; cx.fillRect(W-6, 100+(H-200)*(1-pr), 4, (H-200)*pr);
-  }
+  // На десктопе — у края окна (у края поля она читалась как шов, а без неё
+  // на десктопе не было видно, сколько осталось).
+  { const sx = VX1 > W ? VX1 - 10 : W - 6;
+    cx.fillStyle = "rgba(0,0,0,0.35)"; cx.fillRect(sx, 100, 4, H-200);
+    cx.fillStyle = "#7fd67f"; cx.fillRect(sx, 100+(H-200)*(1-pr), 4, (H-200)*pr); }
   if (g.whiskyT > 0){
     cx.font = "10px " + F; cx.fillStyle = "#e8a838"; cx.textAlign = "center";
     cx.fillText("ОЧКИ x2", W/2, 66); cx.textAlign = "left";
@@ -8193,7 +8200,7 @@ const FINISHES = [
           ["person",340,50,4], ["tree",470,50], ["sbush",470,120]],
     opp:[] },
   // 6. Тверца, Торжок: церковь и городские дома, горожане, дерево.
-  { name:"Торжок", near:[["church",0,50], ["house",10,140], ["person",110,40,2], ["person",110,96,4], ["house",110,142],
+  { name:"Торжок", near:[["house",0,50], ["house",10,140], ["person",110,40,2], ["person",110,96,4], ["house",110,142],
           ["house",220,50], ["house",220,135], ["tree",330,90]],
     opp:[] },
   // 7. Осуга, первый порог: валуны, палатки, костёр, байдарки сохнут.
@@ -10019,7 +10026,9 @@ function upd(){
     // кромку ушла вся зона сужения — иначе русло на экране прыгало назад.
     const reach = e.type === "cyclists" ? CYC_REACH : e.roomDef ? ROOM_FULL + ROOM_TAPER : 0;
     // Собака в деле (бежит, прыгает, плывёт) держит сцену, даже если рыбак уже за кадром.
-    if ((e.dead || offScreen(e.wy + reach)) && !(e.dog && dogBusy(e.dog))) g.bev.splice(i,1);
+    // Улетающая птица убирается, когда улетела (flewOff), а не когда место ушло вниз.
+    const flying = e.away && !e.dead && (e.type === "heron" || e.type === "ducks");
+    if ((e.dead || (!flying && offScreen(e.wy + reach))) && !(e.dog && dogBusy(e.dog))) g.bev.splice(i,1);
   }
   for(let i=g.pts.length-1;i>=0;i--){const p=g.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.lf--;if(p.lf<=0)g.pts.splice(i,1);}
   ensureForks(g.scroll + H*3);
@@ -11108,11 +11117,12 @@ function raceEndScreen(ok){
         link = document.getElementById("ceLink"), ed = document.getElementById("ceEdit");
   link.classList.add("hidden"); link.textContent = "";
   document.getElementById("ceBest").classList[R ? "add" : "remove"]("hidden");   // рекорд редактора в гонке ни при чём
-  if (!R){ document.getElementById("cePlace").textContent = "СВОЙ УРОВЕНЬ"; box.classList.add("hidden"); ch.classList.add("hidden"); ed.classList.remove("hidden"); return; }
+  if (!R){ document.getElementById("ceTracks").classList.add("hidden"); document.getElementById("cePlace").textContent = "СВОЙ УРОВЕНЬ"; box.classList.add("hidden"); ch.classList.add("hidden"); ed.classList.remove("hidden"); return; }
   ed.classList.add("hidden");
   document.getElementById("cePlace").textContent = "ГОНКА";
   const res = raceResult();
   g.lastOk = ok;
+  document.getElementById("ceTracks").classList[R.bots ? "remove" : "add"]("hidden");
   if (R.bots){
     const rr = regattaResult();
     document.getElementById("cePlace").textContent = "РЕГАТА · " + R.bots.track.name;
@@ -11250,8 +11260,14 @@ function showRegattaMenu(){
     b.onclick = () => startRegatta(tr || { id: "rnd", name: "СЛУЧАЙНАЯ", river: Math.floor(Math.random()*4), lenIdx: 1, seed: 1 + Math.floor(Math.random()*99999) });
     box.appendChild(b);
   }
+  const back = document.createElement("button");               // назад к выбору режима гонки
+  back.className = "btn small ghost"; back.textContent = "НАЗАД";
+  back.onclick = showRaceMenu;
+  box.appendChild(back);
   box.classList.remove("hidden");
 }
+// С итога регаты (и откуда угодно) — к списку трасс.
+function toRegattaMenu(){ showRaceMenu(); showRegattaMenu(); }
 function showRaceHost(){
   const h = netHost(save.name);
   document.getElementById("rsTitle").textContent = "ВДВОЁМ";
@@ -11292,6 +11308,7 @@ function showRaceInvite(id){
   document.getElementById("rsSolo").addEventListener("click", () => { startRace(raceLevel(1 + Math.floor(Math.random()*99999))); });
   document.getElementById("rsDuo").addEventListener("click", showRaceHost);
   document.getElementById("rsReg").addEventListener("click", showRegattaMenu);
+  document.getElementById("ceTracks").addEventListener("click", toRegattaMenu);
   document.getElementById("rsGo").addEventListener("click", () => { if (g.invite){ startMusic(); startRace(g.invite.lvl, g.invite); } });
   document.getElementById("rsMenu").addEventListener("click", () => { if (g.net && g.net.ws) try { g.net.ws.close(); } catch(e){} g.net = null; showStart(); });
   document.getElementById("ceChallenge").addEventListener("click", () => {
@@ -11519,7 +11536,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
