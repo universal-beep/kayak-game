@@ -5319,6 +5319,7 @@ function paddleStrike(){
   if (g.s !== "playing") return;
   // Есть топор — двойной тап его кидает (тратится), нет — взмах веслом.
   if ((g.axes || 0) > 0 && !g.axeFly){ throwAxe(); return; }
+  if (raceStrike()) return;                     // гонка: бьём соперника-лодку
   g.strikeT = 12;
   // Твоё весло бьёт в сторону ближайшего соперника, иначе — вправо.
   const near = g.obs.filter(q => q.type === "kayaker" && Math.abs(q.wy - g.pwy) < 120)
@@ -6270,6 +6271,7 @@ function drwClash(){
 
 function drwKy(){
   const x = screenXOf(g.t, g.pwy), y = g.py;
+  if (g.raceFlipT > 0){ drawSprite("rower_flip", x, y); return; }   // гонка: перевернули
   // Мигание в кадрах неуязвимости после удара.
   if (g.inv > 0 && Math.floor(g.frame/4) % 2 === 0) return;
   if (g.yacht){
@@ -11033,6 +11035,7 @@ function startRace(lvl, ghost){
   Object.assign(g.custom, { wide: true, shore: true, place: "ГОНКА",           // берег — только нарисованный, без случайных
                             race: { lvl, f: 0, track: [], end: 0, ghost: ghost || null } });
   g.lastRace = { lvl, ghost: ghost || null };
+  g.raceFlipT = 0; g.raceHits = 0; g.raceHitCool = 0;
   g.day = 0;
   hideAllScreens();
   sg();
@@ -11046,9 +11049,11 @@ function raceStep(){
   if (!R || R.end) return;
   if (R.f % GHOST_STEP === 0){
     R.track.push(Math.round(g.pwy), Math.round(g.t*1000));
-    if (R.net) netSend({ type: "pos", f: R.f, wy: Math.round(g.pwy), t: Math.round(g.t*1000) });
+    if (R.net){ const m = { type: "pos", f: R.f, wy: Math.round(g.pwy), t: Math.round(g.t*1000) }; if (g.raceFlipT > 0) m.fl = 1; netSend(m); }
   }
   R.f++;
+  if (g.raceFlipT > 0) g.raceFlipT--;
+  if (g.raceHitCool > 0) g.raceHitCool--;
   if (R.net) netSmooth(R.net);
   if (R.bots) regattaStep(R);
 }
@@ -11238,7 +11243,8 @@ function netMsg(m){
     g.custom.race.net = n;
     g.s = "countdown"; g.cdT = Math.max(1, Math.round((m.in || 3000)/1000*60));
   }
-  else if (m.type === "pos"){ n.pos = { f: m.f, wy: m.wy, t: m.t/1000 }; }
+  else if (m.type === "pos"){ n.pos = { f: m.f, wy: m.wy, t: m.t/1000, fl: m.fl === 1 ? 1 : 0 }; }
+  else if (m.type === "hit"){ raceHitMe(); }
   else if (m.type === "fin"){ n.rival.frames = m.frames; if (g.s === "customEnd") raceEndScreen(g.lastOk); }
   else if (m.type === "left"){ n.rival.left = true; if (g.s === "customEnd") raceEndScreen(g.lastOk); else popText((n.rival.name || "ДРУГ") + " ВЫШЕЛ", "#9aa9b2"); }
 }
@@ -11262,7 +11268,7 @@ function drwRival(n){
     return;
   }
   drawShadow(x, y + spriteSize("kayak_center").h/2 - 4, spriteSize("kayak_center").w);
-  cx.save(); cx.globalAlpha = 0.85; drawSprite("kayak_center", x, y, 1); cx.restore();
+  cx.save(); cx.globalAlpha = 0.85; drawSprite(n.pos && n.pos.fl ? "rower_flip" : "kayak_center", x, y, 1); cx.restore();
   cx.save(); cx.font = "7px " + F; cx.textAlign = "center";
   cx.fillStyle = "rgba(0,0,0,0.6)"; cx.fillRect(x - 30, y - 44, 60, 11);
   cx.fillStyle = "#ff8a80"; cx.fillText(n.rival.name || "ДРУГ", x, y - 35);
@@ -11379,6 +11385,54 @@ function raceAgain(){
   startCustom();
 }
 /* ===== 12в. Регата: 8 лодок ===== */
+// Драки в гонках: удар веслом по лодке рядом (RACE_DY по ходу, RACE_REACH вбок);
+// два попадания — переворот на RACE_FLIP кадров (2 с), лодка почти стоит,
+// сердца не тратятся. Задира и лихач нападают сами: замах BOT_SWING кадров
+// («!» над ними) → удар, если всё ещё борт о борт. Ударить первым в замах — отбил.
+const RACE_FLIP = 120, RACE_REACH = 70, RACE_DY = 60, BOT_SWING = 30, BOT_COOL = 150;
+function raceAlong(t, wy){
+  return Math.abs(wy - g.pwy) < RACE_DY && Math.abs((t - g.t)*widthAt(g.pwy)/2) < RACE_REACH;
+}
+function raceStrike(){
+  const R = raceOf();
+  if (!R || g.raceFlipT > 0) return false;
+  const hw = widthAt(g.pwy)/2;
+  let best = null, bd = Infinity;
+  for (const b of R.bots || []){
+    if (b.end || b.flipT > 0 || !raceAlong(b.t, b.wy)) continue;
+    const d = Math.hypot((b.t - g.t)*hw, b.wy - g.pwy);
+    if (d < bd){ bd = d; best = b; }
+  }
+  const n = R.net;
+  if (!best && n && n.show && !(n.pos && n.pos.fl) && raceAlong(n.show.t, n.show.wy)) best = { net: true, t: n.show.t, wy: n.show.wy };
+  if (!best) return false;
+  g.strikeT = 12; g.strikeSide = Math.sign((best.t - g.t)) || 1;
+  if (g.raceHitCool > 0) return true;                    // взмах есть, попадание — не чаще раза в треть секунды
+  g.raceHitCool = 20;
+  spPt(screenXOf(best.t, best.wy), screenYOf(best.wy), "#ffd54f", 10); sfx("slap");
+  if (best.net){ netSend({ type: "hit" }); popText("ПОПАЛ!", "#ffd54f"); return true; }
+  if (best.swingT > 0){ best.swingT = 0; best.coolT = BOT_COOL; popText("ОТБИЛ!", "#7fd67f"); }
+  best.hits = (best.hits || 0) + 1;
+  if (best.hits >= 2){ best.flipT = RACE_FLIP; best.hits = 0; popText("ПЕРЕВЕРНУЛ!", "#ffd54f"); }
+  else popText("ПОПАЛ!", "#ffd54f");
+  return true;
+}
+function raceHitMe(){
+  if (g.raceFlipT > 0) return;
+  g.raceHits = (g.raceHits || 0) + 1; g.shake = 8; sfx("slap");
+  if (g.raceHits >= 2){ g.raceFlipT = RACE_FLIP; g.raceHits = 0; popText("ПЕРЕВЕРНУЛСЯ!", "#ff5252"); }
+  else popText("ПО ТЕБЕ!", "#ff8a80");
+}
+function botAttack(b){
+  if (!b.attack || b.flipT > 0) return;
+  if (b.coolT > 0) b.coolT--;
+  if (b.swingT > 0){
+    if (--b.swingT === 0){
+      if (raceAlong(b.t, b.wy)) raceHitMe();
+      b.coolT = BOT_COOL;
+    }
+  } else if (!(b.coolT > 0) && !(g.raceFlipT > 0) && raceAlong(b.t, b.wy)) b.swingT = BOT_SWING;
+}
 // Ты и семь ботов стартуете строем поперёк широкой реки. Боты — с
 // характерами: скорость (mul), как далеко видят (look), какой запас берут от
 // камней (margin), лихач лезет в узкий рукав, задира толкается сильнее.
@@ -11395,9 +11449,9 @@ const REGATTA_TRACKS = [
 ];
 const BOT_STYLES = [
   { style:"fast",    name:"СЕРЁГА",    mul:1.18, look:280, margin:26, variant:0 },
-  { style:"daring",  name:"ЖЕКА",      mul:1.14, look:200, margin:10, variant:1, narrow:true },
+  { style:"daring",  name:"ЖЕКА",      mul:1.14, look:200, margin:10, variant:1, narrow:true, attack:true },
   { style:"careful", name:"ИРИНА",     mul:1.07, look:340, margin:44, variant:2 },
-  { style:"bully",   name:"ЗЛОЙ ГЕНА", mul:1.12, look:240, margin:22, variant:AGGRO_VARIANT, bump:2.2 },
+  { style:"bully",   name:"ЗЛОЙ ГЕНА", mul:1.12, look:240, margin:22, variant:AGGRO_VARIANT, bump:2.2, attack:true },
   { style:"rookie",  name:"КОСТЯ",     mul:1.05, look:90,  margin:4,  variant:0 },
   { style:"steady",  name:"НАТАША",    mul:1.10, look:260, margin:28, variant:1 },
   { style:"old",     name:"ДЯДЬ ВИТЯ", mul:1.09, look:300, margin:32, variant:2 }
@@ -11439,6 +11493,7 @@ function startRegatta(tr){
 }
 function raceRowMul(){
   if (!raceOf()) return 1;
+  if (g.raceFlipT > 0) return 0.15;                    // перевернулся — почти стоит
   return g.rowing > 0 ? 1.22 : g.rowing < 0 ? 0.75 : 1;
 }
 // Лучшая дорожка для бота: штраф за препятствия впереди (в пределах его
@@ -11482,7 +11537,9 @@ function regattaStep(R){
     b.t = Math.max(-0.85, Math.min(0.85, b.t + b.vt));
     // Рывками, как человек: гребёт и отдыхает.
     const row = ((R.f + b.i*37) % 240) < 95 ? 1.18 : 1;
-    b.wy += g.sp*speedMulAt(b.wy)*flowMul(b.t)*b.mul*row*(b.boostT > 0 ? 1.3 : 1)*(b.stunT > 0 ? 0.45 : 1);
+    b.wy += g.sp*speedMulAt(b.wy)*flowMul(b.t)*b.mul*row*(b.boostT > 0 ? 1.3 : 1)*(b.stunT > 0 ? 0.45 : 1)*(b.flipT > 0 ? 0.15 : 1);
+    if (b.flipT > 0) b.flipT--;
+    botAttack(b);
     if (b.stunT > 0) b.stunT--;
     if (b.boostT > 0) b.boostT--;
     if (!(b.stunT > 0)){
@@ -11570,8 +11627,10 @@ function drwBots(R){
   for (const [b, y] of vis){
     const x = screenXOf(b.t, b.wy), sz = spriteSize("rower");
     drawShadow(x, y + sz.h/2 - 3, sz.w);
-    if (b.stunT > 0 && Math.floor(g.frame/5) % 2) { cx.save(); cx.globalAlpha = 0.6; drawSprite("rower", x, y, b.variant); cx.restore(); }
+    if (b.flipT > 0) drawSprite("rower_flip", x, y);
+    else if (b.stunT > 0 && Math.floor(g.frame/5) % 2) { cx.save(); cx.globalAlpha = 0.6; drawSprite("rower", x, y, b.variant); cx.restore(); }
     else drawSprite("rower", x, y, b.variant);
+    if (b.swingT > 0){ cx.save(); cx.fillStyle = "#ff5252"; cx.font = "12px " + F; cx.textAlign = "center"; cx.fillText("!", x, y - 44); cx.restore(); }
     if (b.boostT > 0 && g.frame % 6 === 0) spPt(x + (g.frame % 12 ? 18 : -18), y + 6, "#ffd54f", 2);
     cx.save(); cx.font = "6px " + F; cx.textAlign = "center";
     cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(x - 28, y - 40, 56, 9);
@@ -11581,7 +11640,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
