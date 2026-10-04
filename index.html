@@ -6079,12 +6079,21 @@ function rndrWide(ctx, x0, x1){
 // идёт полосами сверху вниз, и фигуру ниже своей полосы следующие полосы
 // травы закрашивали (у человечка на даче оставалась одна голова).
 let farQueue = [];
+// Прозрачность в дымке у верхнего края — как у ближнего декора в drwBg
+// (FOG_END 320: невидим выше fy=0.85, целиком виден ниже fy=0.45). Раньше
+// дальние сцены рисовались в полную силу прямо в тумане.
+function hazeAlpha(y){
+  const fy = Math.max(0, (320 - y)/320);
+  return Math.max(0, Math.min(1, (0.85 - fy)/0.4));
+}
 function drwFarQueue(x0, x1){
   farQueue.sort((a, b) => b.pw - a.pw);              // дальше (выше по течению) — раньше
   for (const a of farQueue){
     const sz = spriteSize(a.spr), x = a.x, pw = a.pw;
     if (x + sz.w/2 < x0 - 10 || x - sz.w/2 > x1 + 10 || nearRoad(pw, sz.h) || onCycRoad(x, pw, sz.w/2)) continue;
-    const yy = screenYOf(pw) - sz.h/2 + a.oy;
+    const yy = screenYOf(pw) - sz.h/2 + a.oy, ha = hazeAlpha(screenYOf(pw));
+    if (ha <= 0) continue;
+    cx.save(); cx.globalAlpha = ha;
     drawSprite(a.spr, x, yy, a.v);
     if (a.mark){ cx.fillStyle = "#ffd54f"; cx.font = "10px " + F; cx.textAlign = "center"; cx.fillText("!", x, yy - sz.h/2 - 4); cx.textAlign = "left"; }
     if (a.smoke) for (let k = 0; k < 3; k++){              // дым клубами вверх
@@ -6093,6 +6102,7 @@ function drwFarQueue(x0, x1){
       const rr = 3 + q*0.07;
       cx.fillRect(Math.round(x - rr + Math.sin(q*0.07 + k)*4), Math.round(yy - sz.h/2 - q*0.6), Math.round(rr*2), Math.round(rr*2));
     }
+    cx.restore();
   }
   farQueue = [];
 }
@@ -11658,7 +11668,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,

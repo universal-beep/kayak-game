@@ -58,3 +58,20 @@ test("дальний декор не наваливается: заметных 
     assert.equal(bad, 0, "день " + (day + 1) + ": наложений " + bad);
   }
 });
+
+// Дальние сцены у верхнего края тают в дымке, как ближний декор: прозрачные
+// выше fy=0.85 (y < 48), полностью видимые ниже fy=0.45 (y > 176).
+test("дальние сцены вверху тают в дымке, внизу — в полную силу", async () => {
+  const { runInContext } = await import("node:vm");
+  const { K, ctx, sandbox } = loadGame();
+  K.startDay(1); setupWorld(K, { wy: 3000 });
+  const alphas = [];
+  ctx.drawImage = function () { alphas.push(this.globalAlpha); };
+  const at = y => { alphas.length = 0; sandbox.__pw = K.worldYOf(y);
+    runInContext('farQueue = [{ spr: "fisher", x: -200, pw: __pw, oy: 0, v: 0 }]', sandbox);
+    K.drwFarQueue(-560, 980); return alphas.length ? Math.min(...alphas) : 0; };
+  assert.ok(at(500) > 0.99, "внизу видно целиком");
+  const mid = at(110);
+  assert.ok(mid > 0.05 && mid < 0.95, "в дымке полупрозрачно: " + mid);
+  assert.equal(at(20), 0, "у самого верха не видно");
+});
