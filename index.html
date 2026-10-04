@@ -4798,15 +4798,18 @@ function drwCut(){
   cx.restore();                                  // камера
   if (sc.rain) drwCutRain(sc, cw, ch, s, yf);
   drwCutTalk(sc, g.cut.t, s, xf, yf);
-  // подпись — всегда внизу экрана
-  const capH = Math.max(34, Math.round(44*s));
-  const capY = ch - capH;
-  cx.fillStyle = "rgba(0,0,0,0.55)"; cx.fillRect(0, capY, cw, capH);
-  cx.fillStyle = "#fff"; cx.font = Math.max(9, Math.round(9*s)) + "px " + F;
-  cx.textAlign = "center";
+  // подпись — всегда внизу экрана. Была 9 px в полосе 44 px — читалась с
+  // трудом; теперь 20 px × масштаб, а длинная ужимается до ширины кадра (у
+  // пиксельного шрифта знак — ровно 1 em).
   let cap = sc.caption;
   if (sc.captions) for (const [ct, tx] of sc.captions) if (g.cut.t >= ct*(g.cut.len || CUT_LEN)) cap = tx;       // подписи по времени (доли длины)
-  cx.fillText(cap, cw/2, capY + Math.max(16, Math.round(22*s)));
+  const capPx = Math.max(8, Math.min(Math.round(20*s), Math.floor((cw - 24)/Math.max(1, cap.length))));
+  const capH = Math.max(44, Math.round(capPx*2.8));
+  const capY = ch - capH;
+  cx.fillStyle = "rgba(0,0,0,0.6)"; cx.fillRect(0, capY, cw, capH);
+  cx.fillStyle = "#fff"; cx.font = capPx + "px " + F;
+  cx.textAlign = "center";
+  cx.fillText(cap, cw/2, capY + Math.round(capH/2 + capPx/2));
   cx.textAlign = "left";
   // Плавное затемнение в финале сцены (только если задан fadeOut) — поверх всего,
   // включая подпись, чтобы переход к следующей сцене был мягким чёрным кадром.

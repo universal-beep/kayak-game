@@ -81,3 +81,21 @@ test("мульт рисуется без ошибок на всём протяж
   K.playCut("bridge", () => {});
   for (const f of [0, 0.2, 0.5, 0.7, 0.9, 1]) { K.G.cut.t = Math.floor(K.G.cut.len * f); K.drwCut(); }
 });
+
+// Подпись мульта была 9 px (на десктопе — 9 × масштаб) в полосе 44 px: «Под
+// мостом» читалась с трудом. Теперь крупнее, а длинная подпись ужимается,
+// чтобы влезть в ширину (у пиксельного шрифта знак — ровно 1 em).
+test("подпись мульта крупная и влезает в ширину", () => {
+  const { K, ctx } = loadGame();
+  for (const name of ["bridge", "drive_tver"].filter(n => K.CUTS[n])) {
+    const caps = [];
+    ctx.fillText = function (t) { caps.push({ t, px: parseFloat(this.font) }); };
+    K.playCut(name, () => {});
+    K.rndr();
+    const sc = K.CUTS[name], cap = caps.find(c => c.t === sc.caption);
+    assert.ok(cap, name + ": подпись нарисована");
+    const cw = 420;
+    assert.ok(cap.px * cap.t.length <= cw - 16, name + ": влезает (" + cap.px + " px × " + cap.t.length + ")");
+    if (cap.t.length <= 20) assert.ok(cap.px >= 18, name + ": крупная, " + cap.px + " px");
+  }
+});
