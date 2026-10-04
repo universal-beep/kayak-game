@@ -11389,7 +11389,7 @@ function raceAgain(){
 // два попадания — переворот на RACE_FLIP кадров (2 с), лодка почти стоит,
 // сердца не тратятся. Задира и лихач нападают сами: замах BOT_SWING кадров
 // («!» над ними) → удар, если всё ещё борт о борт. Ударить первым в замах — отбил.
-const RACE_FLIP = 120, RACE_REACH = 70, RACE_DY = 60, BOT_SWING = 30, BOT_COOL = 150;
+const RACE_FLIP = 120, RACE_REACH = 70, RACE_DY = 60, BOT_SWING = 30, BOT_COOL = 270;   // нападение не чаще раза в 5 с (замах + отдых)
 function raceAlong(t, wy){
   return Math.abs(wy - g.pwy) < RACE_DY && Math.abs((t - g.t)*widthAt(g.pwy)/2) < RACE_REACH;
 }

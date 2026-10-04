@@ -123,3 +123,18 @@ test("сервер: пересылает удар и признак перево
   await room.webSocketMessage(a, JSON.stringify({ type: "pos", f: 1, wy: 2, t: 3, fl: 1 }));
   assert.deepEqual(b.sent[1], { type: "pos", f: 1, wy: 2, t: 3, fl: 1 });
 });
+
+test("регата: задира нападает не чаще раза в 5 секунд", () => {
+  const K = game(), R = regattaGo(K);
+  const bully = R.bots.find(o => o.style === "bully");
+  const swings = [];
+  for (let f = 0; f < 1200; f++) {
+    alongside(K, R, bully);
+    const was = bully.swingT > 0;
+    K.G.inv = 0; K.G.raceFlipT = 0; K.upd();
+    if (!was && bully.swingT > 0) swings.push(f);
+  }
+  assert.ok(swings.length >= 2, "нападал: " + swings.length);
+  for (let i = 1; i < swings.length; i++)
+    assert.ok(swings[i] - swings[i - 1] >= 300, "пауза между нападениями " + (swings[i] - swings[i - 1]) + " кадров");
+});
