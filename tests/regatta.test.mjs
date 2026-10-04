@@ -177,3 +177,16 @@ test("«ЕЩЁ РАЗ» после регаты — снова регата на
   assert.equal(K.G.custom.race.bots.track.id, tr.id, "та же трасса");
   assert.equal(K.G.s, "countdown");
 });
+
+test("итог регаты — таблица в три колонки, шрифт растёт с высотой окна", async () => {
+  const { K } = game();
+  const rows = Array.from({ length: 8 }, (_, i) => ({ place: i + 1, name: "Б" + i, frames: 3000 + i*60, me: i === 3 }));
+  const html = K.regattaTableHtml(rows);
+  assert.match(html, /class="regtab"/);
+  assert.equal((html.match(/<span class="rp/g) || []).length, 8, "8 строк");
+  assert.match(html, /class="rp me"/, "своя строка выделена");
+  const src = (await import("node:fs")).readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const css = /\.regtab\s*\{([^}]*)\}/.exec(src);
+  assert.ok(css, "стиль .regtab");
+  assert.match(css[1], /font-size:\s*clamp\([^)]*vh/, "размер от высоты окна");
+});

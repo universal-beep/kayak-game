@@ -79,6 +79,10 @@ canvas { display:block;margin:0 auto; }
 .finrun { font-family:"Press Start 2P",monospace;font-size:8px;line-height:2;color:#ddd;text-align:center;margin:6px 0; }
 .finrun b { color:#ffd54f;font-weight:normal; }
 .finrun .rec { color:#7fd67f; }
+.regtab { display:grid;grid-template-columns:auto 1fr auto;gap:0.55em 1.2em;width:min(100%,30em);margin:8px auto;font-family:"Press Start 2P",monospace;font-size:clamp(9px,1.45vh,15px);line-height:1.5;color:#ddd;text-align:left; }
+.regtab .rp { display:contents; }
+.regtab .rp span:first-child, .regtab .rp span:last-child { text-align:right;font-variant-numeric:tabular-nums; }
+.regtab .rp.me { color:#ffd54f; } .regtab .rp.out { color:#ff8a80; }
 .brow.top1 { color:#ffd54f; } .brow.top2 { color:#dfe6ea; } .brow.top3 { color:#d9a066; }
 .brow.mine { color:#12202e;background:#ffd54f; }
 .brow.gap { justify-content:center;color:#666; }
@@ -11184,12 +11188,12 @@ function raceEndScreen(ok){
     if (!rr){
       // Сошёл с дистанции: итога нет — показываем, кто где был в момент схода.
       document.getElementById("ceTitle").textContent = "НЕ ДОШЛИ";
-      box.innerHTML = regattaStandings().map((r, i) => (r.me ? "<b style='color:#ff8a80'>" : "<span>") + (i + 1) + ". " + escHtml(r.name) + (r.me ? " — СОШЁЛ</b>" : "</span>")).join("<br>");
+      box.innerHTML = regattaTableHtml(regattaStandings().map((r, i) => ({ place: i + 1, name: r.name, me: r.me, out: r.me })));
       box.classList.remove("hidden"); ch.classList.add("hidden");
       return;
     }
     document.getElementById("ceTitle").textContent = ["ЗОЛОТО!", "СЕРЕБРО!", "БРОНЗА!"][rr.place - 1] || "МЕСТО " + rr.place;
-    box.innerHTML = rr.rows.map(r => (r.me ? "<b style='color:#ffd54f'>" : "<span>") + r.place + ". " + escHtml(r.name) + " — " + raceTime(r.frames) + (r.me ? "</b>" : "</span>")).join("<br>");
+    box.innerHTML = regattaTableHtml(rr.rows);
     box.classList.remove("hidden"); ch.classList.add("hidden");
     return;
   }
@@ -11615,6 +11619,13 @@ function regattaFinish(R){
     commitSave();
   }
 }
+// Таблица итога: место · имя · время, своя строка жёлтая. Шрифт — от высоты
+// окна (.regtab): на большом мониторе раньше было 8 px в колонке шириной с поле.
+function regattaTableHtml(rows){
+  return '<div class="regtab">' + rows.map(r =>
+    '<span class="rp' + (r.out ? ' out' : r.me ? ' me' : '') + '"><span>' + r.place + '.</span><span>' + escHtml(r.name) +
+    '</span><span>' + (r.out ? "СОШЁЛ" : r.frames != null ? raceTime(r.frames) : "") + '</span></span>').join("") + '</div>';
+}
 function regattaResult(){ const R = raceOf(); return R && R.result || null; }
 function drwBots(R){
   // Себя среди восьми лодок надо найти сразу: жёлтая подпись «ТЫ».
@@ -11645,7 +11656,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
