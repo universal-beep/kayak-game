@@ -118,7 +118,7 @@ test("гребок в гонке ускоряет лодку (в походе �
     const { K, sandbox } = loadGame(); K.resetSave(); K.setAudio(null);
     runInContext("(function(){ let a = 12345; Math.random = function(){ a = (a*1103515245 + 12345) >>> 0; return a/4294967296; }; })()", sandbox);
     const keys = runInContext("keys", sandbox);
-    K.startRace(K.regattaLevel(K.REGATTA_TRACKS[0]));
+    K.startRace({ river: 0, lenIdx: 1, items: [] });           // чистая вода: меряем только гребок
     let f = 0;
     while (K.G.s === "playing" && f++ < 20000) { K.G.inv = 1e9; keys.ArrowUp = row && K.G.stam > 40; K.upd(); }
     return K.G.custom.race.end;
@@ -189,4 +189,21 @@ test("итог регаты — таблица в три колонки, шри�
   const css = /\.regtab\s*\{([^}]*)\}/.exec(src);
   assert.ok(css, "стиль .regtab");
   assert.match(css[1], /font-size:\s*clamp\([^)]*vh/, "размер от высоты окна");
+});
+
+test("трассы регаты нарисованы картой: ширина 7, длина по трассе, знаки из легенды, жители только у берега", () => {
+  const { K } = game();
+  for (const tr of K.REGATTA_TRACKS) {
+    assert.ok(Array.isArray(tr.map), tr.name + ": есть карта");
+    assert.equal(tr.map.length, K.customRows(tr.lenIdx), tr.name + ": рядов");
+    tr.map.forEach((row, r) => {
+      assert.equal(row.length, 7, tr.name + " ряд " + r);
+      [...row].forEach((ch, c) => {
+        assert.ok(ch === "." || K.REG_LEGEND[ch], tr.name + ": знак «" + ch + "» в ряду " + r);
+        if (ch !== "." && K.CUSTOM_SHORE.includes(K.REG_LEGEND[ch])) assert.ok(c === 0 || c === 6, tr.name + ": житель не у берега, ряд " + r);
+      });
+    });
+    const L = K.regattaLevel(tr);
+    assert.equal(L.items.length, tr.map.join("").replace(/\./g, "").length, tr.name + ": всё с карты");
+  }
 });
