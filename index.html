@@ -8313,11 +8313,16 @@ function boxesOverlap(a, b, m){
 }
 // Ставит жителя так, чтобы он ни на кого не налез: сдвигает вдоль берега
 // шагами по 10 px (dir: −1 назад, +1 вперёд), не нашлось места — не ставит.
+// Дорога моста — полоса поперёк всего окна (drwBridge: от wy−30 до wy+46 по
+// миру); житель, задевший её, оказался бы под асфальтом.
+function underBridge(a){
+  return (g.bridges_ || []).some(b => a.lo < b.wy + 46 && a.hi > b.wy - 30);
+}
 function placeBev(e, dir){
   for (let k = 0; k < 40; k++){
     e.box = undefined;
     const a = boxOf(e);
-    if (!a || !g.bev.some(o => boxesOverlap(a, boxOf(o)))){ g.bev.push(e); return true; }
+    if (!a || (!g.bev.some(o => boxesOverlap(a, boxOf(o))) && !underBridge(a))){ g.bev.push(e); return true; }
     e.wy += (dir || -1) * 10;
   }
   return false;

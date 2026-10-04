@@ -34,3 +34,29 @@ test("деревня появляется на берегу, когда до н�
   K.spVillage();
   assert.equal(K.G.bev.filter(e => e.type === "village").length, 1, "та же деревня дважды не ставится");
 });
+
+// Дорога моста — полоса поперёк всего окна (от wy−30 до wy+46). Дом деревни
+// или любой житель берега не должен оказаться под ней.
+test("деревня и жители берега не встают под дорогу моста", () => {
+  const { K } = loadGame();
+  const d = K.LEVELS.findIndex(L => L.river === 2);
+  let checked = 0;
+  for (let k = -12; k <= 12; k++) {
+    K.startDay(d);
+    setupWorld(K, { wy: 3000 });
+    K.G.bev = [];
+    const at = K.spawnWy() + k*15;
+    K.G.bridges_ = [{ wy: at, passed: false }];
+    const plan = K.villagePlan(d);
+    K.G.villages = plan.map(v => Object.assign({}, v));
+    K.G.dist = plan[0].at;
+    K.spVillage();
+    for (const e of K.G.bev) {
+      const b = K.measureBev(e);
+      if (!b) continue;
+      checked++;
+      assert.ok(b.hi <= at - 30 || b.lo >= at + 46, "сдвиг " + k*15 + ": " + e.type + " " + Math.round(b.lo) + ".." + Math.round(b.hi) + " под мостом " + at);
+    }
+  }
+  assert.ok(checked > 10, "проверено " + checked);
+});
