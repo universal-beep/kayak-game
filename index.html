@@ -7392,6 +7392,7 @@ function drwHUD(){
   let ey = 96;
   if (g.breadT  > 0){ drwEffBar("ГРЕБОК+", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
   if (g.whiskyT > 0){ drwEffBar("НЕУЯЗВИМ", g.whiskyT/WHISKY_FRAMES,"#e8a838", ey); ey += 16; }
+  if (g.sunT    > 0){ drwEffBar("ДОРОЖКА",  g.sunT/SUN_FRAMES,      "#ffd54f", ey); ey += 16; }
 
   const seg = segAt(g.pwy);
   const next = g.segs.find(x => x.type === "rapid" && x.start > g.pwy);
@@ -9174,6 +9175,7 @@ function drwBearSwim(){
 }
 
 /* ===== 6. Прочность и бонусы ===== */
+const SUN_FRAMES = 480;                         // солнечная дорожка — 8 секунд
 const INV_FRAMES = 90, BREAD_FRAMES = 480, WHISKY_FRAMES = 360, AXE_RANGE = 420, AXE_MAX = 2;
 
 // Виски обещало двойные очки — а множителя в коде не было вовсе.
@@ -9285,9 +9287,60 @@ function popText(text, color){
   g.pops.push({ text, color, x: screenXOf(g.t,g.pwy), y, life: 55 });
 }
 
+// Солнечная дорожка: строки через 20 px от лодки до верхнего края; в каждой —
+// свободные щели между препятствиями (с запасом), островом и берегами; путь
+// берёт щель, ближайшую к прежней точке. Пусто, если солнца нет.
+function sunPath(){
+  if (!(g.sunT > 0)) return [];
+  const pts = [];
+  let x = screenXOf(g.t, g.pwy);
+  for (let wy = g.pwy + 30; wy <= g.pwy + 630; wy += 20){
+    const c = centerAt(wy), hw = widthAt(wy)/2, iv = [];
+    for (const o of g.obs){
+      if (o.sinkT > 0 || o.flipT > 0) continue;
+      if (Math.abs(o.wy - wy) > (o.visHalfY || o.visHalf || 24) + 14) continue;
+      const ox = screenXOf(o.t, o.wy), h = (o.visHalf || 24) + 6;
+      iv.push([ox - h, ox + h]);
+    }
+    const sh = forkShape(wy);
+    if (sh && sh.h > 0.02) iv.push([c + (sh.c - sh.h)*hw, c + (sh.c + sh.h)*hw]);
+    iv.sort((p, q) => p[0] - q[0]);
+    const gaps = [];
+    let at = c - hw + 10;
+    for (const [p, q] of iv){ if (p - at >= 24) gaps.push([at, p]); at = Math.max(at, q); }
+    if (c + hw - 10 - at >= 24) gaps.push([at, c + hw - 10]);
+    if (!gaps.length) break;
+    let best = x, bd = Infinity;
+    for (const [a, b] of gaps){
+      const nx = Math.max(a + 12, Math.min(b - 12, x)), d = Math.abs(nx - x);
+      if (d < bd){ bd = d; best = nx; }
+    }
+    x = best; pts.push({ wy, x });
+  }
+  return pts;
+}
+function drwSunPath(){
+  const pts = sunPath();
+  if (pts.length < 2) return;
+  const fade = Math.min(1, g.sunT/60);
+  cx.save();
+  for (let i = 1; i < pts.length; i++){
+    const a = pts[i - 1], b = pts[i];
+    const ya = screenYOf(a.wy), yb = screenYOf(b.wy);
+    for (let k = 0; k < 2; k++){
+      const u = k/2, x = a.x + (b.x - a.x)*u, y = ya + (yb - ya)*u;
+      const tw = 0.5 + 0.5*Math.sin(g.frame*0.18 + i*1.7 + k*2.1);
+      cx.globalAlpha = fade*(0.35 + 0.45*tw)*(1 - i/pts.length*0.5);
+      cx.fillStyle = tw > 0.8 ? "#fff6c8" : "#ffd54f";
+      cx.fillRect(Math.round(x - 4), Math.round(y), 8, 2);
+    }
+  }
+  cx.restore();
+}
 function tickEffects(){
   if (g.breadT  > 0) g.breadT--;
   if (g.whiskyT > 0) g.whiskyT--;
+  if (g.sunT    > 0) g.sunT--;
   if (g.inv     > 0) g.inv--;
   if (g.strikeT > 0) g.strikeT--;
   for (let i = g.pops.length-1; i >= 0; i--){
@@ -9318,11 +9371,12 @@ function apBn(b){
       addBonus(15);
       explain("medkit","АПТЕЧКА: возвращает сердце. Если все целы — даёт щит, который гасит один удар");
       break;
-    case "sun":                         // солнечный день: лёгкие очки без таймеров
+    case "sun":                         // солнечная дорожка: 8 с видно, где проплыть
+      // Раньше солнце давало только очки и комбо — почти бесполезно.
       g.comboT = Math.max(g.comboT, 90);
-      addBonus(80);
-      popText("СОЛНЦЕ +" + award(80) + " · КОМБО","#ffd54f");
-      explain("sun","СОЛНЦЕ: не хлеб и не виски, просто жаркий выходной на реке. Очки идут в счёт");
+      addBonus(80); g.sunT = SUN_FRAMES;
+      popText("СОЛНЕЧНАЯ ДОРОЖКА · 8 СЕК","#ffd54f");
+      explain("sun","СОЛНЦЕ: 8 секунд по воде блестит дорожка — по ней можно пройти между камнями, брёвнами и соперниками. И очки в счёт");
       break;
     case "mazai":                       // значок: на 30 секунд — Мазай
       g.bonuses--;                      // значок не считается бонусом дня
@@ -9534,7 +9588,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];g.ashore=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.sunT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
   g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.mazai=null;g.yacht=false;g.mazaiPlaced=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;g.packZones=[];
   ensureSegments(H*2);
   const r = river();
@@ -10368,6 +10422,7 @@ function rndr(){
   drwWeeds();                                   // трава лежит на воде, под всем
   drwWaves();                                   // волны от катера
   for(const b of g.bridges_) drwBridgeAim(b);   // поплавки лежат на воде
+  drwSunPath();                                  // солнечная дорожка — по воде, под препятствиями
   for(const o of drawOrderOf(g.obs))drwOb(o);
   for(const b of g.bns)drwBn(b);
   drwBearSwim();                                // медведь в воде — под туманом
@@ -10551,7 +10606,7 @@ function panelRightHtml(){
   }
   h += "<div class='sp'><h3>БОНУСЫ</h3>" +
        [["bread","БАТОН — гребок сильнее на 8 с"],["whisky","ВИСКИ — неуязвим, очки x2, 6 с"],["medkit","АПТЕЧКА — сердце или щит"],
-        ["axe","ТОПОР — двойной тап: бросить"],["sun","СОЛНЦЕ — очки и комбо"]]
+        ["axe","ТОПОР — двойной тап: бросить"],["sun","СОЛНЦЕ — дорожка, где проплыть"]]
         .map(([n, t]) => "<div class='bn'><canvas data-ic='" + n + "' width='24' height='24'></canvas><span>" + t + "</span></div>").join("") + "</div>";
   h += "<div class='sp'><h3>УПРАВЛЕНИЕ</h3><div>← → руль · ↑ гребок · ↓ табанить</div><div>пробел / X удар · Esc пауза · M музыка</div>" +
        "<div>геймпад: стик руль · A гребок · B удар · Start пауза</div></div>";
@@ -11672,7 +11727,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
