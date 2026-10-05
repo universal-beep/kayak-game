@@ -75,3 +75,25 @@ test("заставка на узком экране: байдарка над к�
     assert.ok(!seen.some(s => /^bear_wave/.test(s.name)), "на узком медведя нет");
   }
 });
+
+// Тень байдарки на заставке (05.10.2026): тёмный овал лежал на 20 px ниже
+// днища — лодка будто висела в воздухе. Теперь ватерлиния: днище в воде,
+// поверх нижних рядов корпуса — вода, под лодкой — отражение, без тени.
+test("заставка: байдарка сидит в воде, без тени-овала под днищем", async () => {
+  const { runInContext } = await import("node:vm");
+  const { loadGame } = await import("./harness.mjs");
+  const { K, ctx, sandbox } = loadGame();
+  let kayak = null;
+  sandbox.__wrapDS = orig => function (name, x, y) { if (/^kayak_man/.test(name)) kayak = { x, y }; return orig.apply(this, arguments); };
+  runInContext("drawSprite = __wrapDS(drawSprite)", sandbox);
+  const ell = [], rects = [];
+  ctx.ellipse = function (x, y, rx, ry) { ell.push({ x, y, rx, ry, fill: String(this.fillStyle) }); };
+  ctx.fillRect = function (x, y, w, h) { rects.push({ x, y, w, h, fill: String(this.fillStyle) }); };
+  K.G.s = "start"; K.setTitleMenuTop(1e9);
+  K.rndr();
+  assert.ok(kayak, "байдарка нарисована");
+  const below = ell.filter(e => Math.abs(e.x - kayak.x) < 40 && e.y > kayak.y + 25 && /0,0,0/.test(e.fill));
+  assert.equal(below.length, 0, "тёмной тени ниже днища нет");
+  const wl = kayak.y + 16;
+  assert.ok(rects.some(r => r.y >= wl - 2 && r.y <= wl + 2 && r.w >= 100 && /rgba\(40,\s*100,\s*170/.test(r.fill)), "вода по ватерлинии поверх корпуса");
+});

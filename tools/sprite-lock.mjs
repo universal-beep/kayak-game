@@ -17,7 +17,12 @@ export function spriteHash(s) {
 export function updateLock(names) {
   const { sprites } = loadSprites();
   const lock = existsSync(LOCK) ? JSON.parse(readFileSync(LOCK, "utf8")) : {};
-  for (const n of names && names.length ? names : Object.keys(sprites)) if (sprites[n]) lock[n] = spriteHash(sprites[n]);
+  // С рисунком обновляются и собранные из него (зеркальные «_l», перекраски):
+  // их карта меняется вместе с исходной.
+  let list = names && names.length ? names.slice() : Object.keys(sprites);
+  if (names && names.length) for (const [n, s] of Object.entries(sprites))
+    if (names.some(b => (s.note || "").includes("«" + b + "»") || n === b + "_l")) list.push(n);   // _l — зеркальная копия из цикла
+  for (const n of list) if (sprites[n]) lock[n] = spriteHash(sprites[n]);
   const sorted = Object.fromEntries(Object.keys(lock).sort().map(k => [k, lock[k]]));
   writeFileSync(LOCK, JSON.stringify(sorted, null, 1) + "\n");
   return sorted;

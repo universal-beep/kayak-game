@@ -75,3 +75,55 @@ test("дальние сцены вверху тают в дымке, внизу 
   assert.ok(mid > 0.05 && mid < 0.95, "в дымке полупрозрачно: " + mid);
   assert.equal(at(20), 0, "у самого верха не видно");
 });
+
+// Охотник, собака и медведь в погоне бегут через велодорогу и пропадали на
+// ней (05.10.2026): дальние сцены прятали фигуру, стоящую на дороге, — правило
+// со времён, когда дорога рисовалась поверх. Теперь дорога — нижний слой,
+// бегущие фигуры рисуются и на ней.
+test("бегущие фигуры погони не пропадают на велодороге", async () => {
+  const { runInContext } = await import("node:vm");
+  const { K, sandbox } = loadGame();
+  K.startDay(2); setupWorld(K, { wy: 3000 });
+  const e = { type: "cyclists", side: 1, wy: 3300, phase: 0, count: 2 };
+  K.G.bev = [e];
+  const pw = 3300;
+  let x = null;
+  for (let xx = 0; xx < K.W + 600; xx += 2) if (K.onCycRoad(xx, pw, 8)) { x = xx; break; }
+  assert.ok(x != null, "нашли дорогу");
+  const drawn = [];
+  sandbox.__wrapDS = orig => function (name) { drawn.push(name); return orig.apply(this, arguments); };
+  runInContext("drawSprite = __wrapDS(drawSprite)", sandbox);
+  sandbox.__x = x; sandbox.__pw = pw;
+  runInContext('farQueue = [{ spr: "bear_run", x: __x, pw: __pw, oy: 0, v: 0, moving: true }, { spr: "fisher", x: __x, pw: __pw, oy: 0, v: 0 }]', sandbox);
+  K.withView(-560, 980, () => K.drwFarQueue(-560, 980));
+  assert.ok(drawn.includes("bear_run"), "медведь в погоне виден на дороге");
+  assert.ok(!drawn.includes("fisher"), "неподвижная сцена на дорогу не ставится");
+});
+
+// «Люди сидят на деревьях у дома» (05.10.2026): дальний декор сторонился
+// сцены только по горизонтали и в узкой полосе слотов; высокое дерево чуть
+// ниже по течению кроной заходило на человечка у дачи, а сцена рисуется
+// поверх — человек «сидел» на дереве. Теперь — пересечение рамок целиком.
+test("дальний декор не налезает на фигуры дальних сцен (дача на Волге)", () => {
+  const { K } = loadGame();
+  K.startDay(0); setupWorld(K, { wy: 3000 });
+  K.G.bev = [];
+  let scenes = 0;
+  for (let k = 50; k < 30000 && scenes < 25; k++) {
+    const fs = K.farScene(k, 0);
+    if (!fs || fs.chase) continue;
+    scenes++;
+    const parts = fs.parts.map(p => {
+      const sz = K.spriteSize(p.spr), x = fs.side < 0 ? -p.dx : K.W + p.dx, pw = k*13 + (p.dy || 0);
+      return { spr: p.spr, x0: x - sz.w/2, x1: x + sz.w/2, y0: pw, y1: pw + sz.h };
+    });
+    for (let v = k - 12; v <= k + 12; v++) for (const it of K.deepItems(v, fs.side, -560, 980)) {
+      for (const p of parts) {
+        const ox = Math.min(it.x + it.w/2, p.x1) - Math.max(it.x - it.w/2, p.x0);
+        const oy = Math.min(it.swy + it.h, p.y1) - Math.max(it.swy, p.y0);
+        assert.ok(!(ox > 2 && oy > 2), "сцена " + fs.name + " у слота " + k + ": " + it.name + " налез на " + p.spr);
+      }
+    }
+  }
+  assert.ok(scenes >= 10, "проверено сцен: " + scenes);
+});
