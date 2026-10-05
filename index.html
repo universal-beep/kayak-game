@@ -248,6 +248,7 @@ canvas { display:block;margin:0 auto; }
     <div class="maprow">
       <button class="btn small hidden" id="rsSolo">ОДИН</button>
       <button class="btn small hidden" id="rsDuo">ВДВОЁМ ПО СЕТИ</button>
+      <button class="btn small hidden" id="rsSplit">ВДВОЁМ НА ОДНОМ ЭКРАНЕ</button>
       <button class="btn small hidden" id="rsReg">РЕГАТА · 8 ЛОДОК</button>
       <button class="btn small" id="rsGo">ПЛЫТЬ</button>
       <button class="btn small ghost" id="rsMenu">В МЕНЮ</button>
@@ -3357,8 +3358,9 @@ function tone(freq, at, dur, type, vol){
   o.start(at); o.stop(at + dur + 0.02);
 }
 
+var seatMute = false;                    // правая половина «вдвоём на одном экране» — без звука
 function startMusic(){
-  if (actx || typeof AudioContext === "undefined") return;
+  if (seatMute || actx || typeof AudioContext === "undefined") return;
   actx = new AudioContext();
   preloadSounds();
   mNext = actx.currentTime + 0.05;
@@ -5743,14 +5745,21 @@ function menuKey(e){
 }
 const gpState = { steer:0, fwd:false, back:false };
 let gpPrev = null, gpSeen = false, gpHold = 0;
+// В половине экрана «вдвоём на одном экране» (extPad !== undefined) геймпад
+// читает страница и присылает сюда — свои navigator.getGamepads не трогаем.
+var extPad;
+function setExtPad(p){ extPad = p; }
 function pollGamepad(){
   gpState.steer = 0; gpState.fwd = false; gpState.back = false;
-  if (typeof navigator === "undefined" || !navigator.getGamepads) return;
   let pad = null;
-  for (const p of navigator.getGamepads() || []) if (p && p.connected){ pad = p; break; }
+  if (extPad !== undefined) pad = extPad;
+  else {
+    if (typeof navigator === "undefined" || !navigator.getGamepads) return;
+    for (const p of navigator.getGamepads() || []) if (p && p.connected){ pad = p; break; }
+  }
   if (!pad){ gpPrev = null; return; }
   const s = gpRead(pad);
-  if (!gpSeen){ gpSeen = true; if (typeof campToast === "function") campToast("ГЕЙМПАД ПОДКЛЮЧЁН", true); }
+  if (!gpSeen && extPad === undefined){ gpSeen = true; if (typeof campToast === "function") campToast("ГЕЙМПАД ПОДКЛЮЧЁН", true); }
   const edge = k => s.btn[k] && !(gpPrev && gpPrev.btn[k]);
   if (g.s === "playing"){
     gpState.steer = s.steer; gpState.fwd = s.fwd; gpState.back = s.back;
@@ -10794,6 +10803,7 @@ function lp(t){
   if (!drwSides()) rndr();                    // десктоп — вся сцена на широком холсте
   if (++panelTick % 12 === 0) updPanels();
   if (panelsOn) updRaceMap();
+  if (SEAT){ seatAutoContinue(); seatReport(); }
   requestAnimationFrame(lp);
 }
 
@@ -11428,8 +11438,8 @@ function netOpen(code, role, deps){
   return ws;
 }
 function netSend(m){ const n = g.net; if (n && n.ws && n.ws.readyState === 1) try { n.ws.send(JSON.stringify(m)); } catch(e){} }
-function netHost(name, deps){
-  const code = roomCode(), lvl = raceLevel(1 + Math.floor(Math.random()*99999));
+function netHost(name, deps, lvl0){
+  const code = roomCode(), lvl = lvl0 || raceLevel(1 + Math.floor(Math.random()*99999));
   g.net = { role:"host", code, lvl, state:"wait", rival:{ name:"" }, pos:null, show:null };
   const ws = g.net.ws = netOpen(code, "host", deps);
   if (ws) ws.onopen = () => netSend({ type:"hello", name: name || "ПУТНИК", lvl });
@@ -11496,7 +11506,7 @@ function drwCountdown(){
 function rsSay(t){ const el = typeof document !== "undefined" && document.getElementById("rsText"); if (el) el.textContent = t; }
 function rsButtons(list){
   document.getElementById("rsTracks").classList.add("hidden");
-  for (const id of ["rsSolo","rsDuo","rsReg","rsGo"]) document.getElementById(id).classList[list.includes(id) ? "remove" : "add"]("hidden");
+  for (const id of ["rsSolo","rsDuo","rsReg","rsGo","rsSplit"]) document.getElementById(id).classList[list.includes(id) ? "remove" : "add"]("hidden");
 }
 function showRaceMenu(){
   hideAllScreens();
@@ -11505,7 +11515,9 @@ function showRaceMenu(){
   document.getElementById("rsTitle").textContent = "ГОНКА";
   document.getElementById("rsLink").classList.add("hidden");
   rsSay("ШИРОКАЯ РЕКА, ОДНА ДЛЯ ВСЕХ. ОДИН — НА ВРЕМЯ, ПОТОМ МОЖНО ВЫЗВАТЬ ДРУГА. ВДВОЁМ — ДРУГ ПО ССЫЛКЕ, СТАРТ ОДНОВРЕМЕННО.");
-  rsButtons(["rsSolo","rsDuo","rsReg"]);
+  const desk = typeof window !== "undefined" && splitAllowed({ innerWidth: window.innerWidth,
+    touch: !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches) });
+  rsButtons(["rsSolo","rsDuo","rsReg"].concat(desk ? ["rsSplit"] : []));
 }
 function showRegattaMenu(){
   document.getElementById("rsTitle").textContent = "РЕГАТА";
@@ -11569,6 +11581,7 @@ function showRaceInvite(id){
   document.getElementById("rsSolo").addEventListener("click", () => { startRace(raceLevel(1 + Math.floor(Math.random()*99999))); });
   document.getElementById("rsDuo").addEventListener("click", showRaceHost);
   document.getElementById("rsReg").addEventListener("click", showRegattaMenu);
+  document.getElementById("rsSplit").addEventListener("click", () => { location.href = location.pathname + "?split=1"; });
   document.getElementById("ceTracks").addEventListener("click", toRegattaMenu);
   document.getElementById("rsGo").addEventListener("click", () => { if (g.invite){ startMusic(); startRace(g.invite.lvl, g.invite); } });
   document.getElementById("rsMenu").addEventListener("click", () => { if (g.net && g.net.ws) try { g.net.ws.close(); } catch(e){} g.net = null; showStart(); });
@@ -12290,7 +12303,209 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, raceMapOn, drwRaceMotors, screenXOf, raceMapPoints, raceChaseText, drwRaceMap, dropTrap, raceBoatNear, botTake, botItems, raceItemsStep, MOTOR_FRAMES, TRAP_LIFE, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+/* ===== 13. Вдвоём на одном экране (десктоп) ===== */
+// Страница ?split=1 ставит рядом две копии игры: ?seat=1 (левая, хозяин,
+// со звуком) и ?seat=2 (правая, гость, без звука). Связь — протокол гонки
+// по сети (hello/lvl/joined/start/pos/hit/trap/fin), только «комната» —
+// сама страница (splitRoom), а не сервер. Вертикальной игре половина
+// широкого экрана — как раз телефонный кадр во всю высоту. Геймпады и
+// клавиатуру читает страница и присылает каждой половине свой геймпад:
+// первый / WASD+пробел — левой, второй / стрелки+Enter — правой. Start или
+// Esc — пауза у обоих сразу. Почему не общий экран: река прокручивается со
+// скоростью игрока, а двух скоростей у одного экрана нет — отставший уезжал
+// бы за нижний край.
+const SPLIT_TRACKS = REGATTA_TRACKS.map(t => ({ id: t.id, name: t.name })).concat([{ id: "rnd", name: "СЛУЧАЙНАЯ РЕКА" }]);
+function splitLevel(id, seed){
+  const tr = REGATTA_TRACKS.find(t => t.id === id);
+  return tr ? regattaLevel(tr) : raceLevel(seed || 1);
+}
+function seatParams(search){
+  const q = new URLSearchParams(search || ""), seat = +q.get("seat");
+  if (seat !== 1 && seat !== 2) return null;
+  return { seat, track: q.get("track") || "volga", seed: +q.get("seed") || 1, name: cleanName(q.get("name")) || "ИГРОК " + seat };
+}
+function splitAllowed(env){ return !env.touch && env.innerWidth >= 900; }
+// Комната страницы: как server/race.mjs, только в памяти. send(место, сообщение).
+function splitRoom(send){
+  const st = { lvl: null, names: {}, started: false };
+  return function(seat, m){
+    if (!m || typeof m.type !== "string") return;
+    const other = seat === 1 ? 2 : 1;
+    if (m.type === "hello"){
+      st.names[seat] = cleanName(m.name) || "ИГРОК " + seat;
+      if (seat === 1 && m.lvl) st.lvl = m.lvl;
+      if (st.names[1] && st.names[2] && st.lvl && !st.started){
+        st.started = true;
+        send(2, { type: "lvl", lvl: st.lvl, name: st.names[1] });
+        send(1, { type: "joined", name: st.names[2] });
+        send(1, { type: "start", in: 3000 }); send(2, { type: "start", in: 3000 });
+      }
+      return;
+    }
+    if (["pos", "hit", "trap", "fin"].includes(m.type)) send(other, m);
+  };
+}
+// Клавиатура как геймпад: кнопки стандартной раскладки (12–15 крестовина, 1 — удар).
+const SPLIT_KEYS = { 1: { l: "KeyA", r: "KeyD", u: "KeyW", d: "KeyS", hit: ["Space"] },
+                     2: { l: "ArrowLeft", r: "ArrowRight", u: "ArrowUp", d: "ArrowDown", hit: ["Enter", "NumpadEnter"] } };
+function splitKeyPad(keys, seat){
+  const k = SPLIT_KEYS[seat], b = Array.from({ length: 16 }, () => ({ pressed: false })), on = c => keys.has(c);
+  b[14].pressed = on(k.l); b[15].pressed = on(k.r); b[12].pressed = on(k.u); b[13].pressed = on(k.d);
+  b[1].pressed = k.hit.some(on);
+  return { axes: [0, 0], buttons: b };
+}
+function splitMerge(real, virt){
+  const pr = x => !!x && (x.pressed === true || x.value > 0.5);
+  const buttons = [];
+  for (let i = 0; i < 16; i++) buttons.push({ pressed: pr(real && real.buttons && real.buttons[i]) || pr(virt.buttons[i]) });
+  return { axes: real && real.axes ? [real.axes[0] || 0, real.axes[1] || 0] : [0, 0], buttons };
+}
+function splitStrip(p){                      // Start страница забирает себе — пауза обоим
+  return { axes: p.axes.slice(), buttons: p.buttons.map((b, i) => ({ pressed: i === 9 ? false : b.pressed })) };
+}
+// --- половина экрана ---
+const SEAT = typeof location !== "undefined" && typeof __KAYAK_TEST__ === "undefined" ? seatParams(location.search) : null;
+let seatLink = null, seatWs = null, seatSent = "";
+function setSeatLink(l){ seatLink = l; }
+// «Сокет» к странице: то, что игра шлёт серверу, уходит в комнату страницы.
+class SeatWS {
+  constructor(){ this.readyState = 0; seatWs = this; setTimeout(() => { this.readyState = 1; if (this.onopen) this.onopen(); }, 0); }
+  send(raw){ if (seatLink) seatLink.post(JSON.parse(raw)); }
+  close(){}
+}
+function seatDeliver(m){ if (seatWs && seatWs.onmessage) seatWs.onmessage({ data: JSON.stringify(m) }); }
+function seatStart(p){
+  extPad = null;
+  if (p.seat === 2){ seatMute = true; setAudio(null); }
+  hideAllScreens();
+  const deps = { WebSocket: SeatWS, url: "http://split" };
+  if (p.seat === 1) netHost(p.name || "ИГРОК 1", deps, splitLevel(p.track, p.seed));
+  else netJoin("SPLT", p.name || "ИГРОК 2", deps);
+}
+// Пауза у обеих половин одна: страница присылает «пауза да/нет», а не
+// «переключи» — иначе половины расходились (одна на экране аварии не
+// ставилась на паузу, и следующий Start менял их местами).
+function seatPause(on){
+  if (on && g.s === "playing") togglePause();
+  else if (!on && g.s === "paused") togglePause();
+}
+// Авария в гонке вдвоём на одном экране: «продолжить» само через 1,5 с —
+// ждать кнопку некому (страница шлёт геймпад только в заплыв).
+function seatAutoContinue(){
+  if (extPad !== undefined && g.s === "continue" && g.contT <= 600 - 90) hs();
+}
+function seatReport(){
+  if (!seatLink || !seatLink.state || g.s === seatSent) return;
+  seatSent = g.s; seatLink.state(g.s);
+}
+function seatBoot(){
+  const to = m => window.parent.postMessage(m, location.origin);
+  setSeatLink({ post: m => to({ kayakNet: m }), state: st => to({ kayakState: st }) });
+  window.addEventListener("message", e => {
+    if (e.origin !== location.origin || !e.data) return;
+    const d = e.data;
+    if (d.kayakNet) seatDeliver(d.kayakNet);
+    if (d.kayakPad !== undefined) extPad = d.kayakPad;
+    if (d.kayakCmd === "pause") seatPause(!!d.on);
+  });
+  seatStart(SEAT);
+}
+// --- страница-разделитель ---
+function splitBoot(){
+  for (const el of [...document.body.children]) if (el.tagName !== "SCRIPT") el.style.display = "none";
+  const css = document.createElement("style");
+  css.textContent = "#split{position:fixed;inset:0;display:flex;background:#05080f}" +
+    "#split iframe{flex:1;border:0;height:100%;pointer-events:none;min-width:0}" +
+    "#split .gap{width:4px;background:#ffd54f}" +
+    "#splitMenu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;" +
+    "background:rgba(4,10,20,0.93);font-family:'Press Start 2P',monospace;color:#cfe8f5;z-index:5}" +
+    "#splitMenu h1{font-size:22px;color:#4fc3f7;margin-bottom:14px;letter-spacing:2px;font-weight:normal}" +
+    "#splitMenu .it{padding:12px 18px;border:2px solid #2c3b47;min-width:380px;text-align:center;font-size:13px;background:rgba(255,255,255,0.04)}" +
+    "#splitMenu .it.on{border-color:#ffd54f;color:#ffd54f}" +
+    "#splitMenu .dim{font-size:10px;color:#8aa0ad;line-height:2.2;text-align:center;margin-top:14px}" +
+    "#splitMenu .gp{font-size:10px;color:#7fd67f}" +
+    "#splitDone{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:4;font-family:'Press Start 2P',monospace;" +
+    "font-size:12px;color:#ffd54f;background:rgba(4,10,20,0.9);border:2px solid #ffd54f;padding:12px 18px;display:none}";
+  document.head.appendChild(css);
+  const root = document.createElement("div"); root.id = "split";
+  const mk = () => { const f = document.createElement("iframe"); f.setAttribute("allow", "autoplay; gamepad"); f.tabIndex = -1; return f; };
+  const f1 = mk(), gap = document.createElement("div"), f2 = mk();
+  gap.className = "gap";
+  root.append(f1, gap, f2);
+  const menu = document.createElement("div"); menu.id = "splitMenu";
+  const done = document.createElement("div"); done.id = "splitDone"; done.textContent = "ГОНКА ОКОНЧЕНА · A / ENTER — К ТРАССАМ";
+  document.body.append(root, menu, done);
+  const items = SPLIT_TRACKS.concat([{ id: "exit", name: "ВЫЙТИ" }]);
+  let phase = "menu", sel = 0, room = null, prev = [null, null];
+  // keys — что зажато; taps — что нажали с прошлого кадра: короткое нажатие
+  // (отпустили раньше, чем кадр) тоже засчитывается.
+  const keys = new Set(), taps = new Set(), state = { 1: "", 2: "" }, win = seat => (seat === 1 ? f1 : f2).contentWindow;
+  const pads = () => (navigator.getGamepads ? [...navigator.getGamepads()].filter(p => p && p.connected) : []);
+  const drawMenu = () => {
+    const n = pads().length;
+    menu.innerHTML = "<h1>ВДВОЁМ НА ОДНОМ ЭКРАНЕ</h1>" +
+      items.map((it, i) => "<div class='it" + (i === sel ? " on" : "") + "'>" + escHtml(it.name) + "</div>").join("") +
+      "<div class='gp'>ГЕЙМПАДОВ ПОДКЛЮЧЕНО: " + n + (n < 2 ? " — НАЖМИ КНОПКУ НА ГЕЙМПАДЕ, ЧТОБЫ БРАУЗЕР ЕГО УВИДЕЛ" : "") + "</div>" +
+      "<div class='dim'>ЛЕВЫЙ: ГЕЙМПАД 1 ИЛИ WASD + ПРОБЕЛ · ПРАВЫЙ: ГЕЙМПАД 2 ИЛИ СТРЕЛКИ + ENTER<br>" +
+      "ТРАССА — КРЕСТОВИНА ИЛИ СТРЕЛКИ · ПЛЫТЬ — A, START ИЛИ ENTER<br>В ГОНКЕ: START ИЛИ ESC — ПАУЗА У ОБОИХ</div>";
+  };
+  const start = () => {
+    const it = items[sel];
+    if (it.id === "exit"){ location.href = location.pathname; return; }
+    phase = "race"; paused = false; state[1] = state[2] = ""; menu.style.display = "none"; done.style.display = "none";
+    room = splitRoom((seat, m) => { const w = win(seat); if (w) w.postMessage({ kayakNet: m }, location.origin); });
+    const seed = 1 + Math.floor(Math.random()*99999), base = location.pathname + "?seat=";
+    f1.src = base + "1&track=" + it.id + "&seed=" + seed + "&name=" + encodeURIComponent("ИГРОК 1");
+    f2.src = base + "2&track=" + it.id + "&seed=" + seed + "&name=" + encodeURIComponent("ИГРОК 2");
+  };
+  const toMenu = () => { phase = "menu"; done.style.display = "none"; menu.style.display = "flex"; drawMenu(); };
+  let paused = false;
+  const pauseBoth = () => { paused = !paused; for (const seat of [1, 2]){ const w = win(seat); if (w) w.postMessage({ kayakCmd: "pause", on: paused }, location.origin); } };
+  window.addEventListener("message", e => {
+    if (e.origin !== location.origin || !e.data) return;
+    const seat = e.source === f1.contentWindow ? 1 : e.source === f2.contentWindow ? 2 : 0;
+    if (!seat) return;
+    if (e.data.kayakNet && room) room(seat, e.data.kayakNet);
+    if (e.data.kayakState){
+      state[seat] = e.data.kayakState;
+      if (phase === "race" && state[1] === "customEnd" && state[2] === "customEnd"){ phase = "done"; done.style.display = "block"; }
+    }
+  });
+  window.addEventListener("keydown", e => {
+    keys.add(e.code); taps.add(e.code);
+    if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
+    if (e.code === "Escape"){ if (phase === "race") pauseBoth(); else if (phase === "menu") location.href = location.pathname; }
+  });
+  window.addEventListener("keyup", e => keys.delete(e.code));
+  window.addEventListener("blur", () => keys.clear());
+  const loop = () => {
+    const real = pads();
+    const held = new Set([...keys, ...taps]); taps.clear();
+    const st = [1, 2].map(seat => splitMerge(real[seat - 1] || null, splitKeyPad(held, seat)));
+    const rd = st.map(gpRead);
+    const edge = (i, k) => rd[i].btn[k] && !(prev[i] && prev[i].btn[k]);
+    const navEdge = i => (rd[i].navPrev && !(prev[i] && prev[i].navPrev)) ? -1 : (rd[i].navNext && !(prev[i] && prev[i].navNext)) ? 1 : 0;
+    if (phase === "menu"){
+      const d = navEdge(0) || navEdge(1);
+      if (d){ sel = menuStep(items.length, sel, d); drawMenu(); }
+      if ([0, 1].some(i => edge(i, 0) || edge(i, 9) || edge(i, 1))) start();
+      else if (++loop.tick % 30 === 0) drawMenu();          // подключили геймпад — обновить счётчик
+    } else {
+      if ([0, 1].some(i => edge(i, 9))) pauseBoth();
+      if (phase === "done" && [0, 1].some(i => edge(i, 0) || edge(i, 1))) toMenu();
+      for (const seat of [1, 2]){
+        const w = win(seat), live = state[seat] === "playing" || state[seat] === "countdown";
+        if (w) w.postMessage({ kayakPad: live ? splitStrip(st[seat - 1]) : null }, location.origin);
+      }
+    }
+    prev = rd;
+    requestAnimationFrame(loop);
+  };
+  loop.tick = 0;
+  drawMenu();
+  loop();
+}
+globalThis.__KAYAK__ = { G: g, W, H, seatPause, seatAutoContinue, SPLIT_TRACKS, splitLevel, seatParams, splitAllowed, splitRoom, splitKeyPad, splitMerge, splitStrip, setExtPad, setSeatLink, seatDeliver, seatStart, netSend, gpRead, pollGamepad, gpState, raceMapOn, drwRaceMotors, screenXOf, raceMapPoints, raceChaseText, drwRaceMap, dropTrap, raceBoatNear, botTake, botItems, raceItemsStep, MOTOR_FRAMES, TRAP_LIFE, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
@@ -12303,7 +12518,9 @@ globalThis.__KAYAK__ = { G: g, W, H, raceMapOn, drwRaceMotors, screenXOf, raceMa
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
 prerenderAll();
-if (typeof __KAYAK_TEST__ === "undefined"){
+if (typeof __KAYAK_TEST__ === "undefined" && new URLSearchParams(location.search).get("split") === "1") splitBoot();
+else if (typeof __KAYAK_TEST__ === "undefined" && SEAT){ seatBoot(); lp(); }
+else if (typeof __KAYAK_TEST__ === "undefined"){
   // Режим просмотра катсцен без прохождения игры: ?cut=night|morning|drive1|drive2|drive3|finale (или all — по кругу).
   const cutPreview = new URLSearchParams(location.search).get("cut");
   if (cutPreview && (cutPreview === "all" || CUTS[cutPreview])){
