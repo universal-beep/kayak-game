@@ -121,3 +121,33 @@ test("на ходу одежда не меняется: у кадра ходьб
     }
   assert.equal(JSON.stringify(K.SPR.person_w1.variants), JSON.stringify(K.SPR.person.variants));
 });
+
+// Мелочи 05.10.2026: рюкзаки разных цветов; весло героя крупнее и с древком
+// толще одного пикселя; на высоком экране телефона низ кадра не пустой —
+// машина с прицепом и байдарками на привокзальной дороге, в конце уезжает.
+test("рюкзаки у ребят разных цветов", () => {
+  const { K } = loadGame();
+  const vars = new Set(F(K).actors.filter(a => a.spr === "pack").map(a => a.var || 0));
+  assert.ok((K.SPR.pack.variants || []).length >= 4, "у рюкзака есть расцветки");
+  assert.ok(vars.size >= 4, "цветов " + vars.size);
+});
+
+test("весло героя заметное: крупнее и древко толще пикселя", () => {
+  const { K } = loadGame();
+  const oar = F(K).actors.find(a => a.spr === "oar" && a.with === "hero");
+  assert.ok(oar.keys[0][3] >= 1.3, "масштаб " + oar.keys[0][3]);
+  const mid = K.SPR.oar.map[7].replace(/\./g, "");
+  assert.ok(mid.length >= 2, "древко: " + K.SPR.oar.map[7]);
+});
+
+test("внизу кадра машина с прицепом и байдарками; уезжает в конце", () => {
+  const { K } = loadGame();
+  const acts = F(K).actors;
+  for (const spr of ["car", "trailer", "kayak_side"]) {
+    const a = acts.find(x => x.spr === spr);
+    assert.ok(a, spr);
+    const y = posAt(a.keys, 0.5)[1];
+    assert.ok(y > 690 && y < 820, spr + " y=" + y);
+    assert.ok(posAt(a.keys, 1)[0] > posAt(a.keys, 0.6)[0] + 400, spr + " уезжает вправо");
+  }
+});
