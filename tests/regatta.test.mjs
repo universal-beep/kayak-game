@@ -148,10 +148,10 @@ test("бот рядом с бонусом забирает его", () => {
   K.startRegatta(K.REGATTA_TRACKS[0]);
   run(K, () => K.G.s === "playing");
   const b = K.G.custom.race.bots[2];
-  K.G.bns.push({ t: b.t, wy: b.wy + 2, type: "bread", visHalf: 16, visHalfY: 10 });
-  const n = K.G.bns.length;
+  const bn = { t: b.t, wy: b.wy + 2, type: "bread", visHalf: 16, visHalfY: 10 };
+  K.G.bns.push(bn);
   K.upd();
-  assert.equal(K.G.bns.length, n - 1, "бонус забран");
+  assert.ok(!K.G.bns.includes(bn), "бонус забран");      // число бонусов не меряем: в гонке появляются новые
   assert.ok(b.boostT > 0, "бот ускорился");
 });
 

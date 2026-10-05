@@ -60,7 +60,7 @@ export async function ghostRoute(req, env, url, { json, cleanName }) {
 // Хозяин (host) приходит первым и приносит уровень; гость получает уровень
 // и имя хозяина; когда оба на месте — обоим «старт через START_IN мс».
 // Дальше комната только пересылает сопернику положение (pos, fl — перевёрнут),
-// удар веслом (hit) и финиш (fin).
+// удар веслом (hit), корягу за корму (trap) и финиш (fin).
 // Физику каждый считает у себя: лодки друг друга не толкают, задержка не важна.
 // Сокеты — «спящие» (acceptWebSocket): комната не держит память между
 // сообщениями, роль и имя лежат во вложении сокета, уровень — в хранилище.
@@ -113,6 +113,7 @@ export class RaceRoom {
       this.send(peer, out);
     }
     else if (m.type === "hit") this.send(peer, { type: "hit" });   // удар веслом по сопернику
+    else if (m.type === "trap" && okNum(m.wy) && okNum(m.t)) this.send(peer, { type: "trap", wy: m.wy, t: m.t });   // коряга за корму
     else if (m.type === "fin" && Number.isInteger(m.frames) && m.frames > 0) this.send(peer, { type: "fin", frames: m.frames });
   }
   async webSocketClose(ws) {

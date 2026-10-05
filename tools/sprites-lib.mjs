@@ -22,7 +22,7 @@ export const INDEX = fileURLToPath(new URL("../index.html", import.meta.url));
 // попадает в «Катсцены и прочее».
 export const GROUPS = [
   ["Река: препятствия", ["log", "branch", "snag", "boulder", "fang", "slab", "mossy", "pebbles", "barge", "boat", "shallows"]],
-  ["Бонусы", ["bread", "whisky", "medkit", "axe", "sun"]],
+  ["Бонусы", ["bread", "whisky", "medkit", "axe", "sun", "motor", "trapbn"]],
   ["Лодки", ["kayak_center", "kayak_left", "kayak_right", "rower", "rower_flip", "oar"]],
   ["Берег и финиш: природа", ["tree", "sfir", "sbirch", "sbush", "bush", "bear", "bear_b", "bear_swim", "bear_swim_b", "bear_wave", "bear_wave_b", "dog_lie", "dog_run", "dog_run_b", "dog_jump", "dog_swim", "badge", "hare", "yacht", "duck", "duckfly0", "duckfly1", "fish"]],
   ["Берег и финиш: люди и лагерь", ["person", "girl", "sitter", "guitarist", "guitarist_b", "night_guitar", "night_guitar_b", "note", "fisher", "tent", "tent2", "pack", "fire", "tower", "church", "house"]],

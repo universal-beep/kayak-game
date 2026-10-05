@@ -60,7 +60,7 @@ test("панели по этапам: заставка и меню — пуст�
   const pl = K.panelLeftHtml(), pr = K.panelRightHtml();
   assert.ok(pl.includes("ПОХОД") && (pl.match(/class='rt/g) || []).length === 9 && pl.includes("cur"), "маршрут в паузе");
   assert.ok(pr.includes("БОНУСЫ") && pr.includes("УПРАВЛЕНИЕ") && pr.includes("геймпад"));
-  assert.equal((pr.match(/data-ic=/g) || []).length, 5, "иконки пяти бонусов");
+  assert.equal((pr.match(/data-ic=/g) || []).length, 7, "иконки семи бонусов (с мотором и подлянкой)");
 });
 
 test("панели: имя и текст экранируются, свой уровень без маршрута похода", () => {

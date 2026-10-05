@@ -785,6 +785,39 @@ const SPR = {
     "knook......",
     "knok.......",
     ".kk........"]},
+  // Подвесной мотор (бонус гонки, 05.10.2026, по геометрии): колпак с бликом и
+  // красной полосой, румпель влево, нога, винт.
+  motor:{map:[".....kkkkkk..",
+    "....kGGGGGGk.",
+    "kkkkgjjjjjjgk",
+    "rKKKggggggggk",
+    "kkkkRrrrrrrRk",
+    "...kggggggggk",
+    "....kggggggk.",
+    ".....kkjgkk..",
+    "......kjgk...",
+    "......kjgk...",
+    ".....kkjgk...",
+    "....kWkjgk...",
+    "....kWWjgkk..",
+    ".....kggggjk.",
+    "....kWWkkkk..",
+    "....kWk......",
+    ".....k......."]},
+  // Подлянка (бонус гонки): коряга с красным флажком — бросается за корму.
+  trapbn:{map:["......kkkkk..",
+    ".....kOQrrrk.",
+    ".....kOrrrk..",
+    ".....kOrrk.k.",
+    "..k..kOkk.knk",
+    ".knk.kOk.knk.",
+    ".knk.kOk.knk.",
+    ".kknkkOkknkk.",
+    "konnnnnnnnnnk",
+    "kooooooooooOk",
+    ".kkkkknkkkkk.",
+    ".....knk.....",
+    "......k......"]},
   sun:{map:["....k.....","..k.kk.k..","...kYYk...",".kkYYYYkk.","kYYYYYYYYk",
     ".kkYYYYkk.","...kYYk...","..k.kk.k..","....k....."],noOutline:true},
   // Камни в реке — вид сверху, свет сверху-слева, мокрая тёмная кромка у
@@ -5324,9 +5357,22 @@ function throwAxe(){
     const score = d + lat*2;
     if (score < best){ best = score; tgt = o; }
   }
+  // Гонка: лодки соперников впереди — в первую очередь.
+  let boat = null;
+  const R = raceOf();
+  if (R){
+    const cand = (R.bots || []).filter(b => !b.end && !(b.flipT > 0));
+    if (R.net && R.net.show && !(R.net.pos && R.net.pos.fl)) cand.push(R.net.show);
+    for (const b of cand){
+      const d = b.wy - g.pwy, lat = Math.abs(b.t - g.t)*widthAt(b.wy)/2;
+      if (d < 20 || d > AXE_RANGE || lat > 110) continue;
+      const score = d + lat*2 - 150;
+      if (score < best){ best = score; tgt = b; boat = R.net && b === R.net.show ? "net" : "bot"; }
+    }
+  }
   g.axes--;
   const dur = Math.round(14 + (tgt ? Math.max(0, tgt.wy - g.pwy) : 300)/25);
-  g.axeFly = { t0: g.t, wy0: g.pwy, tgt, k: 0, dur };
+  g.axeFly = { t0: g.t, wy0: g.pwy, tgt, k: 0, dur, boat };
   g.strikeT = 12; sfx("swing");
 }
 // Полёт топора: долетел — колет дерево, топит лодку соперника, от камня и
@@ -5337,6 +5383,12 @@ function axeStep(){
   if (++a.k < a.dur) return;
   g.axeFly = null;
   const o = a.tgt;
+  if (o && a.boat){                              // гонка: топор по лодке — переворот
+    spPt(screenXOf(o.t, o.wy), screenYOf(o.wy), "#cfe8f5", 24); g.shake = 7; sfx("chop");
+    if (a.boat === "net"){ netSend({ type: "hit" }); netSend({ type: "hit" }); popText("ТОПОРОМ! ПЕРЕВЕРНУЛ", "#ffd54f"); }
+    else if (!o.end){ o.flipT = RACE_FLIP; o.hits = 0; o.swingT = 0; popText("ТОПОРОМ! " + o.name, "#ffd54f"); }
+    return;
+  }
   if (o && g.obs.includes(o)){
     const ox = screenXOf(o.t, o.wy), oy = screenYOf(o.wy);
     if (o.type === "log" || o.type === "branch" || o.type === "snag"){
@@ -5371,6 +5423,15 @@ function drwAxeFly(){
 }
 function paddleStrike(){
   if (g.s !== "playing") return;
+  // Гонка — по обстановке: борт о борт — веслом; кто-то впереди и есть топор —
+  // топор; кто-то сзади и есть подлянка — коряга за корму.
+  if (raceOf()){
+    if (raceStrike()) return;
+    if ((g.axes || 0) > 0 && !g.axeFly && raceBoatNear(1, AXE_RANGE)){ throwAxe(); return; }
+    if ((g.traps || 0) > 0 && raceBoatNear(-1, TRAP_SEE)){ dropTrap(); return; }
+    if ((g.axes || 0) > 0 && !g.axeFly){ throwAxe(); return; }
+    if ((g.traps || 0) > 0){ dropTrap(); return; }
+  }
   // Есть топор — двойной тап его кидает (тратится), нет — взмах веслом.
   if ((g.axes || 0) > 0 && !g.axeFly){ throwAxe(); return; }
   if (raceStrike()) return;                     // гонка: бьём соперника-лодку
@@ -6319,7 +6380,7 @@ function drwBg(x0, x1){
 }
 // Соответствие внутренних типов препятствий именам спрайтов.
 const OB_SPRITE = { boat:"boat", log:"log", shallows:"shallows", kayaker:"rower", snag:"snag", branch:"branch", barge:"barge" };
-const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun", mazai:"badge", hare:"hare" };
+const BN_SPRITE = { bread:"bread", whisky:"whisky", medkit:"medkit", axe:"axe", sun:"sun", motor:"motor", trap:"trapbn", mazai:"badge", hare:"hare" };
 
 // Искра, где встретились вёсла при парировании.
 function drwClash(){
@@ -7430,11 +7491,17 @@ function drwHUD(){
     cx.fillStyle = "rgba(0,0,0,0.5)"; cx.fillRect(ax0, 76, 14, 14);
     if (SPR.axe.img) cx.drawImage(SPR.axe.img, ax0 + 1, 77, 12, 12);
   }
+  for (let i = 0; i < (g.traps || 0); i++){      // подлянки в запасе (гонка)
+    const tx0 = W - 34 - (gi + (g.axes || 0) + i)*20;
+    cx.fillStyle = "rgba(0,0,0,0.5)"; cx.fillRect(tx0, 76, 14, 14);
+    if (SPR.trapbn && SPR.trapbn.img) cx.drawImage(SPR.trapbn.img, tx0 + 1, 77, 12, 12);
+  }
   drwMazaiHud();
   let ey = 96;
   if (g.breadT  > 0){ drwEffBar("ГРЕБОК+", g.breadT/BREAD_FRAMES,  "#eec27a", ey); ey += 16; }
   if (g.whiskyT > 0){ drwEffBar("НЕУЯЗВИМ", g.whiskyT/WHISKY_FRAMES,"#e8a838", ey); ey += 16; }
   if (g.sunT    > 0){ drwEffBar("ДОРОЖКА",  g.sunT/SUN_FRAMES,      "#ffd54f", ey); ey += 16; }
+  if (g.motorT  > 0){ drwEffBar("МОТОР",    g.motorT/MOTOR_FRAMES,  "#cfe8f5", ey); ey += 16; }
 
   const seg = segAt(g.pwy);
   const next = g.segs.find(x => x.type === "rapid" && x.start > g.pwy);
@@ -9420,6 +9487,16 @@ function apBn(b){
       popText("СОЛНЕЧНАЯ ДОРОЖКА · 8 СЕК","#ffd54f");
       explain("sun","СОЛНЦЕ: 8 секунд по воде блестит дорожка — по ней можно пройти между камнями, брёвнами и соперниками. И очки в счёт");
       break;
+    case "motor":                       // гонка: мотор на 5 секунд
+      g.motorT = MOTOR_FRAMES; addBonus(10);
+      popText("МОТОР · 5 СЕК", "#cfe8f5");
+      explain("motor", "МОТОР: 5 секунд лодка идёт в полтора раза быстрее — догнать и перегнать");
+      break;
+    case "trap":                        // гонка: подлянка в запас
+      g.traps = Math.min(TRAP_MAX, (g.traps || 0) + 1); addBonus(10);
+      popText("ПОДЛЯНКА В ЗАПАСЕ", "#d9b98a");
+      explain("trap", "ПОДЛЯНКА: пробел (двойной тап), когда кто-то сзади, — коряга за корму. Кто налетит, встанет");
+      break;
     case "mazai":                       // значок: на 30 секунд — Мазай
       g.bonuses--;                      // значок не считается бонусом дня
       addBonus(10); startMazai();
@@ -10469,7 +10546,9 @@ function rndr(){
   for(const b of g.bns)drwBn(b);
   drwBearSwim();                                // медведь в воде — под туманом
   drwFog();                                     // туман и мгла — под своей байдаркой
-  drwWake();drwPt();drwGhost();drwKy();drwClash();
+  drwWake();drwPt();drwGhost();drwKy();
+  { const R = raceOf(); if (R && !R.end) drwRaceMotors(R); }
+  drwClash();
   // Мост рисуется ПОСЛЕ байдарки: под мостом проплывают, а не по нему.
   for(const b of g.bridges_) drwBridge(b);
   drwTape();
@@ -10633,13 +10712,12 @@ function panelRightHtml(){
   let h = "";
   if (stage === "play"){
     if (R && R.bots){
-      h += "<div class='sp'><h3>РЕГАТА · " + escHtml(R.bots.track.name) + "</h3>" +
-           regattaStandings().map((r, i) => "<div class='rt" + (r.me ? " cur" : "") + "'><span>" + (i + 1) + ". " + escHtml(r.name) + "</span><span></span></div>").join("") + "</div>";
+      h += "<div class='sp'><h3>РЕГАТА · " + escHtml(R.bots.track.name) + "</h3>" + (R.end ? "" : RACE_MAP_HTML) + "</div>";
     } else if (R){
       const rival = R.net ? (R.net.rival.name || "ДРУГ") : R.ghost ? (R.ghost.name || "ПРИЗРАК") : null;
       h += "<div class='sp'><h3>ГОНКА</h3>" + (rival ? "<div>соперник: " + escHtml(rival) + "</div>" +
            (R.ghost ? "<div class='gp'>его время " + raceTime(R.ghost.frames) + "</div>" : "") :
-           "<div>на время — после финиша вызови друга</div>") + "</div>";
+           "<div>на время — после финиша вызови друга</div>") + (R.end ? "" : RACE_MAP_HTML) + "</div>";
     } else if (!custom){
       h += "<div class='sp'><h3>ДЕНЬ " + L.day + " · ТАБЛИЦА</h3>" + boardHtml(L.day) +
            (onlineUrl() ? "<div class='dim'>все игроки — на экране «Рекорды»</div>" : "") + "</div>";
@@ -10648,7 +10726,8 @@ function panelRightHtml(){
   }
   h += "<div class='sp'><h3>БОНУСЫ</h3>" +
        [["bread","БАТОН — гребок сильнее на 8 с"],["whisky","ВИСКИ — неуязвим, очки x2, 6 с"],["medkit","АПТЕЧКА — сердце или щит"],
-        ["axe","ТОПОР — двойной тап: бросить"],["sun","СОЛНЦЕ — дорожка, где проплыть"]]
+        ["axe","ТОПОР — двойной тап: бросить"],["sun","СОЛНЦЕ — дорожка, где проплыть"],
+        ["motor","МОТОР — в гонке 5 с быстрее"],["trap","ПОДЛЯНКА — в гонке коряга за корму"]]
         .map(([n, t]) => "<div class='bn'><canvas data-ic='" + n + "' width='24' height='24'></canvas><span>" + t + "</span></div>").join("") + "</div>";
   h += "<div class='sp'><h3>УПРАВЛЕНИЕ</h3><div>← → руль · ↑ гребок · ↓ табанить</div><div>пробел / X удар · Esc пауза · M музыка</div>" +
        "<div>геймпад: стик руль · A гребок · B удар · Start пауза</div></div>";
@@ -10714,6 +10793,7 @@ function lp(t){
   while (n-- > 0) upd();
   if (!drwSides()) rndr();                    // десктоп — вся сцена на широком холсте
   if (++panelTick % 12 === 0) updPanels();
+  if (panelsOn) updRaceMap();
   requestAnimationFrame(lp);
 }
 
@@ -11155,12 +11235,14 @@ function raceLevel(seed){
 function startRace(lvl, ghost){
   g.custom = customLevel(lvl);
   Object.assign(g.custom, { wide: true, shore: true, place: "ГОНКА",           // берег — только нарисованный, без случайных
-                            race: { lvl, f: 0, track: [], end: 0, ghost: ghost || null } });
+                            race: { lvl, f: 0, track: [], end: 0, ghost: ghost || null, traps: [], flyAxes: [] } });
   g.lastRace = { lvl, ghost: ghost || null };
   g.raceFlipT = 0; g.raceHits = 0; g.raceHitCool = 0;
+  g.motorT = 0; g.raceStunT = 0; g.traps = 0;
   g.day = 0;
   hideAllScreens();
   sg();
+  { const R = g.custom.race; R.startWy = g.pwy; R.finWy = g.scroll + level().len*PX_PER_M - 150; }   // для карты гонки
   customRiver(g.custom.items);
   g.cNext = 0;
   showMobileHint();
@@ -11176,8 +11258,11 @@ function raceStep(){
   R.f++;
   if (g.raceFlipT > 0) g.raceFlipT--;
   if (g.raceHitCool > 0) g.raceHitCool--;
+  if (g.motorT > 0) g.motorT--;
+  if (g.raceStunT > 0) g.raceStunT--;
   if (R.net) netSmooth(R.net);
   if (R.bots) regattaStep(R);
+  raceItemsStep(R);
 }
 function raceFinishLine(){
   const R = raceOf();
@@ -11250,6 +11335,7 @@ async function raceLoad(id, deps){
 function drwGhost(){
   const R = raceOf();
   if (!R || g.s !== "playing" && g.s !== "arrive" && g.s !== "paused" && g.s !== "countdown") return;
+  drwRaceItems(R);
   if (R.net){ drwRival(R.net); return; }
   if (R.bots){ drwBots(R); return; }
   if (!R.ghost) return;
@@ -11275,6 +11361,7 @@ function drwRaceHud(){
     cx.fillText("МЕСТО " + p + "/8", W/2, 84);
     cx.restore();
   }
+  if (!panelsOn && raceMapOn()) drwRaceMap(cx, W - 13, 118, 6, 150, false);   // телефон: крошечная карта у правого края
   cx.save(); cx.font = "9px " + F; cx.textAlign = "right";
   cx.fillStyle = "#ffd54f"; cx.fillText(raceTime(R.f), W - 12, 84);   // под сердечками
   if (R.ghost || (R.net && R.net.show)){
@@ -11367,6 +11454,7 @@ function netMsg(m){
   }
   else if (m.type === "pos"){ n.pos = { f: m.f, wy: m.wy, t: m.t/1000, fl: m.fl === 1 ? 1 : 0 }; }
   else if (m.type === "hit"){ raceHitMe(); }
+  else if (m.type === "trap"){ const R = raceOf(); if (R && R.traps && Number.isFinite(m.wy) && Number.isFinite(m.t)) R.traps.push({ wy: m.wy, t: m.t/1000, owner: "net", life: TRAP_LIFE }); }
   else if (m.type === "fin"){ n.rival.frames = m.frames; if (g.s === "customEnd") raceEndScreen(g.lastOk); }
   else if (m.type === "left"){ n.rival.left = true; if (g.s === "customEnd") raceEndScreen(g.lastOk); else popText((n.rival.name || "ДРУГ") + " ВЫШЕЛ", "#9aa9b2"); }
 }
@@ -11505,6 +11593,222 @@ function raceAgain(){
   if (R && R.bots){ startRegatta(R.bots.track); return; }
   if (g.lastRace && R){ const lr = g.lastRace; startRace(lr.lvl, lr.ghost || g.myRun); return; }
   startCustom();
+}
+/* ===== 12б2. Предметы гонки ===== */
+// В гонках (05.10.2026, просьба Максима — «не хватает влияния на ход гонки»):
+// через RACE_BN_GAP px на реке лежит предмет — топор, подлянка, мотор или
+// батон. Что и где — от номера отрезка (hsh), не от случая: вдвоём по сети
+// у обоих те же. Игрок пускает в ход пробелом (см. paddleStrike), боты —
+// сами: топор — в лодку впереди, корягу — когда кто-то сидит на хвосте.
+// Коряга стоит на месте; налетевший (кроме хозяина) встаёт на секунду.
+const RACE_BN_GAP = 340, MOTOR_FRAMES = 300, MOTOR_MUL = 1.6, TRAP_MAX = 2, TRAP_LIFE = 1800,
+      TRAP_STUN = 60, TRAP_SEE = 420, BOT_AXE_RANGE = 320;
+const BOT_COLORS = { fast:"#4fc3f7", daring:"#ff9800", careful:"#81c784", bully:"#ff5252", rookie:"#ce93d8", steady:"#a1887f", old:"#90a4ae" };
+function raceItemsStep(R){
+  if (R.end) return;
+  if (!R.traps) R.traps = [];
+  if (!R.flyAxes) R.flyAxes = [];
+  if (R.nextBn == null) R.nextBn = (Math.floor(g.pwy/RACE_BN_GAP) + 2)*RACE_BN_GAP;
+  while (R.nextBn < spawnWy()){
+    const k = Math.round(R.nextBn/RACE_BN_GAP), h = hsh(k*31 + 7);
+    const type = h < 0.32 ? "axe" : h < 0.62 ? "trap" : h < 0.85 ? "motor" : "bread";
+    const base = (hsh(k*17 + 3)*2 - 1)*0.7, wy = R.nextBn;
+    const t = [base, -base, base*0.4, 0].find(c => !inIsland(c, wy) &&
+      !g.obs.some(o => Math.abs(o.wy - wy) < 50 && Math.abs((o.t - c)*widthAt(wy)/2) < (o.visHalf || 24) + 14));
+    if (t != null){ const sz = spriteSize(BN_SPRITE[type]); g.bns.push({ t, wy, type, visHalf: sz.w/2, visHalfY: sz.h/2 }); }
+    R.nextBn += RACE_BN_GAP;
+  }
+  // Коряги: кто налетел (кроме хозяина) — встаёт, коряга уходит.
+  for (let i = R.traps.length - 1; i >= 0; i--){
+    const tr = R.traps[i];
+    if (--tr.life <= 0){ R.traps.splice(i, 1); continue; }
+    const hw = widthAt(tr.wy)/2, near = (wy, t) => Math.abs(wy - tr.wy) < 24 && Math.abs((t - tr.t)*hw) < 26;
+    let hit = false;
+    if (tr.owner !== "me" && !(g.raceStunT > 0) && near(g.pwy, g.t)){
+      g.raceStunT = TRAP_STUN; g.shake = 6; sfx("chop"); popText("НА КОРЯГЕ!", "#ff8a80"); hit = true;
+    }
+    if (!hit) for (const b of R.bots || []){
+      if (b === tr.owner || b.end || !near(b.wy, b.t)) continue;
+      b.stunT = Math.max(b.stunT, TRAP_STUN + 20); b.hits++; b.vt = 0;
+      if (tr.owner === "me") popText(b.name + " НА КОРЯГЕ!", "#ffd54f");
+      hit = true; break;
+    }
+    if (hit){ spPt(screenXOf(tr.t, tr.wy), screenYOf(tr.wy), "#a87848", 16); R.traps.splice(i, 1); }
+  }
+  // Топоры ботов в полёте.
+  for (let i = R.flyAxes.length - 1; i >= 0; i--){
+    const a = R.flyAxes[i];
+    if (++a.k < a.dur) continue;
+    R.flyAxes.splice(i, 1);
+    if (a.tgt === "me"){
+      if (!(g.raceFlipT > 0) && !(g.whiskyT > 0)){
+        g.raceFlipT = RACE_FLIP; g.raceHits = 0; g.shake = 8; sfx("chop"); popText(a.from.name + " — ТОПОРОМ!", "#ff5252");
+      }
+    } else if (!a.tgt.end){ a.tgt.flipT = RACE_FLIP; a.tgt.hits = 0; }
+  }
+}
+function botTake(b, type){
+  if (type === "motor") b.motorT = MOTOR_FRAMES;
+  else if (type === "axe") b.axes = 1;
+  else if (type === "trap") b.traps = 1;
+  else b.boostT = 240;
+}
+function botItems(b, R){
+  if (b.end || b.flipT > 0 || b.stunT > 0) return;
+  if (b.axes > 0){
+    let best = null, bd = Infinity;
+    for (const o of regattaBoats(R)){
+      if (o === b || o.end || o.flipT > 0 || (o.me && g.raceFlipT > 0)) continue;
+      const d = o.wy - b.wy, lat = Math.abs(o.t - b.t)*widthAt(o.wy)/2;
+      if (d < 40 || d > BOT_AXE_RANGE || lat > 110) continue;
+      if (d + lat*2 < bd){ bd = d + lat*2; best = o.me ? "me" : o; }
+    }
+    if (best){
+      b.axes--;
+      const tw = best === "me" ? g.pwy : best.wy;
+      R.flyAxes.push({ from: b, t0: b.t, wy0: b.wy, tgt: best, k: 0, dur: Math.round(14 + Math.max(0, tw - b.wy)/25) });
+    }
+  }
+  if (b.traps > 0){
+    const hw = widthAt(b.wy)/2;
+    if (regattaBoats(R).some(o => o !== b && !o.end && b.wy - o.wy > 40 && b.wy - o.wy < 220 && Math.abs((o.t - b.t)*hw) < 90)){
+      b.traps--; R.traps.push({ wy: b.wy - 46, t: b.t, owner: b, life: TRAP_LIFE });
+    }
+  }
+}
+// Есть ли лодка соперника впереди (dir 1) или сзади (−1) в пределах range.
+function raceBoatNear(dir, range){
+  const R = raceOf();
+  if (!R) return false;
+  const list = (R.bots || []).filter(b => !b.end);
+  if (R.net && R.net.show) list.push(R.net.show);
+  return list.some(o => { const d = (o.wy - g.pwy)*dir; return d > 20 && d < range && Math.abs((o.t - g.t)*widthAt(o.wy)/2) < 140; });
+}
+function dropTrap(){
+  const R = raceOf();
+  if (!R) return;
+  g.traps--;
+  if (!R.traps) R.traps = [];
+  const tr = { wy: g.pwy - 46, t: g.t, owner: "me", life: TRAP_LIFE };
+  R.traps.push(tr);
+  if (R.net) netSend({ type: "trap", wy: Math.round(tr.wy), t: Math.round(tr.t*1000) });
+  g.strikeT = 12; sfx("splash"); popText("ПОДЛЯНКА ЗА КОРМОЙ", "#d9b98a");
+}
+// Мотор: за кормой белая полоса пены — расширяется и тает книзу, чуть
+// виляет; рисуется на воде под лодками.
+function drwMotorWake(x, y){
+  for (let i = 0; i < 14; i++){
+    const yy = y + 18 + i*7, w = 5 + i*0.9, wob = Math.sin(g.frame*0.4 + i*0.9)*1.5;
+    cx.fillStyle = "rgba(255,255,255," + (0.85 - i*0.055).toFixed(2) + ")";
+    cx.fillRect(Math.round(x - w/2 + wob), Math.round(yy), Math.round(w), 5);
+  }
+}
+// Сам мотор на корме (спрайт бонуса, уменьшенный) — поверх лодки.
+function drwMotorOn(x, y){
+  const img = SPR.motor && SPR.motor.img;
+  if (!img) return;
+  const w = Math.round(img.width*0.5), h = Math.round(img.height*0.5);
+  cx.drawImage(img, Math.round(x - w/2), Math.round(y + 12), w, h);
+}
+function drwRaceMotors(R){                        // после лодок: моторы на корме
+  if (g.motorT > 0 && !(g.raceFlipT > 0)) drwMotorOn(screenXOf(g.t, g.pwy), g.py);
+  for (const b of R.bots || []) if (b.motorT > 0 && !(b.flipT > 0)){
+    const y = screenYOf(b.wy);
+    if (y > -60 && y < H + 60) drwMotorOn(screenXOf(b.t, b.wy), y);
+  }
+}
+function drwRaceItems(R){
+  if (g.motorT > 0 && !(g.raceFlipT > 0)) drwMotorWake(screenXOf(g.t, g.pwy), g.py);
+  for (const b of R.bots || []) if (b.motorT > 0 && !(b.flipT > 0)){
+    const y = screenYOf(b.wy);
+    if (y > -140 && y < H + 60) drwMotorWake(screenXOf(b.t, b.wy), y);
+  }
+  for (const tr of R.traps || []){
+    const y = screenYOf(tr.wy);
+    if (y < -60 || y > H + 60) continue;
+    drawSprite("snag", screenXOf(tr.t, tr.wy), y);
+  }
+  for (const a of R.flyAxes || []){
+    const tt = a.tgt === "me" ? g.t : a.tgt.t, tw = a.tgt === "me" ? g.pwy : a.tgt.wy, u = a.k/a.dur;
+    const x0 = screenXOf(a.t0, a.wy0), y0 = screenYOf(a.wy0), x1 = screenXOf(tt, tw), y1 = screenYOf(tw);
+    cx.save(); cx.translate(Math.round(x0 + (x1 - x0)*u), Math.round(y0 + (y1 - y0)*u - Math.sin(u*Math.PI)*40)); cx.rotate(a.k*0.55);
+    drawSprite("axe", 0, 0); cx.restore();
+  }
+}
+// Карта нужна, пока идёт гонка; после финиша и на итогах — нет.
+function raceMapOn(){ const R = raceOf(); return !!R && !R.end && g.s === "playing"; }
+// Карта гонки: k — доля пути от старта (0) до финиша (1).
+function raceMapPoints(){
+  const R = raceOf();
+  if (!R || R.startWy == null) return [];
+  const span = Math.max(1, R.finWy - R.startWy), k = wy => Math.max(0, Math.min(1, (wy - R.startWy)/span));
+  const pts = [{ name: save.name || "ТЫ", me: true, k: R.end ? 1 : k(g.pwy), col: "#ffd54f", flip: g.raceFlipT > 0 }];
+  for (const b of R.bots || []) pts.push({ name: b.name, k: b.end ? 1 : k(b.wy), col: BOT_COLORS[b.style] || "#cfe8f5", flip: b.flipT > 0 });
+  if (R.ghost) pts.push({ name: R.ghost.name || "ПРИЗРАК", k: k(ghostAt(R.ghost, R.f).wy), col: "#b0bec5" });
+  if (R.net && R.net.show) pts.push({ name: R.net.rival.name || "ДРУГ", k: k(R.net.show.wy), col: "#ff8a80", flip: !!(R.net.pos && R.net.pos.fl) });
+  return pts;
+}
+// Кто впереди и кто догоняет — с отрывом в метрах.
+function raceChaseText(){
+  const R = raceOf(), pts = raceMapPoints();
+  if (pts.length < 2) return "";
+  const span = (R.finWy - R.startWy)/PX_PER_M, s = pts.slice().sort((a, b) => b.k - a.k), i = s.findIndex(p => p.me);
+  const m = p => Math.round(Math.abs(p.k - s[i].k)*span);
+  return [i > 0 ? "ВПЕРЕДИ: " + s[i - 1].name + " +" + m(s[i - 1]) + " М" : "ТЫ ЛИДЕР",
+          i < s.length - 1 ? "ДОГОНЯЕТ: " + s[i + 1].name + " −" + m(s[i + 1]) + " М" : "ТЫ ПОСЛЕДНИЙ"].join("\n");
+}
+// big — десктоп (в панели, с именами), иначе — тонкая полоска у края экрана.
+function drwRaceMap(c2, x, y, w, h, big){
+  const pts = raceMapPoints(), R = raceOf();
+  if (!pts.length) return;
+  c2.save();
+  const pad = big ? 6 : 2, mx = big ? x + 12 : x + w/2, rw = big ? 6 : 3;
+  c2.fillStyle = "rgba(4,10,20,0.55)"; c2.fillRect(x - pad, y - pad - 3, w + pad*2, h + pad*2 + 3);
+  c2.fillStyle = "#3f77b8"; c2.fillRect(Math.round(mx - rw/2), y, rw, h);                   // река
+  const cell = big ? 3 : 2;                                                                    // финиш — шашечки
+  for (let i = 0; i < 4; i++){ c2.fillStyle = i % 2 ? "#ffffff" : "#111111"; c2.fillRect(Math.round(mx - 2*cell + i*cell), y - cell - 1, cell, cell); }
+  const yk = k => y + h*(1 - k);
+  if (R.traps) for (const tr of R.traps){
+    const k = (tr.wy - R.startWy)/Math.max(1, R.finWy - R.startWy);
+    if (k < 0 || k > 1) continue;
+    c2.fillStyle = "#a87848"; c2.fillRect(Math.round(mx - rw), Math.round(yk(k)), rw*2, 1);
+  }
+  const ord = pts.slice().sort((a, b) => (a.me ? 1 : 0) - (b.me ? 1 : 0));
+  for (const p of ord){
+    const r = p.me ? (big ? 5 : 3) : (big ? 3 : 2), py = Math.round(yk(p.k));
+    if (p.me){ c2.fillStyle = "#000000"; c2.fillRect(Math.round(mx - r - 1), py - r - 1, r*2 + 2, r*2 + 2); }
+    c2.fillStyle = p.flip ? "#ffffff" : p.col; c2.fillRect(Math.round(mx - r), py - r, r*2, r*2);
+  }
+  if (big){                                       // подписи: по порядку, не налезая друг на друга
+    c2.font = "8px " + F; c2.textAlign = "left";
+    let last = -1e9;
+    for (const p of pts.slice().sort((a, b) => b.k - a.k)){
+      const ly = Math.max(Math.round(yk(p.k)) + 3, last + 10); last = ly;
+      c2.fillStyle = p.me ? "#ffd54f" : p.col;
+      c2.fillText((p.flip ? "× " : "") + p.name, mx + 10, ly);
+    }
+  }
+  c2.restore();
+}
+const RACE_MAP_HTML = "<canvas id='raceMap' width='190' height='280' style='image-rendering:pixelated;display:block;margin:6px 0'></canvas><div id='raceChase' class='gp' style='white-space:pre-line'></div>";
+let raceChaseWas = "";
+function updRaceMap(){
+  if (typeof document === "undefined" || !raceOf()) return;
+  const el = document.getElementById("raceMap");
+  if (!el || !el.getContext) return;
+  if (!raceMapOn()){                              // финишировал — убрать сразу, не ждать перерисовки панели
+    if (el.style) el.style.display = "none";
+    const d = document.getElementById("raceChase"); if (d && d.style) d.style.display = "none";
+    return;
+  }
+  const c2 = el.getContext("2d");
+  c2.imageSmoothingEnabled = false;
+  c2.clearRect(0, 0, el.width, el.height);
+  drwRaceMap(c2, 8, 12, el.width - 16, el.height - 22, true);
+  if (g.frame % 10 === 0){
+    const t = raceChaseText(), d = document.getElementById("raceChase");
+    if (d && t !== raceChaseWas){ d.textContent = t; raceChaseWas = t; }
+  }
 }
 /* ===== 12в. Регата: 8 лодок ===== */
 // Драки в гонках: удар веслом по лодке рядом (RACE_DY по ходу, RACE_REACH вбок);
@@ -11828,7 +12132,10 @@ function startRegatta(tr){
 function raceRowMul(){
   if (!raceOf()) return 1;
   if (g.raceFlipT > 0) return 0.15;                    // перевернулся — почти стоит
-  return g.rowing > 0 ? 1.22 : g.rowing < 0 ? 0.75 : 1;
+  let m = g.rowing > 0 ? 1.22 : g.rowing < 0 ? 0.75 : 1;
+  if (g.motorT > 0) m *= MOTOR_MUL;                    // мотор
+  if (g.raceStunT > 0) m *= 0.4;                       // налетел на корягу
+  return m;
 }
 // Лучшая дорожка для бота: штраф за препятствия впереди (в пределах его
 // взгляда и с его запасом), за остров, за лодки прямо впереди; середина
@@ -11871,9 +12178,11 @@ function regattaStep(R){
     b.t = Math.max(-0.85, Math.min(0.85, b.t + b.vt));
     // Рывками, как человек: гребёт и отдыхает.
     const row = ((R.f + b.i*37) % 240) < 95 ? 1.18 : 1;
-    b.wy += g.sp*speedMulAt(b.wy)*flowMul(b.t)*b.mul*row*(b.boostT > 0 ? 1.3 : 1)*(b.stunT > 0 ? 0.45 : 1)*(b.flipT > 0 ? 0.15 : 1);
+    b.wy += g.sp*speedMulAt(b.wy)*flowMul(b.t)*b.mul*row*(b.boostT > 0 ? 1.3 : 1)*(b.stunT > 0 ? 0.45 : 1)*(b.flipT > 0 ? 0.15 : 1)*(b.motorT > 0 ? MOTOR_MUL : 1);
     if (b.flipT > 0) b.flipT--;
+    if (b.motorT > 0) b.motorT--;
     botAttack(b);
+    botItems(b, R);
     if (b.stunT > 0) b.stunT--;
     if (b.boostT > 0) b.boostT--;
     if (!(b.stunT > 0)){
@@ -11891,7 +12200,7 @@ function regattaStep(R){
     // Бонус рядом — забирает.
     for (let i = g.bns.length - 1; i >= 0; i--){
       const bn = g.bns[i];
-      if (Math.abs(bn.wy - b.wy) < 30 && Math.abs((bn.t - b.t)*hw) < 30){ g.bns.splice(i, 1); b.boostT = 240; break; }
+      if (Math.abs(bn.wy - b.wy) < 30 && Math.abs((bn.t - b.t)*hw) < 30){ g.bns.splice(i, 1); botTake(b, bn.type); break; }
     }
     if (b.wy >= R.finWy) b.end = R.f;
   }
@@ -11981,7 +12290,7 @@ function drwBots(R){
 }
 
 /* ===== 13. Экспорт для тестов ===== */
-globalThis.__KAYAK__ = { G: g, W, H, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, raceMapOn, drwRaceMotors, screenXOf, raceMapPoints, raceChaseText, drwRaceMap, dropTrap, raceBoatNear, botTake, botItems, raceItemsStep, MOTOR_FRAMES, TRAP_LIFE, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
