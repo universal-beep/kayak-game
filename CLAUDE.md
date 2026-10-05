@@ -48,6 +48,12 @@
 
 ## После отправки
 
+**Проверить, что сайт пересобрался** (05.10.2026 Pages не запустил сборку,
+Максим видел старую версию):
+`gh api repos/universal-beep/kayak-game/pages/builds/latest --jq '.status,.commit'`
+— коммит должен быть последним. Нет — `gh api -X POST repos/universal-beep/kayak-game/pages/builds`,
+подождать и проверить снова. Говорить «на сайте» только после этого.
+
 `node tools/board.mjs` → `docs/board.html`, опубликовать (Доска сплава:
 https://claude.ai/artifact/Dp7fuctjq7HrecmAX9wHMp); `node tools/game-book.mjs`
 → книга игры (https://claude.ai/artifact/DmTCnTZa77afHYkZecKdEe).
