@@ -6009,10 +6009,13 @@ function deepPick(name, wy, side, key){
 // с низом в swy занимает swy…swy+h — пересёкся с дорогой → не ставим.
 // На полевой дороге велосипедистов (она на десктопе уходит далеко в бок) декор
 // не ставим: x — центр спрайта, swy — его низ в мире, half — полширины.
-function onCycRoad(x, swy, half){
+// h — высота спрайта: дорога изгибается, и верх высокого дома или ёлки мог
+// заходить на неё, хотя основание стоит рядом (05.10.2026).
+function onCycRoad(x, swy, half, h){
+  const top = swy + Math.max(30, h || 0);
   for (const e of g.bev){
-    if (e.type !== "cyclists" || Math.abs(swy - e.wy) > CYC_REACH) continue;
-    for (const w of [swy, swy + 30]){
+    if (e.type !== "cyclists" || top < e.wy - CYC_REACH || swy > e.wy + CYC_REACH) continue;
+    for (let w = swy; w <= top; w += 15){
       const rx = centerAt(w) + e.side*(widthAt(w)/2 + cycRoadOff(w - e.wy));
       if (Math.abs(x - rx) < CYC_GAP + 15 + half) return true;
     }
@@ -6151,7 +6154,7 @@ function deepItems(vwx, side, x0, x1){
     const it = deepCand(vwx, r, side);
     if (!it) continue;
     if (it.x + it.w/2 > L - 12 && it.x - it.w/2 < R + 12) continue;
-    if (nearRoad(swy, it.h) || farBlock(vwx, side, it) || onCycRoad(it.x, swy, it.w/2)) continue;
+    if (nearRoad(swy, it.h) || farBlock(vwx, side, it) || onCycRoad(it.x, swy, it.w/2, it.h)) continue;
     let blocked = false;
     for (let k = vwx - 6; k <= vwx + 6 && !blocked; k += 3)
       for (let rr = Math.max(0, r - 1); rr <= r + 1 && !blocked; rr++){
@@ -6218,7 +6221,7 @@ function drwFarQueue(x0, x1){
     if (x + sz.w/2 < x0 - 10 || x - sz.w/2 > x1 + 10) continue;
     // Неподвижную сцену на дорогу не ставим; бегущие (погоня) дорогу
     // пересекают — дорога нижний слой, раньше они на ней пропадали.
-    if (!a.moving && (nearRoad(pw, sz.h) || onCycRoad(x, pw, sz.w/2))) continue;
+    if (!a.moving && (nearRoad(pw, sz.h) || onCycRoad(x, pw, sz.w/2, sz.h))) continue;
     const yy = screenYOf(pw) - sz.h/2 + a.oy, ha = hazeAlpha(screenYOf(pw));
     if (ha <= 0) continue;
     cx.save(); cx.globalAlpha = ha;
@@ -6344,7 +6347,7 @@ function drwBg(x0, x1){
       const place = (name, side, gap) => {
         const dz = spriteSize(name);
         if (nearRoad(swy, dz.h)) return;               // у моста дорога идёт через всю ширину
-        if (onCycRoad(edgeOf(side) + side*(dz.w/2 + gap), swy, dz.w/2)) return;
+        if (onCycRoad(edgeOf(side) + side*(dz.w/2 + gap), swy, dz.w/2, dz.h)) return;
         const box = { side, in0: gap, in1: gap + dz.w, lo: swy, hi: swy + dz.h };
         if (g.bev.some(e => boxesOverlap(box, boxOf(e), 2))) return;
         if (sandBar(swy, side) > 1) return;            // на песчаной отмели не растёт
@@ -8471,13 +8474,36 @@ function boxesOverlap(a, b, m){
 function underBridge(a){
   return (g.bridges_ || []).some(b => a.lo < b.wy + 46 && a.hi > b.wy - 30);
 }
+// Велодорога e задевает рамку жителя box (in0/in1 — вглубь от кромки, lo/hi —
+// по реке): палатка, дом или баня на дороге (05.10.2026 — так стояли).
+// m — запас: рамка жителя от кадра к кадру «дышит» на пару пикселей (анимация).
+function roadHitsBox(e, box, m){
+  if (!box || e.type !== "cyclists" || box.side !== e.side) return false;
+  m = m || 0;
+  const rw = CYC_GAP + 15 + m;
+  for (let w = Math.max(box.lo - m, e.wy - CYC_REACH); w <= Math.min(box.hi + m, e.wy + CYC_REACH); w += 12){
+    const off = cycRoadOff(w - e.wy);
+    if (box.in0 < off + rw && box.in1 > off - rw) return true;
+  }
+  return false;
+}
+function onRoad(e, a){
+  if (e.type === "cyclists") return g.bev.some(o => o !== e && o.type !== "cyclists" && roadHitsBox(e, boxOf(o), 12));
+  return g.bev.some(o => o !== e && o.type === "cyclists" && roadHitsBox(o, a, 12));
+}
+// Мерить — уже стоя в списке жителей: деревня подстраивает ширину под реку,
+// а та считается по списку (roomDef). Вне списка замер был неполным (63 px
+// вглубь вместо 170), и деревня вставала на дорогу и соседей (05.10.2026).
 function placeBev(e, dir){
   for (let k = 0; k < 40; k++){
     e.box = undefined;
-    const a = boxOf(e);
-    if (!a || (!g.bev.some(o => boxesOverlap(a, boxOf(o))) && !underBridge(a))){ g.bev.push(e); return true; }
+    g.bev.push(e);
+    const a = boxOf(e), others = g.bev.filter(o => o !== e);
+    if (!a || (!others.some(o => boxesOverlap(a, boxOf(o))) && !underBridge(a) && !onRoad(e, a))) return true;
+    g.bev.pop();
     e.wy += (dir || -1) * 10;
   }
+  e.box = undefined;
   return false;
 }
 
@@ -12553,7 +12579,7 @@ function splitBoot(){
   drawMenu();
   loop();
 }
-globalThis.__KAYAK__ = { G: g, W, H, setTitleMenuTop, spriteSize, seatPause, seatAutoContinue, SPLIT_TRACKS, splitLevel, seatParams, splitAllowed, splitRoom, splitKeyPad, splitMerge, splitStrip, setExtPad, setSeatLink, seatDeliver, seatStart, netSend, gpRead, pollGamepad, gpState, raceMapOn, drwRaceMotors, screenXOf, raceMapPoints, raceChaseText, drwRaceMap, dropTrap, raceBoatNear, botTake, botItems, raceItemsStep, MOTOR_FRAMES, TRAP_LIFE, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, roadHitsBox, setTitleMenuTop, spriteSize, seatPause, seatAutoContinue, SPLIT_TRACKS, splitLevel, seatParams, splitAllowed, splitRoom, splitKeyPad, splitMerge, splitStrip, setExtPad, setSeatLink, seatDeliver, seatStart, netSend, gpRead, pollGamepad, gpState, raceMapOn, drwRaceMotors, screenXOf, raceMapPoints, raceChaseText, drwRaceMap, dropTrap, raceBoatNear, botTake, botItems, raceItemsStep, MOTOR_FRAMES, TRAP_LIFE, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,

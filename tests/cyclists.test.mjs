@@ -77,3 +77,46 @@ test("едут то один, то двое, то трое, то группа и
   assert.equal(new Set(ws).size, 7, "никто не едет в одной точке с другим");
   assert.notEqual(K.cyclistLane(0, 2), K.cyclistLane(1, 2), "двое — по одному на колее");
 });
+
+// «На дороге не должны стоять палатки и дома» (05.10.2026): расстановка
+// жителей берега не знала про велодорогу — лагерь или деревня вставали на неё,
+// и дорога ложилась через стоящую деревню. Дальний декор сверялся с дорогой
+// только у основания, а она изгибается — верх высокого дома заходил на неё.
+test("жители берега не встают на велодорогу, и дорога не ложится через них", () => {
+  const { K } = loadGame();
+  K.startDay(2);
+  for (const side of [-1, 1]) for (const dy of [-300, -120, 0, 150, 400]) {
+    setupWorld(K, { wy: 3000 });
+    K.G.bev = [];
+    const road = { type: "cyclists", side, wy: 3600, phase: 0, count: 2 };
+    K.G.bev.push(road);
+    for (const type of ["camp", "village", "banya"]) {
+      K.placeBev({ type, side, wy: 3600 + dy, off: 40, phase: 0, mode: "sit", seed: 5 }, 1);
+    }
+    for (const e of K.G.bev) if (e !== road) assert.ok(!K.roadHitsBox(road, K.measureBev(e)), e.type + " на дороге (сдвиг " + dy + ")");
+  }
+  // наоборот: деревня стоит — дорога через неё не прокладывается
+  setupWorld(K, { wy: 3000 });
+  K.G.bev = [];
+  K.placeBev({ type: "village", side: 1, wy: 3600, off: 40, phase: 0, seed: 5 }, 1);
+  const vil = K.G.bev[0];
+  const road = { type: "cyclists", side: 1, wy: 3600, phase: 0, count: 2 };
+  const placed = K.placeBev(road, 1);
+  assert.ok(!placed || !K.roadHitsBox(road, K.measureBev(vil)), "дорога через деревню");
+});
+
+test("дальний декор не задевает велодорогу и верхушкой", () => {
+  const { K } = loadGame();
+  K.startDay(2);
+  const { setupWorld: sw } = { setupWorld };
+  sw(K, { wy: 3000 });
+  for (const side of [-1, 1]) {
+    K.G.bev = [{ type: "cyclists", side, wy: 3600, phase: 0, count: 2 }];
+    for (let v = Math.floor(3000/13); v < Math.floor(4300/13); v++)
+      for (const it of K.deepItems(v, side, -560, 980))
+        for (let h = 0; h <= it.h; h += 5) {            // дорога на высоте предмета — считаем сами
+          const w = it.swy + h, rx = K.centerAt(w) + side*(K.widthAt(w)/2 + K.cycRoadOff(w - 3600));
+          assert.ok(Math.abs(it.x - rx) >= it.w/2 + 21, it.name + " на дороге на высоте " + h);
+        }
+  }
+});
