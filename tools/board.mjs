@@ -3,7 +3,8 @@
 //   node tools/board.mjs   → docs/board.html (её же публикуем артефактом)
 // Данные: docs/requests.json, docs/.test-index.json (последний прогон сторожа,
 // node tools/guard.mjs), git: что уже в origin/master — значит, на сайте.
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
+const require_fs = () => ({ statSync });
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -29,7 +30,11 @@ export function buildData() {
     return { id: r.id, date: r.date, ask: r.ask, result: r.result || "", stage: stageOf(r, onSite),
              commits: (r.commits || []).map(h => ({ h, site: onSite.has(h) })), guards, gstate, link: r.link || "" };
   });
-  return { rows, tests: index.tests.length, testsDate: index.date, built: new Date().toISOString(), stages: STAGES, repo: REPO };
+  // Прогон сторожа старше кода — доска может врать (05.10.2026 так и вышло:
+  // доску собрали по прогону с нарочно откаченным исправлением).
+  let stale = false;
+  try { const { statSync } = require_fs(); stale = !index.date || statSync(path.join(ROOT, "index.html")).mtimeMs > Date.parse(index.date); } catch (e) {}
+  return { rows, stale, tests: index.tests.length, testsDate: index.date, built: new Date().toISOString(), stages: STAGES, repo: REPO };
 }
 
 export function boardHtml(data) {
@@ -86,6 +91,7 @@ details{grid-column:2;font-size:13px;color:var(--muted)}
 details li.fail,details li.lost{color:var(--bad)}
 summary{cursor:pointer}
 .empty{color:var(--muted);padding:24px;text-align:center}
+.stale{margin:8px 0 0;padding:8px 12px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:13px}
 .legend{font-size:13px;color:var(--muted);line-height:1.7;max-width:70ch}
 @media (max-width:720px){.flow{grid-template-columns:repeat(3,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr)}details{grid-column:1}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -94,6 +100,7 @@ summary{cursor:pointer}
   <header>
     <h1>Доска сплава</h1>
     <div class="sub" id="sub"></div>
+    <p class="stale" id="stale" hidden>Прогон сторожа старше кода — отметки «откат» и «цел» могут быть неверны. Пересобрать: node tools/guard.mjs, потом node tools/board.mjs.</p>
   </header>
   <nav class="flow" id="flow" aria-label="Этапы"></nav>
   <div class="health" id="health"></div>
@@ -140,6 +147,7 @@ function drawList(){
       (r.guards.length ? '<details><summary>сторожа</summary><ul>' + r.guards.map(g => '<li class="' + g.state + '">' + esc(g.name) + (g.state === "lost" ? ' — нет такого теста' : g.state === "fail" ? ' — упал' : '') + '</li>').join("") + '</ul></details>' : '') +
     '</article>').join("") : '<div class="empty">Ничего не нашлось — сними фильтр.</div>';
 }
+document.getElementById("stale").hidden = !D.stale;
 document.getElementById("sub").textContent = "Просьб " + D.rows.length + " · тестов " + D.tests +
   (D.testsDate ? " · прогон сторожа " + new Date(D.testsDate).toLocaleString("ru-RU") : "") + " · собрано " + new Date(D.built).toLocaleString("ru-RU");
 document.addEventListener("click", e => {
