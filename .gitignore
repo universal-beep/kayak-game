@@ -1,3 +1,4 @@
 # Kesh wrangler (Cloudflare) i sekrety
 .wrangler/
 .env
+docs/.test-index.json

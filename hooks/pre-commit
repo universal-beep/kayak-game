@@ -1,0 +1,11 @@
+#!/bin/sh
+# Quality gate: lint на каждый коммит.
+# Устанавливается командой /gates или вручную:
+#   copy hooks/pre-commit .git/hooks/pre-commit
+# (в Git for Windows shell работает из коробки)
+
+echo "[quality-gates] lint..."
+if [ -f package.json ] && grep -q '"lint"' package.json; then
+  npm run lint || exit 1
+fi
+exit 0

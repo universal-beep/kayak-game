@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import { INDEX, loadSprites, validateMap, replaceMap, findMapSpan, isMain } from "./sprites-lib.mjs";
 import { DATA_FILE, renderDataFile } from "./sprite-data.mjs";
+import { updateLock } from "./sprite-lock.mjs";
 
 export function applySprite(job, { htmlPath = INDEX, force = false } = {}) {
   const { name, map, base } = job;
@@ -53,10 +54,11 @@ if (isMain(import.meta.url)) {
     const job = JSON.parse(readFileSync(file, "utf8"));
     const r = applySprite(job, { force });
     writeFileSync(DATA_FILE, renderDataFile(r.data));
+    updateLock([job.name]);                     // нарочно перерисовали — новый отпечаток в замок
     console.log("Файл:   " + file);
     console.log("Спрайт: " + job.name + "  " + r.before[0].length + "x" + r.before.length +
       " -> " + r.after[0].length + "x" + r.after.length);
-    console.log("index.html обновлён, tools/sprite-data.js пересобран.");
+    console.log("index.html обновлён, tools/sprite-data.js пересобран, отпечаток в tests/sprite-lock.json обновлён.");
   } catch (e) {
     console.error("НЕ ПРИМЕНЕНО: " + e.message);
     process.exitCode = 1;
