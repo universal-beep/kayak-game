@@ -32,3 +32,46 @@ test("заставка на широком окне: название и бай�
     assert.ok(texts.includes("НА БАЙДАРКЕ"), "подзаголовок, вид " + view);
   }
 });
+
+// Заставка (05.10.2026): меню перекрывало байдарочника. На широком окне он
+// плывёт слева от меню, справа на отмели машет медведь; на узком экране
+// байдарка встаёт над кнопками.
+test("заставка на широком окне: байдарка слева от поля, медведь справа машет", async () => {
+  const { runInContext } = await import("node:vm");
+  const { loadGame } = await import("./harness.mjs");
+  const { K, sandbox } = loadGame();
+  const seen = [];
+  sandbox.__wrapDS = orig => function (name, x, y) { seen.push({ name, x, y }); return orig.apply(this, arguments); };
+  runInContext("drawSprite = __wrapDS(drawSprite)", sandbox);
+  K.G.s = "start";
+  const frames = new Set();
+  for (let i = 0; i < 60; i++) {
+    seen.length = 0;
+    K.withView(-560, 980, () => K.rndr());
+    const kayak = seen.find(s => /^kayak_man/.test(s.name)), bear = seen.find(s => /^bear_wave/.test(s.name));
+    assert.ok(kayak && kayak.x < -60, "байдарка слева: " + (kayak && kayak.x));
+    assert.ok(bear && bear.x > K.W + 60, "медведь справа: " + (bear && bear.x));
+    frames.add(bear.name);
+  }
+  assert.equal(frames.size, 2, "машет — два кадра");
+});
+
+test("заставка на узком экране: байдарка над кнопками меню, медведя нет", async () => {
+  const { runInContext } = await import("node:vm");
+  const { loadGame } = await import("./harness.mjs");
+  const { K, sandbox } = loadGame();
+  const seen = [];
+  sandbox.__wrapDS = orig => function (name, x, y) { seen.push({ name, x, y }); return orig.apply(this, arguments); };
+  runInContext("drawSprite = __wrapDS(drawSprite)", sandbox);
+  K.G.s = "start";
+  for (const top of [600, 430, 400]) {
+    K.setTitleMenuTop(top);
+    seen.length = 0;
+    K.rndr();
+    const kayak = seen.find(s => /^kayak_man/.test(s.name));
+    const h = K.spriteSize("kayak_man").h;
+    assert.ok(kayak.y + h/2 <= Math.max(top - 4, 405), "меню с " + top + ": низ байдарки " + (kayak.y + h/2));
+    assert.ok(kayak.y - h/2 >= 316, "не выше берега");
+    assert.ok(!seen.some(s => /^bear_wave/.test(s.name)), "на узком медведя нет");
+  }
+});

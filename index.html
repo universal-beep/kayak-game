@@ -116,7 +116,7 @@ canvas { display:block;margin:0 auto; }
 #startScreen .ctrl { background:rgba(4,10,20,0.55);padding:8px 12px;border-radius:4px; }
 #startScreen p { font-family:"Press Start 2P",monospace;font-size:8px;color:#d6dde3;margin:4px 0;line-height:1.8;text-align:center;max-width:380px; }
 #startScreen .key { color:#ffe27a; }
-@media (max-height:500px) { #startScreen { padding-bottom:12px; } #startScreen .menu { margin-bottom:4px; } #startScreen .ctrl { display:none; } }
+@media (max-height:700px) { #startScreen { padding-bottom:12px; } #startScreen .menu { margin-bottom:4px; } #startScreen .ctrl { display:none; } }
 .hidden { display:none !important; }
 #pauseBtn { position:absolute;top:40%;right:6px;width:42px;height:42px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:14px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
 #pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.92);pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
@@ -10466,7 +10466,16 @@ function drawOrderOf(obs){
 
 // Заставка: рассвет над рекой, силуэты ёлок, байдарка покачивается на воде.
 // Рисуется, пока игра в состоянии «start»; кнопки — поверх, в DOM.
-let titleT = 0;
+let titleT = 0, titleMenuTop = 1e9;
+function setTitleMenuTop(v){ titleMenuTop = v; }
+// Верх меню заставки в координатах холста (по экрану; меню — HTML поверх).
+function measureTitleMenu(){
+  if (typeof document === "undefined") return;
+  const m = document.querySelector && document.querySelector("#startScreen .menu"), cv = document.getElementById("game");
+  if (!m || !cv || !m.getBoundingClientRect) return;
+  const r = m.getBoundingClientRect(), c = cv.getBoundingClientRect();
+  if (c.height > 0 && r.height > 0) titleMenuTop = (r.top - c.top)/(c.height/H);
+}
 function drwTitle(x0, x1){
   // x0..x1 — ширина сцены: поле 0…W или шире (боковые зоны десктопа). Узор тот же, за краями повторяется.
   if (x0 === undefined){ x0 = VX0; x1 = VX1; }
@@ -10516,7 +10525,22 @@ function drwTitle(x0, x1){
     cx.fillRect((i*131 + titleT*0.6*(0.3 + k)) % (W + 80) - 40 + m*W, y + 3, 14 + k*34, 2);
   }
   // Байдарка с гребцом (kayak_man, две фазы гребка): качается и чуть дрейфует.
-  const bob = Math.sin(titleT*0.05)*3, kx = 150 + Math.sin(titleT*0.012)*10, ky = 396 + bob;
+  // Меню её перекрывало (05.10.2026). На широком окне она плывёт слева от
+  // поля, а справа на отмели машет медведь; на узком — встаёт над кнопками
+  // (titleMenuTop — верх меню в координатах холста), но не выше берега.
+  if (typeof __KAYAK_TEST__ === "undefined" && titleT % 30 === 1) measureTitleMenu();
+  const side = x0 < -160 && x1 > W + 160;
+  const bob = Math.sin(titleT*0.05)*3;
+  const kx = (side ? x0/2 : 150) + Math.sin(titleT*0.012)*10;
+  const ky = (side ? 420 : Math.max(360, Math.min(396, titleMenuTop - 46))) + bob;
+  if (side){
+    const bx = W + (x1 - W)*0.45, by = 430;
+    cx.fillStyle = "#d2b674"; cx.beginPath(); cx.ellipse(bx, by + 34, 58, 11, 0, 0, Math.PI*2); cx.fill();   // отмель
+    cx.fillStyle = "#e6cf93"; cx.beginPath(); cx.ellipse(bx - 6, by + 31, 40, 5, 0, 0, Math.PI*2); cx.fill();
+    cx.fillStyle = "rgba(255,255,255,0.45)";
+    for (let i = 0; i < 3; i++) cx.fillRect(bx - 70 + i*52 + Math.sin(titleT*0.05 + i)*4, by + 46 + (i%2)*3, 20, 2);
+    drawSprite(Math.floor(titleT/22) % 2 ? "bear_wave_b" : "bear_wave", bx, by);
+  }
   cx.fillStyle = "rgba(0,0,0,0.25)";
   cx.beginPath(); cx.ellipse(kx, ky + 42, 78, 7, 0, 0, Math.PI*2); cx.fill();
   cx.fillStyle = "rgba(255,255,255,0.45)";
@@ -12505,7 +12529,7 @@ function splitBoot(){
   drawMenu();
   loop();
 }
-globalThis.__KAYAK__ = { G: g, W, H, seatPause, seatAutoContinue, SPLIT_TRACKS, splitLevel, seatParams, splitAllowed, splitRoom, splitKeyPad, splitMerge, splitStrip, setExtPad, setSeatLink, seatDeliver, seatStart, netSend, gpRead, pollGamepad, gpState, raceMapOn, drwRaceMotors, screenXOf, raceMapPoints, raceChaseText, drwRaceMap, dropTrap, raceBoatNear, botTake, botItems, raceItemsStep, MOTOR_FRAMES, TRAP_LIFE, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, setTitleMenuTop, spriteSize, seatPause, seatAutoContinue, SPLIT_TRACKS, splitLevel, seatParams, splitAllowed, splitRoom, splitKeyPad, splitMerge, splitStrip, setExtPad, setSeatLink, seatDeliver, seatStart, netSend, gpRead, pollGamepad, gpState, raceMapOn, drwRaceMotors, screenXOf, raceMapPoints, raceChaseText, drwRaceMap, dropTrap, raceBoatNear, botTake, botItems, raceItemsStep, MOTOR_FRAMES, TRAP_LIFE, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
