@@ -1,0 +1,54 @@
+# Сторож и выкладка сайта на стороне GitHub (07.10.2026).
+# Местный hooks/pre-push обходится отправкой не с этого компьютера (облачная
+# сессия, pull request), а старая сборка GitHub Pages дважды не запустилась
+# сама. Здесь: любая отправка в art-pipeline или master — сторож (все тесты +
+# сторожа просьб); в master — сайт выкладывается ТОЛЬКО если сторож зелёный.
+name: Сторож и сайт
+
+on:
+  push:
+    branches: [master, art-pipeline]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Сторож просьб
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Линтер
+        run: npm run lint
+      - name: Размер index.html
+        run: npm run analyze
+      - name: Сторож (все тесты и сторожа сделанных просьб)
+        run: node tools/guard.mjs
+
+  deploy:
+    name: Выкладка сайта
+    needs: guard
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: pages
+        uses: actions/deploy-pages@v4
