@@ -84,7 +84,33 @@ code{font-family:var(--f-mono);font-size:.88em;background:var(--quote);padding:1
 .where{display:grid;gap:10px;margin:18px 0 0}
 .where div{padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:4px;min-width:0}
 .where b{font-family:var(--f-display);font-weight:500;font-size:14px}
+.tabs{max-width:1180px;margin:0 auto;display:flex;gap:4px;flex-wrap:wrap;padding-block:16px 0;border-bottom:1px solid var(--line)}
+.tabs button{font:600 13px var(--f-mono);letter-spacing:.04em;color:var(--muted);background:none;border:1px solid transparent;border-bottom:none;border-radius:4px 4px 0 0;padding:9px 14px;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--fg);background:var(--paper);border-color:var(--line)}
+.tabs button:focus-visible{outline:2px solid var(--fire);outline-offset:2px}
+.rating main{max-width:none}
+.rating .narrow{max-width:72ch}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.score{font-family:var(--f-mono);font-weight:600}
+.tie{font-family:var(--f-mono);font-size:11px;color:var(--fire)}
+.pill{display:inline-block;font:600 11px var(--f-mono);padding:2px 7px;border-radius:10px;letter-spacing:.03em;white-space:nowrap}
+.p-buy{background:var(--water);color:var(--bg)}
+.p-alt{border:1px solid var(--water);color:var(--water)}
+.p-later{border:1px solid var(--muted);color:var(--muted)}
+.p-skip{color:var(--muted)}
+.cov td{text-align:center}
+.cov td:first-child{text-align:left}
+.yes{color:var(--water);font-weight:700}
+.part{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:14px 0}
+.grid2 > div{padding:14px 16px;background:var(--paper);border:1px solid var(--line);border-radius:4px;min-width:0}
+.grid2 h3{margin:0 0 6px}
 </style>
+<div class="tabs" role="tablist" aria-label="Разделы">
+<button type="button" role="tab" id="tab-tut" aria-controls="pane-tut" aria-selected="true">Туториал</button>
+<button type="button" role="tab" id="tab-rating" aria-controls="pane-rating" aria-selected="false">Рейтинг книг</button>
+</div>
+<div id="pane-tut" role="tabpanel" aria-labelledby="tab-tut">
 <div class="wrap">
 <nav class="route" aria-label="Оглавление">
 <ol>
@@ -381,7 +407,7 @@ code{font-family:var(--f-mono);font-size:.88em;background:var(--quote);padding:1
 <div class="km-tag">привал</div>
 <h2>Книги с полки: что читать</h2>
 <p class="sub">Разбор фотографий из магазина. Отзывы — из открытых источников; моё мнение помечено отдельно</p>
-<p><b>Моя рекомендация, по порядку:</b> 1) Роджерс, «Level Up!»; 2) Зубек, «Элементы гейм-дизайна»; 3) Мэдиган, «Психология видеоигр»; 4) Лемаршан, «Игровая разработка без боли и кранчей». «Игровой баланс» — позже, как справочник. Остальное с полок — для удовольствия или не про нашу игру.</p>
+<p><b>Итог после рейтинга и проверки критиком</b> (подробно — на вкладке «Рейтинг книг»): купить 2–3 книги — Роджерс, «Level Up!»; Лемаршан, «Игровая разработка без боли и кранчей»; по желанию Мэдиган, «Психология видеоигр». Зубек — равноценная замена «Level Up!», а не дополнение к ней. Ниже — первоначальный разбор; где он расходится с вкладкой, верна вкладка.</p>
 
 <h3>Брать в первую очередь</h3>
 <div class="book"><h3>Скотт Роджерс — «Level Up! Руководство по созданию классных видеоигр»</h3>
@@ -424,8 +450,8 @@ code{font-family:var(--f-mono);font-size:.88em;background:var(--quote);padding:1
 
 <h3>Не про «Сплав» или не удалось проверить</h3>
 <ul>
-<li><b>Бауэр — «Профессия левел-дизайнер»:</b> автор из Ubisoft и Crytek, сейчас ведёт левел-дизайн Hunt: Showdown. Про большие 3D-миры и карьеру в ААА. Отзывов не нашёл.</li>
-<li><b>О’Коннор — «Практика гейм-дизайна»:</b> не удалось надёжно установить оригинал и отзывы. Не брать вслепую — сначала полистать в магазине.</li>
+<li><b>Бауэр — «Профессия левел-дизайнер»</b> (ориг. A Practical Guide to Level Design, 2023): автор руководил левел-дизайном Far Cry Primal, 5 и 6 в Ubisoft, работал в Crytek, сейчас креативный директор Plan A Collective. Про большие 3D-миры, переговоры в команде и карьеру в ААА. Отзывов не нашёл.</li>
+<li><b>О’Коннор — «Практика гейм-дизайна»</b> (ориг. The Craft and Science of Game Design, 2020, 122 стр.): автор работал над Far Cry 3 и Rainbow Six Siege. На Goodreads 2,75 из 5 по 8 оценкам.</li>
 <li><b>Турабова — «Геймдизайн на практике»; Горбатов — «С нуля в геймдев»; Козлова — «Геймдев по классике»; Пименов — «Игра и жизнь»:</b> серия «Видеоигры. Глубокое погружение». Содержательных отзывов не нашёл ни по одной. Пролистать оглавление на месте.</li>
 <li><b>Ветушинский — «Игродром»:</b> про игровую культуру и философию игр, а не про дизайн. Goodreads 4,25 (32 оценки).</li>
 <li><b>Для удовольствия:</b> Кен Уильямс — «Взлёт и падение Sierra On-Line»; Уолт Уильямс — «Мясорубка игровой индустрии»; «Japansoft»; Костин — «Гарри Поттер и Дары геймдева» (рецензенту не хватило скриншотов).</li>
@@ -603,3 +629,224 @@ code{font-family:var(--f-mono);font-size:.88em;background:var(--quote);padding:1
 </section>
 </main>
 </div>
+</div>
+
+<div id="pane-rating" role="tabpanel" aria-labelledby="tab-rating" hidden>
+<div class="wrap rating">
+<nav class="route" aria-label="Оглавление рейтинга">
+<ol>
+<li><a href="#r-itog"><span class="km">итог</span>Что купить</a></li>
+<li><a href="#r-opis"><span class="km">шаг 1</span>Что на фото</a></li>
+<li><a href="#r-otsev"><span class="km">шаг 2</span>Что откинул</a></li>
+<li><a href="#r-metod"><span class="km">шаг 3</span>Как считал</a></li>
+<li><a href="#r-tabl"><span class="km">шаг 4</span>Рейтинг</a></li>
+<li><a href="#r-pokr"><span class="km">шаг 5</span>Покрытие вопросов</a></li>
+<li><a href="#r-vne"><span class="km">шаг 6</span>Нет на полке</a></li>
+<li><a href="#r-kritik"><span class="km">проверка</span>Что сказал критик</a></li>
+<li><a href="#r-magazin"><span class="km">в магазине</span>Чек-лист</a></li>
+<li><a href="#r-istochniki"><span class="km">архив</span>Источники</a></li>
+</ol>
+</nav>
+<main>
+<header class="hero">
+<div class="eyebrow">Рейтинг книг · 8 фото из книжного · 16.10.2026</div>
+<h1>Какие книги брать для «Сплава»</h1>
+<p class="lede">Опись всех корешков на фото, логика отсева, рейтинг с зарубежными оценками и проверка логики сторонним критиком.</p>
+</header>
+
+<section class="leg" id="r-itog">
+<div class="km-tag">итог</div>
+<h2>Что купить</h2>
+<div class="grid2">
+<div><span class="pill p-buy">брать первой</span><h3>Скотт Роджерс — «Level Up!»</h3><p>Обучение, уровни, темп, управление. Самая большая выборка отзывов: Goodreads 4,09 по 1139 оценкам, Amazon 4,6 по 821.</p></div>
+<div><span class="pill p-buy">брать второй</span><h3>Ричард Лемаршан — «Игровая разработка без боли и кранчей»</h3><p>Плейтест, вертикальный срез, этапы. Закрывает вопрос процесса, которого нет у Роджерса.</p></div>
+<div><span class="pill p-alt">по желанию третьей</span><h3>Тайнан Сильвестр — «Геймдизайн. Рецепты успеха…» или Мэдиган — «Психология видеоигр»</h3><p>Удержание и мотивация: открытый вопрос «ради чего возвращаться». Сильвестра в магазине не было — заказать, он закрывает больше. Мэдиган — если брать с полки сразу.</p></div>
+<div><span class="pill p-alt">замена первой</span><h3>Роберт Зубек — «Элементы гейм-дизайна»</h3><p>Почти вровень с «Level Up!» (разница 0,11 — ничья). Компактнее и системнее, но пересекается с Роджерсом. Взять одну из двух — ту, что больше понравится в магазине.</p></div>
+</div>
+<p><b>Позже, под задачу, сначала пролистать:</b> «Игровой баланс» Шрайбера и Ромеро — когда дойдёт до очков, звёзд и разрядов; Купер, «Анимация в видеоиграх» — ради одной главы 14 о 2D и пиксель-арт анимации.</p>
+</section>
+
+<section class="leg" id="r-opis">
+<div class="km-tag">шаг 1</div>
+<h2>Что на фото</h2>
+<p class="sub">Все 8 фото разобраны, мелкие корешки — по увеличенным фрагментам. Около 33 книг про игры и ещё около 15 не по теме</p>
+<div class="tbl"><table>
+<thead><tr><th>Группа</th><th>Книги</th></tr></thead>
+<tbody>
+<tr><td>Геймдизайн и производство, переводы</td><td>Зубек «Элементы гейм-дизайна»; Роджерс «Level Up!»; Роджерс «Твой ход!»; Маклин, Шарп «Игры: дизайн и игровой опыт»; Деспейн «100 принципов гейм-дизайна»; Шрайбер, Ромеро «Игровой баланс»; Гэзеуэй «Введение в дизайн игровых систем»; Тотен «Левел-дизайн. Архитектурный подход»; Бауэр «Профессия левел-дизайнер»; О’Коннор «Практика гейм-дизайна»; Мэдиган «Психология видеоигр»; Хойснер и др. «Инструменты нарративного дизайна»; Лемаршан «Игровая разработка без боли и кранчей»; Купер «Анимация в видеоиграх»</td></tr>
+<tr><td>Русские авторы</td><td>Турабова «Геймдизайн на практике»; Ветушинский «Игродром»; Прохоренко «Как делать хорошие игры»; серия «Видеоигры. Глубокое погружение»: Козлова «Геймдев по классике», Горбатов «С нуля в геймдев», Грис «Сделай видеоигру один и не свихнись», Пименов «Игра и жизнь»</td></tr>
+<tr><td>История и мемуары</td><td>К. Уильямс «Взлёт и падение Sierra On-Line»; У. Уильямс «Мясорубка игровой индустрии»; «Japansoft»; Ларссон, Голдберг «Minecraft»; Костин «Гарри Поттер и Дары геймдева»</td></tr>
+<tr><td>Инструменты</td><td>Лепешкина «Основы анимации в Spine 2D»; Шэннон «Unreal Engine 4 для дизайна и визуализации»; «Программирование в Unreal Engine 5»; «Основы визуального языка Blueprint»; ещё одна по UE5; Корягин «Создание хоррор-игр в Роблокс» и его же книга о Roblox, 2-е изд.</td></tr>
+<tr><td>Не по теме</td><td>около десяти книг по программированию (Python, рекурсия, алгоритмы, Linux, «Искусство чистого кода», байесовская статистика, «Тайная жизнь программ», Scratch для детей); комикс «Тайные кодеры»; «Апгрейд машинного обучения»; книга о больших языковых моделях; «Midjourney: от промпта к иллюстрации»</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="leg" id="r-otsev">
+<div class="km-tag">шаг 2</div>
+<h2>Что откинул до оценки и почему</h2>
+<div class="tbl"><table>
+<thead><tr><th>Что</th><th>Почему</th></tr></thead>
+<tbody>
+<tr><td>Программирование, ML, Midjourney, детский комикс</td><td>не про дизайн игр</td></tr>
+<tr><td>Unreal ×3, Blueprint, Roblox ×2</td><td>чужой движок: «Сплав» написан на HTML и холсте</td></tr>
+<tr><td>Spine 2D</td><td>скелетная анимация; в игре пиксельные спрайты, нарисованные геометрией</td></tr>
+<tr><td>История и мемуары</td><td>не учат делать игру; читать для удовольствия. Репутация: «Japansoft» — Time Extension называет «настоящим сокровищем», но без скриншотов; «Мясорубку» рецензировал NPR; книгу о Sierra и «Minecraft» крупные издания почти не разбирали; Костин — рецензенту Cubiq не хватило иллюстраций</td></tr>
+<tr><td>Пименов «Игра и жизнь»</td><td>ни аннотации, ни отзывов найти не удалось — нечего оценивать; пролистать в магазине</td></tr>
+</tbody></table></div>
+<p>Остальные русские авторы (Турабова, Горбатов, Козлова, Грис, Прохоренко) в первой версии были отсеяны из-за отсутствия отзывов. Критик указал, что это отсев по репутации, а не по теме. Теперь они оценены по аннотации.</p>
+</section>
+
+<section class="leg" id="r-metod">
+<div class="km-tag">шаг 3</div>
+<h2>Как считал</h2>
+<div class="narrow">
+<p>Три критерия, оценка от 1 до 5:</p>
+<ul>
+<li><b>A — применимость к «Сплаву» сейчас, 55%.</b> Соло-разработка, 2D-аркада в браузере, этап — вертикальный срез первого дня; нужны обучение, темп, удержание, плейтест.</li>
+<li><b>C — польза на час чтения, 25%.</b> Объём, плотность, порог для новичка.</li>
+<li><b>R — внешняя репутация, 20%.</b> Средняя оценка Goodreads/Amazon, сдвинутая к нейтральным 3,5 пропорционально размеру выборки: R = (n·оценка + 50·3,5) / (n + 50). Книга с 6 оценками почти не отходит от 3,5, книга с 2000 — почти не сдвигается.</li>
+</ul>
+<p><b>Нет числовых оценок</b> — R не ставится, итог считается по A и C с перенормировкой весов: (0,55·A + 0,25·C) / 0,8. Отсутствие данных не наказывается и не награждается.</p>
+<p><b>Ничья.</b> Разница меньше 0,15 балла меньше погрешности субъективных оценок и показывается как ничья.</p>
+<p>Пересечения книг между собой не входят в балл: они видны в матрице покрытия на шаге 5, по ней и собирается минимальный набор.</p>
+</div>
+</section>
+
+<section class="leg" id="r-tabl">
+<div class="km-tag">шаг 4</div>
+<h2>Рейтинг</h2>
+<div class="tbl"><table>
+<thead><tr><th>#</th><th>Книга</th><th class="num">A</th><th class="num">C</th><th class="num">R</th><th class="num">Итог</th><th>Внешние данные</th><th>Решение</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Роджерс — «Level Up!»</td><td class="num">5</td><td class="num">4</td><td class="num">4,28</td><td class="num score">4,61</td><td>GR 4,09 (1139), Amazon 4,6 (821); Эмили Шорт: дружелюбно и практично, слабее в сюжетных механиках</td><td><span class="pill p-buy">брать</span></td></tr>
+<tr><td>2</td><td>Зубек — «Элементы гейм-дизайна» <span class="tie">ничья с №1</span></td><td class="num">4,5</td><td class="num">5</td><td class="num">3,87</td><td class="num score">4,50</td><td>GR 4,25 (~48), I-Programmer 4,5/5</td><td><span class="pill p-alt">замена №1</span></td></tr>
+<tr><td>3</td><td>Лемаршан — «Игровая разработка без боли и кранчей»</td><td class="num">4</td><td class="num">4</td><td class="num">н/д</td><td class="num score">4,00</td><td>читательских отзывов не нашёл; автор — ведущий дизайнер Uncharted, профессор USC</td><td><span class="pill p-buy">брать</span></td></tr>
+<tr><td>4</td><td>Деспейн — «100 принципов гейм-дизайна» <span class="tie">ничья с №3</span></td><td class="num">3,5</td><td class="num">5</td><td class="num">3,77</td><td class="num score">3,93</td><td>GR 4,10 (42), I-Programmer 4,5/5; читатели жалуются на крупные картинки</td><td><span class="pill p-later">пролистать</span></td></tr>
+<tr><td>5</td><td>Мэдиган — «Психология видеоигр»</td><td class="num">3,5</td><td class="num">4,5</td><td class="num">н/д</td><td class="num score">3,81</td><td>Publishers Weekly: умно и смешно, мало о пользе игр; Audible 4/5</td><td><span class="pill p-alt">по желанию</span></td></tr>
+<tr><td>6</td><td>Гэзеуэй — «Введение в дизайн игровых систем»</td><td class="num">3</td><td class="num">4</td><td class="num">3,70</td><td class="num score">3,39</td><td>GR 4,07 (27)</td><td><span class="pill p-skip">не сейчас</span></td></tr>
+<tr><td>7</td><td>Грис — «Сделай видеоигру один и не свихнись»</td><td class="num">3</td><td class="num">4</td><td class="num">3,52</td><td class="num score">3,35</td><td>GR 3,57 (14); единственная книга о выживании соло-разработчика</td><td><span class="pill p-later">пролистать</span></td></tr>
+<tr><td>8</td><td>Маклин, Шарп — «Игры: дизайн и игровой опыт»</td><td class="num">3</td><td class="num">3,5</td><td class="num">3,63</td><td class="num score">3,25</td><td>GR ~3,7 (90); во многом повторяет Зубека</td><td><span class="pill p-skip">не сейчас</span></td></tr>
+<tr><td>9</td><td>Шрайбер, Ромеро — «Игровой баланс»</td><td class="num">3,5</td><td class="num">2</td><td class="num">н/д</td><td class="num score">3,03</td><td>~800 стр.; единственная большая книга о балансе</td><td><span class="pill p-later">позже, по главам</span></td></tr>
+<tr><td>10</td><td>Хойснер и др. — «Инструменты нарративного дизайна»</td><td class="num">2,5</td><td class="num">3,5</td><td class="num">н/д</td><td class="num score">2,81</td><td>Эмили Шорт: учебник с упражнениями, больше о нормах индустрии</td><td><span class="pill p-skip">не сейчас</span></td></tr>
+<tr><td>11</td><td>О’Коннор — «Практика гейм-дизайна»</td><td class="num">2</td><td class="num">4</td><td class="num">3,40</td><td class="num score">2,78</td><td>ориг. The Craft and Science of Game Design; GR 2,75 (8)</td><td><span class="pill p-skip">нет</span></td></tr>
+<tr><td>12</td><td>Горбатов — «С нуля в геймдев»</td><td class="num">2,5</td><td class="num">3</td><td class="num">н/д</td><td class="num score">2,66</td><td>по аннотации: как делать игры и зарабатывать, 320 стр.</td><td><span class="pill p-later">пролистать</span></td></tr>
+<tr><td>13</td><td>Купер — «Анимация в видеоиграх»</td><td class="num">2,5</td><td class="num">2,5</td><td class="num">н/д</td><td class="num score">2,50</td><td>из 15 глав одна про 2D и пиксель-арт, остальное — 3D и мокап</td><td><span class="pill p-later">ради гл. 14</span></td></tr>
+<tr><td>14</td><td>Прохоренко — «Как делать хорошие игры»</td><td class="num">2</td><td class="num">3,5</td><td class="num">н/д</td><td class="num score">2,47</td><td>ЛитРес ~10 отзывов, хвалят; по словам коллеги, скорее для тех, кто уже в индустрии</td><td><span class="pill p-skip">нет</span></td></tr>
+<tr><td>15</td><td>Тотен — «Левел-дизайн. Архитектурный подход»</td><td class="num">2,5</td><td class="num">2</td><td class="num">н/д</td><td class="num score">2,34</td><td>академические рецензии: «ключевой текст»; про 3D-пространство</td><td><span class="pill p-skip">нет</span></td></tr>
+<tr><td>16</td><td>Ветушинский — «Игродром»</td><td class="num">1,5</td><td class="num">3</td><td class="num">3,79</td><td class="num score">2,33</td><td>GR 4,25 (32); про игровую культуру, не про дизайн</td><td><span class="pill p-skip">для души</span></td></tr>
+<tr><td>17</td><td>Турабова — «Геймдизайн на практике»</td><td class="num">2</td><td class="num">3</td><td class="num">н/д</td><td class="num score">2,31</td><td>по аннотации — кухня студий и карьера</td><td><span class="pill p-later">пролистать</span></td></tr>
+<tr><td>18</td><td>Роджерс — «Твой ход!»</td><td class="num">1,5</td><td class="num">3</td><td class="num">3,59</td><td class="num score">2,29</td><td>GR 4,33 (6); настольные игры</td><td><span class="pill p-skip">нет</span></td></tr>
+<tr><td>19</td><td>Бауэр — «Профессия левел-дизайнер»</td><td class="num">1,5</td><td class="num">3</td><td class="num">н/д</td><td class="num score">1,97</td><td>ориг. A Practical Guide to Level Design (2023); ААА, Far Cry</td><td><span class="pill p-skip">нет</span></td></tr>
+<tr><td>19</td><td>Козлова — «Геймдев по классике»</td><td class="num">1,5</td><td class="num">3</td><td class="num">н/д</td><td class="num score">1,97</td><td>по аннотации — сюжет и культурные влияния в играх</td><td><span class="pill p-skip">нет</span></td></tr>
+</tbody></table></div>
+<p class="src">GR — Goodreads, в скобках — число оценок. R — после сдвига к 3,5 по размеру выборки. «н/д» — числовых оценок нет, итог по A и C. Оценки A и C — моё суждение; для русских книг без отзывов — по аннотации, не по тексту.</p>
+</section>
+
+<section class="leg" id="r-pokr">
+<div class="km-tag">шаг 5</div>
+<h2>Покрытие вопросов «Сплава»</h2>
+<p class="sub">Какая книга отвечает на какой открытый вопрос. По этой таблице собирается минимальный набор</p>
+<div class="tbl"><table class="cov">
+<thead><tr><th>Книга</th><th>Обучение</th><th>Темп и сложность</th><th>Удержание</th><th>Плейтест и процесс</th><th>Отклик</th></tr></thead>
+<tbody>
+<tr><td>Роджерс — «Level Up!»</td><td class="yes">да</td><td class="yes">да</td><td class="part">частично</td><td class="part">частично</td><td class="part">частично</td></tr>
+<tr><td>Зубек</td><td class="part">частично</td><td class="part">частично</td><td class="part">частично</td><td class="yes">да</td><td>—</td></tr>
+<tr><td>Лемаршан</td><td>—</td><td>—</td><td>—</td><td class="yes">да</td><td>—</td></tr>
+<tr><td>Мэдиган</td><td>—</td><td class="part">частично</td><td class="yes">да</td><td>—</td><td>—</td></tr>
+<tr><td>Деспейн</td><td class="part">частично</td><td class="part">частично</td><td class="part">частично</td><td class="part">частично</td><td class="part">частично</td></tr>
+<tr><td>Шрайбер, Ромеро</td><td>—</td><td class="yes">да</td><td class="part">частично</td><td>—</td><td>—</td></tr>
+<tr><td>Купер</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="yes">да</td></tr>
+</tbody></table></div>
+<p><b>Минимальный набор:</b> «Level Up!» (обучение, темп) + Лемаршан (плейтест, процесс) + Мэдиган (удержание) закрывают все четыре главных вопроса. Отклик частично даёт Роджерс; полностью — Купер и бесплатные доклады «Juice it or lose it» и «The Art of Screenshake» с вкладки «Туториал».</p>
+</section>
+
+<section class="leg" id="r-vne">
+<div class="km-tag">шаг 6</div>
+<h2>Нет на полке, но стоит знать</h2>
+<p class="sub">Важные книги, которых не было в магазине. Оценены по той же методике, чтобы их можно было сравнить с книгами с полки</p>
+<div class="tbl"><table>
+<thead><tr><th>Книга</th><th class="num">A</th><th class="num">C</th><th class="num">R</th><th class="num">Итог</th><th>На русском</th><th>Внешние данные и зачем</th></tr></thead>
+<tbody>
+<tr><td>Тайнан Сильвестр — «Геймдизайн. Рецепты успеха лучших компьютерных игр» (Designing Games)</td><td class="num">4,5</td><td class="num">4</td><td class="num">4,38</td><td class="num score">4,35</td><td>есть</td><td>GR 4,47 (517). Автор RimWorld. Эмоции, элегантность механик, мастерство, баланс — ближе всего к вопросам темпа и удержания</td></tr>
+<tr><td>Дерек Ю — «Spelunky» (Boss Fight Books) <span class="tie">ничья с Сильвестром</span></td><td class="num">4</td><td class="num">5</td><td class="num">4,41</td><td class="num score">4,33</td><td>не нашёл</td><td>GR 4,44 (~1700). Короткая история одной маленькой игры: соло-разработка, процедурные уровни, обучение без текста</td></tr>
+<tr><td>Джесси Шелл — «Геймдизайн. Как создать игру, в которую будут играть все»</td><td class="num">4,5</td><td class="num">3</td><td class="num">4,38</td><td class="num score">4,10</td><td>есть (Альпина)</td><td>GR 4,39 (~3400). Классика: больше сотни «линз»-вопросов. Объёмная — минус по пользе на час</td></tr>
+<tr><td>Селия Ходент — «The Gamer’s Brain» <span class="tie">ничья с Шеллом</span></td><td class="num">4</td><td class="num">4</td><td class="num">4,16</td><td class="num score">4,03</td><td>не нашёл</td><td>GR 4,32 (~200). UX и нейронаука: восприятие, внимание, память, онбординг. Автор — бывший директор по UX в Epic (Fortnite)</td></tr>
+<tr><td>Раф Костер — «Разработка игр и теория развлечений»</td><td class="num">3</td><td class="num">5</td><td class="num">3,89</td><td class="num score">3,68</td><td>есть</td><td>GR 3,90 (~3450). Короткая, с рисунками: интерес — это обучение. Скорее про «почему», чем «как»</td></tr>
+<tr><td>Стив Свинк — «Game Feel»</td><td class="num">4</td><td class="num">2,5</td><td class="num">3,85</td><td class="num score">3,60</td><td>нет</td><td>GR 3,90 (377). Единственная большая книга об ощущении от управления; плотная, примеры 2008 года</td></tr>
+<tr><td>Роберт Нистром — «Game Programming Patterns»</td><td class="num">3</td><td class="num">4</td><td class="num">4,46</td><td class="num score">3,54</td><td>не нашёл; бесплатно онлайн на английском</td><td>GR 4,49 (~1600). Не про дизайн, про код игры: игровой цикл, обновление, пул объектов — прямо про устройство «Сплава»</td></tr>
+<tr><td>Брэтуэйт, Шрайбер — «Challenges for Game Designers»</td><td class="num">3</td><td class="num">4</td><td class="num">3,92</td><td class="num score">3,43</td><td>не нашёл</td><td>GR 3,99 (309). Сборник упражнений, многие на бумаге</td></tr>
+<tr><td>Адамс, Дорманс — «Game Mechanics: Advanced Game Design»</td><td class="num">3</td><td class="num">2,5</td><td class="num">3,99</td><td class="num score">3,07</td><td>нет</td><td>GR 4,12 (~185). Экономики и петли в схемах Machinations; пригодится для очков и разрядов</td></tr>
+<tr><td>Джейсон Шрайер — «Кровь, пот и пиксели»</td><td class="num">1,5</td><td class="num">4</td><td class="num">4,20</td><td class="num score">2,66</td><td>есть, 2-е изд.</td><td>GR 4,20 (~24 000). Десять историй создания известных игр. Для души, не учебник</td></tr>
+<tr><td>The Level Design Book (book.leveldesignbook.com)</td><td class="num">2</td><td class="num">4</td><td class="num">н/д</td><td class="num score">2,62</td><td>нет; бесплатно онлайн</td><td>волонтёрская онлайн-книга о левел-дизайне, в основном 3D</td></tr>
+</tbody></table></div>
+<p><b>Что это меняет в итоге.</b> Если сложить обе таблицы, первая пятёрка: «Level Up!» 4,61, Зубек 4,50, Сильвестр 4,35, «Spelunky» 4,33, Шелл 4,10. Основа покупки в магазине прежняя. Добавляется:</p>
+<ul>
+<li><b>Сильвестра заказать.</b> На русском есть, по удержанию и темпу закрывает больше Мэдигана. Если брать третью книгу — его вместо Мэдигана.</li>
+<li><b>«Spelunky» — если читаешь по-английски:</b> короткая, ближе всего к положению соло-разработчика маленькой игры.</li>
+<li><b>Бесплатно уже сейчас:</b> «Game Programming Patterns» на сайте автора — для кода «Сплава».</li>
+</ul>
+<p class="src">Источники: <a href="https://www.goodreads.com/list/user_vote/3581815">Goodreads, Шелл и Костер</a> · <a href="https://www.goodreads.com/book/show/22492102">Goodreads, Сильвестр</a> · <a href="https://www.labirint.ru/reviews/goods/747748/">Лабиринт, Сильвестр на русском</a> · <a href="https://www.goodreads.com/series/153597">Goodreads, Boss Fight Books</a> · <a href="https://bossfightbooks.com/products/spelunky-by-derek-yu">Boss Fight Books, «Spelunky»</a> · <a href="https://www.abebooks.com/Game-Feel-Designers-Guide-Virtual-Sensation/32112284582/bd">Свинк</a> · <a href="https://lizengland.com/blog/review-game-feel-by-steve-swink/">Лиз Ингленд о Свинке</a> · <a href="https://www.goodreads.com/work/editions/55787545-the-gamer-s-brain-how-neuroscience-and-ux-can-impact-video-game-design?page=1">Goodreads, Ходент</a> · <a href="https://www.goodreads.com/work/quotes/4791133">Goodreads, Брэтуэйт и Шрайбер</a> · <a href="https://critpoints.net/2017/02/08/review-game-mechanics-advanced-game-design-by-joris-dormans/">обзор Адамса и Дорманса</a> · <a href="https://www.goodreads.com/shelf/show/gamedesign">Goodreads, полка gamedesign</a> · <a href="https://www.goodreads.com/author/show/16222011.Jason_Schreier">Goodreads, Шрайер</a> · <a href="https://www.chitai-gorod.ru/product/krov-pot-i-pikseli-obratnaya-storona-industrii-videoigr-2-e-izdanie-3016545">Читай-город, «Кровь, пот и пиксели»</a> · <a href="https://habr.com/ru/hubs/game_design/articles/page66">Хабр о Костере</a>. Раздел добавлен после проверки критиком; его логику критик не смотрел.</p>
+</section>
+
+<section class="leg" id="r-kritik">
+<div class="km-tag">проверка</div>
+<h2>Что сказал критик и что я поправил</h2>
+<p class="sub">Независимый агент без контекста переписки проверил черновик. Вердикт: «логика годится с правками»</p>
+<div class="tbl"><table>
+<thead><tr><th>Замечание критика</th><th>Что сделал</th></tr></thead>
+<tbody>
+<tr><td>Балл «уникальность» (не дублирует книгу выше) — круговая логика: ранг зависит от балла, балл от ранга</td><td>убрал из балла, пересечения — в матрицу покрытия</td></tr>
+<tr><td>Репутация с весом 25% при тонких данных; «нет данных» оценено по-разному (3, 2 или исключение)</td><td>вес 20%, единое правило «н/д», сдвиг малых выборок к 3,5</td></tr>
+<tr><td>Оценка 4,6 у «Игрового баланса» — из постов в LinkedIn, это не источник</td><td>заменил на «н/д»</td></tr>
+<tr><td>Свежесть издания дублирует репутацию и почти не важна для принципов дизайна</td><td>убрал критерий</td></tr>
+<tr><td>Польза на час занижена для соло-разработчика</td><td>вес с 10% до 25%</td></tr>
+<tr><td>Русских авторов выкинули за отсутствие отзывов — это отсев по репутации, а не по теме</td><td>оценил по аннотации, Пименова — нет данных совсем</td></tr>
+<tr><td>Купер завышен: из 15 глав про 2D одна</td><td>применимость 3,5 → 2,5, решение «ради главы 14»</td></tr>
+<tr><td>Мэдиган завышен (нет рецептов для обучения и темпа), Грис занижен (единственный про соло)</td><td>Мэдиган 4 → 3,5, Грис 2,5 → 3</td></tr>
+<tr><td>Четыре книги — слишком много; Зубек и Роджерс сильно пересекаются</td><td>итог — 2–3 книги, Зубек как замена «Level Up!»</td></tr>
+<tr><td>Разница меньше погрешности — это ничья, а не место</td><td>ничьи помечены (№1–2, №3–4)</td></tr>
+<tr><td>Нет проверки издания и перевода, нет чек-листа для магазина</td><td>добавил чек-лист ниже</td></tr>
+</tbody></table></div>
+<p>Не принял одно: критик предлагал вес применимости 45%. Я поставил 55%, потому что после удаления двух критериев её доля и так должна вырасти, а главный вопрос — польза для этой игры.</p>
+<p>Арифметику первой версии критик пересчитал по всем 17 строкам — расхождений не нашёл.</p>
+</section>
+
+<section class="leg" id="r-magazin">
+<div class="km-tag">в магазине</div>
+<h2>Чек-лист перед покупкой</h2>
+<ul class="check">
+<li>Посмотреть выходные данные: с какого издания перевод. У «Level Up!» есть 2-е (2014) и 3-е (2024, добавлены VR и AR); у Купера нужно 2-е — в нём глава о пиксель-арте.</li>
+<li>Открыть оглавление и найти главы про обучение, темп и кривую сложности, удержание, плейтест. Нет ни одной — не брать.</li>
+<li>Прочитать две страницы подряд: понятен ли перевод без английского оригинала.</li>
+<li>Зубек или Роджерс: открыть у обоих главу об обучении игрока и взять ту книгу, что читается легче.</li>
+<li>Грис, Турабова, Горбатов, Пименов: пролистать оглавление — оценки по аннотациям, не по тексту.</li>
+</ul>
+</section>
+
+<section class="leg" id="r-istochniki">
+<div class="km-tag">архив</div>
+<h2>Источники зарубежных оценок</h2>
+<p class="src"><a href="https://emshort.blog/2019/05/07/level-up-the-guide-to-great-video-game-design-scott-rogers/">Эмили Шорт о «Level Up!»</a> · <a href="https://www.goodreads.com/work/quotes/13313639">Goodreads, «Level Up!»</a> · <a href="https://www.wiley-vch.de/de/fachgebiete/computer-und-informatik/level-up-the-guide-to-great-video-game-design-978-1-394-29876-1">Wiley, 3-е изд. «Level Up!»</a> · <a href="https://www.goodreads.com/book/show/55023325">Goodreads, Зубек</a> · <a href="https://www.i-programmer.info/bookreviews/6-graphics/14102-elements-of-game-design-mit-press.html">I-Programmer, Зубек</a> · <a href="https://www.publishersweekly.com/978-1-4422-3999-9">Publishers Weekly, Мэдиган</a> · <a href="https://penguinrandomhouse.com/books/675860/a-playful-production-process-by-richard-lemarchand">Лемаршан, издатель</a> · <a href="https://www.goodreads.com/work/quotes/23669789">Goodreads, Деспейн</a> · <a href="https://i-programmer.info/bookreviews/159-uiux/6366-100-principles-of-game-design.html">I-Programmer, Деспейн</a> · <a href="https://www.goodreads.com/work/quotes/88488743">Goodreads, Гэзеуэй</a> · <a href="https://www.abebooks.com/Games-Design-Play-Detailed-Approach-Iterative/32153949236/bd">Маклин и Шарп</a> · <a href="https://www.routledge.com/9781498799577">«Игровой баланс»</a> · <a href="https://emshort.blog/2017/11/09/game-narrative-toolbox/">Эмили Шорт о Хойснере</a> · <a href="https://www.routledge.com/The-Craft-and-Science-of-Game-Design-A-Video-Game-Designers-Manual/OConnor/p/book/9780367556532">О’Коннор, издатель</a> · <a href="https://www.goodreads.com/work/quotes/85210608">Goodreads, О’Коннор</a> · <a href="https://www.thevideogamelibrary.org/book/a-practical-guide-to-level-design-from-theory-to-practice-diplomacy-and-production">Бауэр</a> · <a href="https://www.routledge.com/Game-Anim-Video-Game-Animation-Explained/Cooper/p/book/9780367707651">Купер, 2-е изд.</a> · <a href="https://salford-repository.worktribe.com/output/1378544">рецензия на Тотена</a> · <a href="https://www.goodreads.com/work/quotes/103503020">Goodreads, «Твой ход!»</a> · <a href="https://www.goodreads.com/work/quotes/146374128">Goodreads, Грис</a> · <a href="https://www.goodreads.com/work/quotes/91107430">Goodreads, Ветушинский</a> · <a href="https://litres.com/book/petr-prohorenko/kak-delat-horoshie-igry-ot-idei-do-zapuska-71466148/reviews/">ЛитРес, Прохоренко</a> · <a href="https://www.timeextension.com/news/2020/01/review_japansoft_an_oral_history_-_a_true_treasure_you_need_to_read">Time Extension о «Japansoft»</a> · <a href="https://www.npr.org/2017/09/24/548665168/leveling-up-in-the-video-game-industry-without-checkpoints-significant-zero">NPR о «Мясорубке»</a> · <a href="https://www.labirint.ru/books/983705/">Лабиринт, Spine 2D</a></p>
+<p class="src">Reddit: архив Arctic Shift весь день отвечал таймаутами, поэтому обсуждений этих книг на Reddit собрать не удалось. Обсуждений на Пикабу и DTF поиск не нашёл. Числа Goodreads — из поисковой выдачи, живые страницы могут отличаться.</p>
+</section>
+</main>
+</div>
+</div>
+<script>
+(function(){
+  var tabs=[document.getElementById('tab-tut'),document.getElementById('tab-rating')];
+  var panes=[document.getElementById('pane-tut'),document.getElementById('pane-rating')];
+  function show(i,push){
+    tabs.forEach(function(t,j){t.setAttribute('aria-selected',j===i?'true':'false');t.tabIndex=j===i?0:-1;});
+    panes.forEach(function(p,j){p.hidden=j!==i;});
+    if(push){try{history.replaceState(null,'',i===1?'#rating':'#top');}catch(e){}}
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener('click',function(){show(i,true);window.scrollTo(0,0);});
+    t.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key==='ArrowLeft'){var k=1-i;show(k,true);tabs[k].focus();}});
+  });
+  var h=location.hash.slice(1);
+  if(h==='rating'||h.indexOf('r-')===0){show(1,false);}
+  window.addEventListener('hashchange',function(){var x=location.hash.slice(1);if(x==='rating'||x.indexOf('r-')===0)show(1,false);});
+})();
+</script>
