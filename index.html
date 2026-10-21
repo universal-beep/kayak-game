@@ -7432,6 +7432,12 @@ function campaignSum(){
   return s;
 }
 
+// Единственный счёт дня: метры плюс очки за бонусы и трюки. Им же меряются
+// HUD, финиш, провал и рекорд — чтобы игрок не видел три разных числа.
+function scoreNow(){
+  return Math.floor(g.dist) + g.bsc + g.sc;
+}
+
 // Соперники по таблице. Настоящего сервера у игры нет, поэтому имена
 // генерируются один раз на день и дальше живут в сохранении — это соперники
 // из похода, а не результаты реальных игроков.
@@ -7656,7 +7662,7 @@ function drwHUD(){
   cx.fillStyle = "#fff";
   cx.fillText("ДИСТ: " + Math.floor(g.dist) + "м", 12, 22);
   cx.fillStyle = "#ffd54f";
-  cx.fillText("СЧЁТ: " + (g.sc + g.bsc), 12, 42);
+  cx.fillText("ОЧКИ: " + scoreNow(), 12, 42);
   cx.font = "8px " + F;
   cx.fillStyle = "#9aa9b2";
   if (!g.custom) cx.fillText("ЛУЧШЕЕ ЗА ДЕНЬ: " + (save.best[level().day] || 0), 12, 60);
@@ -7792,7 +7798,7 @@ function finishLevel(){
   document.getElementById("pauseBtn").classList.add("hidden");
   if (g.custom){ finishCustom(true); return; }   // свой уровень поход не трогает
   const L = level();
-  const total = Math.floor(g.dist) + g.bsc + g.sc;
+  const total = scoreNow();
   const stars = 1 + (g.livesLost === 0 ? 1 : 0) + (goalMet() ? 1 : 0);
 
   if (stars > starsOf(L.day)) save.stars[L.day] = stars;
@@ -7810,13 +7816,13 @@ function finishLevel(){
   g.s = "finish";
   sfx("clean");
   sfx("bell");
-  showFinish(L, stars, total);
+  showFinish(L, stars);
 }
 
 function failLevel(){
   if (g.custom){ finishCustom(false); return; }
   const L = level();
-  const total = Math.floor(g.dist) + g.bsc + g.sc;
+  const total = scoreNow();
   save.failPaid = save.failPaid || [];   // старое сохранение без поля — совместимо
   // Провал платит /9 только один раз за день. Повторный провал того же дня —
   // ноль: иначе самый выгодный способ копить очки — намеренно разбиваться
@@ -7865,7 +7871,8 @@ function showMap(){
   document.getElementById("mapScreen").classList.remove("hidden");
 }
 
-function showFinish(L, stars, total){
+function showFinish(L, stars){
+  const total = scoreNow();
   hideAllScreens();
   document.getElementById("finPlace").textContent = L.place;
   document.getElementById("finStars").innerHTML = "★".repeat(stars) + "<span class='off'>" + "★".repeat(3-stars) + "</span>";
@@ -11351,7 +11358,7 @@ function startCustom(){
 function finishCustom(ok){
   g.s = "customEnd";
   document.getElementById("pauseBtn").classList.add("hidden");
-  const total = Math.floor(g.dist) + g.bsc + g.sc;
+  const total = scoreNow();
   // Гонка — не уровень из редактора: его рекорд не трогаем.
   if (ok && !g.custom.race && total > (cs.best || 0)){ cs.best = total; saveCustom(); }
   hideAllScreens();
@@ -12833,7 +12840,7 @@ globalThis.__KAYAK__ = { G: g, W, H, roadHitsBox, setTitleMenuTop, spriteSize, s
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   SAVE_VERSION, SAVE_DEFAULT, mergeSave, showSaveProblem, saveProblem: () => saveProblem, requestMapExit, onWindowBlur, onWindowFocus, onVisibilityChange, pageVisible, resumeAfterTimeout,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
-  campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, toShore, ashoreStep, RUSH_FRAMES, ASHORE_FRAMES, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
+  campaignSum, scoreNow, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, toShore, ashoreStep, RUSH_FRAMES, ASHORE_FRAMES, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp, keyName, keyHeld, onKeyDown, onKeyUp };
 prerenderAll();
