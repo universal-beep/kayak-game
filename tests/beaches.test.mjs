@@ -10,6 +10,9 @@ function beachesOn(day, seed) {
   const { K, sandbox } = loadGame();
   runInContext("(function(){ let a = " + seed + "; Math.random = function(){ a = (a*1103515245 + 12345) >>> 0; return a/4294967296; }; })()", sandbox);
   K.resetSave(); K.setAudio(null);
+  // Пляжи считаем на обычном дне: обучение дня 1 меняет порядок вызовов
+  // Math.random, а проба сидит на фиксированном seed.
+  K.save.seen.tutorial = 1;
   K.startDay(day); setupWorld(K, { wy: 400 }); K.G.s = "playing";
   const seen = new Set();
   for (let f = 0; f < 9000 && K.G.s === "playing"; f++) {
