@@ -57,6 +57,7 @@ canvas { display:block;margin:0 auto; }
 .goal { font-family:"Press Start 2P",monospace;font-size:8px;color:#9aa9b2;margin:10px 0;text-align:center;line-height:1.8;max-width:320px; }
 .diary { font-family:"Press Start 2P",monospace;font-size:8px;color:#ddd;line-height:2.1;max-width:340px;max-height:60vh;overflow:auto;margin-bottom:12px; }
 .diary b { color:#4fc3f7; }
+@media (max-width:768px) { .diary { font-size:10px; } }
 .namerow { display:flex;gap:6px;align-items:center;margin:6px 0 4px; }
 .namerow input { font-family:"Press Start 2P",monospace;font-size:9px;padding:8px;width:130px;background:#12202e;color:#fff;border:2px solid #4fc3f7;text-transform:uppercase; }
 .boardtitle { font-family:"Press Start 2P",monospace;font-size:8px;color:#888;margin-top:8px; }
@@ -149,6 +150,7 @@ canvas { display:block;margin:0 auto; }
     <div class="goal" id="pauseGoal"></div>
     <div class="maprow">
       <button class="btn small" id="resumeBtn">ПРОДОЛЖИТЬ</button>
+      <button class="btn small ghost" id="pauseHintBtn">ПОДСКАЗКА</button>
       <button class="btn small ghost" id="pauseHelpBtn">ПОМОЩЬ</button>
       <button class="btn small ghost" id="pauseMusicBtn">МУЗЫКА</button>
       <button class="btn small ghost" id="pauseMapBtn">К МАРШРУТУ</button>
@@ -5995,6 +5997,7 @@ document.getElementById("musicBtn").addEventListener("click",()=>{ startMusic();
 document.getElementById("helpBtn").addEventListener("click",()=>showHelp("map"));
 document.getElementById("startHelpBtn").addEventListener("click",()=>showHelp("start"));
 document.getElementById("pauseHelpBtn").addEventListener("click",()=>showHelp("pause"));
+document.getElementById("pauseHintBtn").addEventListener("click",repeatHint);
 document.getElementById("mapTutBtn").addEventListener("click",()=>{ startMusic(); g.tutForce = true; startDay(0); });
 document.getElementById("diaryBack").addEventListener("click",backFromDiary);
 document.getElementById("recordsBtn").addEventListener("click",()=>showRecords());
@@ -8057,10 +8060,24 @@ function showHelp(from){
     "всё уплывает от тебя. Скорость самой реки при этом не меняется. Разгон тратит " +
     "силы, батон восстанавливает их втрое быстрее</p>" +
     BONUS_HELP.map(([n,d]) => "<p><b>" + n + ".</b> " + d + "</p>").join("") +
+    "<p><b>ЦЕЛИ ДНЯ.</b> За день можно взять до трёх звёзд: дойти, не потеряв " +
+    "попытку, и выполнить задание дня.<br>" +
+    LEVELS.map(L => "День " + L.day + ": " + L.goalText.toLowerCase()).join("<br>") + "</p>" +
     "<p><b>КОМБО.</b> Проходи препятствия подряд без удара — множитель растёт, " +
     "и чем ближе проходишь, тем больше очков</p>" +
     "<p><b>ПОРОГ.</b> Пройди целиком без удара — плюс 150</p>";
   document.getElementById("diaryScreen").classList.remove("hidden");
+}
+// Повтор подсказки из паузы: во время обучения показываем текущий шаг,
+// иначе — короткую шпаргалку по управлению. Пауза при этом снимается.
+function repeatHint(){
+  if (g.s === "paused") togglePause();
+  if (tutActive()){
+    g.tut.hint = null;
+    tutRefresh();
+    return;
+  }
+  g.hint = { text: "РУЛЬ — СТРЕЛКИ ИЛИ ПАЛЕЦ · ВПЕРЁД — ↑ · УДАР — ПРОБЕЛ / ДВОЙНОЙ ТАП", life: 320 };
 }
 function backFromDiary(){
   if (diaryMode !== "help"){ showMap(); return; }
@@ -8648,12 +8665,16 @@ function spOb(){
               variant:ty=="kayaker"?(aggro?AGGRO_VARIANT:Math.floor(Math.random()*3)):undefined,
               aggro, swingT:-1, seed:Math.floor(Math.random()*120)});
 }
-function spBn(){
+function spBn(force){
   const wy=spawnWy();
-  if(rapidBlend(wy)>0.5)return;            // на порогах бонусов нет
+  if(rapidBlend(wy)>0.5)return false;      // на порогах бонусов нет
   const t=["bread","whisky","medkit","axe","sun"],w=bonusWeights();
-  let r=Math.random(),c=0,ty="bread";
-  for(let i=0;i<t.length;i++){c+=w[i];if(r<c){ty=t[i];break;}}
+  let ty="bread";
+  if (force) ty = force;
+  else {
+    let r=Math.random(),c=0;
+    for(let i=0;i<t.length;i++){c+=w[i];if(r<c){ty=t[i];break;}}
+  }
   const bVis=spriteSize(BN_SPRITE[ty]||"bread").w/2;
   let bt=null;
   const fk=forkAt(wy);
@@ -8664,8 +8685,11 @@ function spBn(){
     if(inIsland(cand,wy))continue;
     if(spaceFree(cand,wy,bVis)){bt=cand;break;}
   }
-  if(bt===null)return;
-  g.bns.push({t:bt,wy,type:ty,visHalf:bVis,visHalfY:spriteSize(BN_SPRITE[ty]||"bread").h/2});
+  if(bt===null)return false;
+  g.bns.push({t:bt,wy,type:ty,visHalf:bVis,
+              visHalfY:spriteSize(BN_SPRITE[ty]||"bread").h/2,
+              tempo: force ? 1 : 0});
+  return true;
 }
 // Девять финишей — у каждого дня своя стоянка по месту прибытия. Строка:
 // [житель, back — сколько px ниже ленты по реке, off — вглубь берега от
@@ -10169,7 +10193,41 @@ function finishTutorial(){
   if (g.s === "playing") popText("ОБУЧЕНИЕ ПРОЙДЕНО — ДАЛЬШЕ САМ", "#7fd67f");
 }
 function skipTutorial(){ finishTutorial(); }
-function spawnAllowed(){ return !tutActive(); }
+// Темп дня: затишье → нарастание → пик → улово. Плотность не растёт
+// монотонно: после пика река отпускает, и в улове гарантированно лежит бонус.
+function tempoAt(f){
+  f = Math.max(0, Math.min(1, f));
+  if (f < 0.08) return 0.45;                         // затишье
+  if (f < 0.25) return 0.45 + 0.55*(f - 0.08)/0.17;  // нарастание
+  if (f < 0.40){                                     // пик
+    const k = (f - 0.25)/0.15;
+    return 1 + 0.35*Math.sin(Math.PI*k);
+  }
+  if (f < 0.45) return 0.18;                         // улово
+  return 0.95;
+}
+function spawnRate(){
+  const f = g.dist/Math.max(1, level().len);
+  return (level().dens || 0.016)*g.df*tempoAt(f)*(g.rRocks || 1);
+}
+function tempoTick(){
+  if (g.custom) return;
+  if (!g.tempo) g.tempo = { restT: 0, lull: false, lullBonus: false };
+  const f = g.dist/Math.max(1, level().len);
+  if (f >= 0.40 && !g.tempo.lull){
+    g.tempo.lull = true;
+    g.tempo.restT = 160;                  // 2,6 секунды без новых препятствий
+  }
+  if (g.tempo.restT > 0) g.tempo.restT--;
+  // В улове бонус не по случаю: пока не встал на воду, пробуем каждый кадр.
+  if (g.tempo.lull && !g.tempo.lullBonus && f < 0.45)
+    g.tempo.lullBonus = spBn("bread");
+}
+function spawnAllowed(){
+  if (tutActive()) return false;
+  if (g.tempo && g.tempo.restT > 0) return false;
+  return true;
+}
 function tutTick(){
   if (!tutActive()) return;
   const T = g.tut;
@@ -10195,7 +10253,7 @@ function sg(){
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];g.ashore=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;g.lastHit=null;g.hitLog=[];
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.sunT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
-  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.mazai=null;g.yacht=false;g.mazaiPlaced=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;g.packZones=[];
+  g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.mazai=null;g.yacht=false;g.mazaiPlaced=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;g.packZones=[];g.tempo={restT:0,lull:false,lullBonus:false};
   ensureSegments(H*2);
   const r = river();
   g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks; g.rFreq = r.freq || 1;
@@ -10651,13 +10709,15 @@ function upd(){
     else if (++g.idleT === 420) g.hint = { text:"ЛОДКОЙ НУЖНО УПРАВЛЯТЬ: СТРЕЛКИ ИЛИ КРУЖОК — РУЛЬ, ВВЕРХ — ГРЕБИ, OK — УДАР", life: 320 };
   }
   tutTick();
-  const sr=(level().dens||0.016)*g.df*(g.rRocks||1);
+  tempoTick();
+  const sr = spawnRate();
   if(!g.custom && spawnAllowed() && Math.random()<sr)spOb();
   bargeHorn();
   // Не вышло (порог, катер уже идёт) — пробуем снова через 10 м.
   if (level().boats && g.dist >= (g.boatNext || 60)) g.boatNext = g.dist + (spBoat() ? 150 + Math.random()*120 : 10);
   waveStep();
-  if(!g.custom && spawnAllowed() && Math.random()<0.003)spBn();
+  if(!g.custom && spawnAllowed() &&
+     Math.random() < 0.003*tempoAt(g.dist/Math.max(1, level().len))) spBn();
   spCustom();
   raceStep();
   fightStep();
@@ -13065,6 +13125,7 @@ globalThis.__KAYAK__ = { G: g, W, H, roadHitsBox, setTitleMenuTop, spriteSize, s
   SAVE_VERSION, SAVE_DEFAULT, mergeSave, showSaveProblem, saveProblem: () => saveProblem, requestMapExit, onWindowBlur, onWindowFocus, onVisibilityChange, pageVisible, resumeAfterTimeout,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
   tutActive, tutTick, tutAction, tutRefresh, skipTutorial, finishTutorial, tutBegin, spawnAllowed, TUT_LEN,
+  repeatHint, backFromDiary, tempoAt, tempoTick, spawnRate,
   campaignSum, scoreNow, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, toShore, ashoreStep, RUSH_FRAMES, ASHORE_FRAMES, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp, keyName, keyHeld, onKeyDown, onKeyUp };
