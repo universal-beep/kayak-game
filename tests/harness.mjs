@@ -8,6 +8,23 @@ import { createContext, runInContext } from "node:vm";
 
 const FILE = fileURLToPath(new URL("../index.html", import.meta.url));
 
+// Простое хранилище вместо браузерного localStorage: тесты сохранения
+// задают исходные ключи и могут включить отказ записи (квота/приватный режим).
+export function makeStorage(initial = {}) {
+  const data = new Map(Object.entries(initial));
+  const storage = {
+    data, failWrites: false,
+    getItem(k) { return data.has(k) ? data.get(k) : null; },
+    setItem(k, v) {
+      if (storage.failWrites) throw new Error("QuotaExceededError");
+      data.set(k, String(v));
+    },
+    removeItem(k) { data.delete(k); },
+    clear() { data.clear(); },
+  };
+  return storage;
+}
+
 function makeCtx() {
   return {
     canvas: { width: 420, height: 720 },
@@ -47,6 +64,7 @@ export function loadGame(htmlPath, opts = {}) {
     querySelector() { return null; }, querySelectorAll() { return []; },
   });
   const document = {
+    visibilityState: "visible",
     getElementById: (id) => dummy(id),
     createElement(tag) { const o = dummy(tag); if (tag === "canvas") { o.width = 10; o.height = 10; } o.getContext = () => ctx; return o; },
     body: dummy("body"), addEventListener() {}, documentElement: { style: {} },
@@ -70,6 +88,7 @@ export function loadGame(htmlPath, opts = {}) {
     URLSearchParams, location: { search: opts.search || "" },
     __KAYAK_TEST__: true,
   };
+  if (opts.storage) sandbox.localStorage = opts.storage;
   if (opts.boot) {
     delete sandbox.__KAYAK_TEST__;
     sandbox.__raf = 0;
@@ -81,7 +100,7 @@ export function loadGame(htmlPath, opts = {}) {
   runInContext(src, sandbox, { filename: "game.js" });
   const K = sandbox.__KAYAK__;
   if (!K) throw new Error("Нет __KAYAK__ в sandbox");
-  return { K, ctx, sandbox };
+  return { K, ctx, sandbox, storage: opts.storage };
 }
 
 // Минимальный мир для упрощённого теста (без случайного спавна).

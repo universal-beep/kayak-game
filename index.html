@@ -101,6 +101,7 @@ canvas { display:block;margin:0 auto; }
 #campToast { position:fixed;left:50%;top:16%;transform:translateX(-50%);background:rgba(14,20,30,0.95);color:#ffd54f;border:1px solid #ffd54f;padding:10px 16px;border-radius:8px;font-family:"Press Start 2P",monospace;font-size:9px;letter-spacing:1px;opacity:0;transition:opacity .3s;z-index:60;pointer-events:none;white-space:nowrap; }
 #campToast.show { opacity:1; }
 #campToast.mid { top:34%; }
+#saveWarn { position:fixed;left:50%;top:10px;transform:translateX(-50%);background:#7a1f1f;color:#fff;border:2px solid #ff8a80;border-radius:6px;padding:8px 12px;font-family:"Press Start 2P",monospace;font-size:8px;line-height:1.6;z-index:70;max-width:90%;text-align:center;pointer-events:none; }
 #continueScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:#000;pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 #continueScreen h1 { font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;margin-bottom:22px;letter-spacing:2px; }
 #continueScreen .count { font-family:"Press Start 2P",monospace;font-size:46px;color:#ffd54f;margin-bottom:22px; }
@@ -139,6 +140,7 @@ canvas { display:block;margin:0 auto; }
       <p><span class="key">← →</span> руль &nbsp; <span class="key">↑ ↓</span> вперёд и назад</p>
       <p><span class="key">пробел</span> удар веслом &nbsp; <span class="key">Esc</span> пауза &nbsp; <span class="key">M</span> музыка</p>
       <p><span class="key">тач</span> — веди пальцем, двойной тап — удар</p>
+      <p><span class="key">пульт ТВ</span> кружок руль · OK удар</p>
       <p><span class="key">геймпад</span> стик руль · A гребок · B удар · Start пауза</p>
     </div>
   </div>
@@ -301,6 +303,7 @@ canvas { display:block;margin:0 auto; }
   <div><b>ПАЛЕЦ СВЕРХУ</b> — ГРЕБИ&nbsp;&nbsp;·&nbsp;&nbsp;<b>ПАЛЕЦ СНИЗУ</b> — ТАБАНЬ</div>
   <div><b>ДВОЙНОЙ ТАП</b> — УДАР ВЕСЛОМ</div>
 </div>
+<div id="saveWarn" class="hidden">НЕ УДАЛОСЬ СОХРАНИТЬ ПРОГРЕСС.<br>ЗАКРОЙТЕ ЛИШНИЕ ВКЛАДКИ ИЛИ ВЫЙДИТЕ ИЗ ПРИВАТНОГО РЕЖИМА.</div>
 <div id="pauseBtn" class="hidden">II</div>
 <canvas id="bgCanvas"></canvas>
 <canvas id="game"></canvas>
@@ -5210,8 +5213,8 @@ const STAM_MAX = 100, STAM_DRAIN = 0.55, STAM_REGEN = 0.30;
 
 function rowInput(){
   let f = 0;
-  if (keys["ArrowUp"]   || keys["w"] || keys["W"] || keys["ц"] || keys["Ц"] || keys["z"] || keys["Z"] || keys["я"] || keys["Я"] || g.btnFwd || gpState.fwd)  f += 1;
-  if (keys["ArrowDown"] || keys["s"] || keys["S"] || keys["ы"] || keys["Ы"] || keys["c"] || keys["C"] || keys["с"] || keys["С"] || g.btnBack || gpState.back) f -= 1;
+  if (keyHeld("ArrowUp")   || keys["w"] || keys["W"] || keys["ц"] || keys["Ц"] || keys["z"] || keys["Z"] || keys["я"] || keys["Я"] || g.btnFwd || gpState.fwd)  f += 1;
+  if (keyHeld("ArrowDown") || keys["s"] || keys["S"] || keys["ы"] || keys["Ы"] || keys["c"] || keys["C"] || keys["с"] || keys["С"] || g.btnBack || gpState.back) f -= 1;
   // Мобильная версия без кнопок: скорость задаётся вертикальной зоной экрана
   // (палец вверху = вперёд, внизу = табань, середина = по инерции).
   if (g.mSpeed !== null && g.mSpeed !== undefined) f += g.mSpeed;
@@ -5615,28 +5618,81 @@ function widthAt(w){ return widthRaw(w) - roomAt(w).cut; }
 function speedMulAt(w){ return 1 + 0.4*rapidBlend(w); }
 
 const keys={};let mt=null;
-addEventListener("keydown",e=>{
+// Имена кнопок пульта ТВ сводим к обычным клавишам. Android TV приставка
+// присылает крестовину кодами 19–22, OK — 23 или 13, Back — 4, и при этом
+// e.key часто пустой или «Unidentified». Браузер на телевизоре может также
+// назвать кнопки «Up»/«Left»/«OK»/«Select». Без этой сводки пульт «то
+// работает, то нет».
+function keyName(e){
+  if(!e) return "";
+  const k = e.key || "", c = e.code || "", n = e.keyCode || e.which || 0;
+  const raw = !k || k === "Unidentified";              // код без имени клавиши
+  if(k==="ArrowUp"   ||k==="Up"   ||c==="ArrowUp"   ||n===38||(raw&&n===19))return "ArrowUp";
+  if(k==="ArrowDown" ||k==="Down" ||c==="ArrowDown" ||n===40||(raw&&n===20))return "ArrowDown";
+  if(k==="ArrowLeft" ||k==="Left" ||c==="ArrowLeft" ||n===37||(raw&&n===21))return "ArrowLeft";
+  if(k==="ArrowRight"||k==="Right"||c==="ArrowRight"||n===39||(raw&&n===22))return "ArrowRight";
+  if(k==="Enter"||k==="OK"||k==="Select"||k==="Accept"||k==="Execute"||k==="Go"||
+     c==="Enter"||n===13||(raw&&n===23))return "Enter";
+  if(k==="Escape"||k==="Back"||k==="Backspace"||k==="Return"||k==="GoBack"||k==="BrowserBack"||
+     n===8||n===27||n===4||n===461||n===10009)return "Escape";
+  return k;
+}
+// Пульт шлёт очень короткое нажатие: keydown и keyup могут попасть между
+// двумя кадрами, и гребок/поворот терялся. Запоминаем момент нажатия и
+// считаем клавишу нажатой ещё TV_PULSE мс после отпускания.
+const TV_PULSE = 140, keyPulse = {};
+function keyHeld(k){
+  if(keys[k]) return true;
+  const t = keyPulse[k];
+  return !!t && Date.now() - t < TV_PULSE;
+}
+function onKeyDown(e){
+  const k = keyName(e);
   // Печать имени не должна включать музыку, делать скриншот или листать экраны.
   if(e.target&&e.target.tagName==="INPUT"){
-    if(e.key==="Enter"){e.preventDefault();document.getElementById("saveNameBtn").click();}
-    return;
+    if(k==="Enter"){
+      e.preventDefault();
+      document.getElementById("saveNameBtn").click();
+      // Сохранили имя — снимаем фокус. Иначе на телевизоре OK так и остаётся
+      // в поле ввода: «ДАЛЬШЕ» не нажимается, а стрелки не рулят.
+      if(e.target.blur)e.target.blur();
+      return;
+    }
+    const scr = document.getElementById("finishScreen");
+    const hidden = scr && scr.classList && scr.classList.contains("hidden");
+    if(!hidden) return;                                  // в видимом поле имя набирают
+    // Экран с полем уже скрыт, а фокус в нём остался (бывает после «ДАЛЬШЕ»):
+    // отдаём клавишу игре.
+    if(e.target.blur)e.target.blur();
   }
-  // Удержание не должно дёргать тумблеры и автопарировать пробелом:
-  // только одиночные нажатия.
-  if(e.repeat&&(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь"||
-     e.key=="Escape"||e.key=="p"||e.key=="P"||e.key=="з"||e.key=="З"||e.key==" "))return;
+  // Удержание не должно дёргать тумблеры и автопарировать пробелом/веслом:
+  // только одиночные нажатия. Повтор ловим и по e.repeat, и по прежнему
+  // состоянию клавиши — телевизор не всегда ставит repeat.
+  if(e.repeat&&(k=="m"||k=="M"||k=="ь"||k=="Ь"||
+     k=="Escape"||k=="p"||k=="P"||k=="з"||k=="З"||k==" "||
+     k=="x"||k=="X"||k=="ч"||k=="Ч"||k=="Enter"))return;
+  const was = !!keys[k];
   if(g.s!=="playing"&&g.s!=="cutscene"&&menuKey(e))return;        // стрелки, Enter, Esc в меню
-  keys[e.key]=true;
-  if(e.key=="m"||e.key=="M"||e.key=="ь"||e.key=="Ь")toggleMusic();
+  keys[k]=true;
+  if(k=="ArrowUp"||k=="ArrowDown"||k=="ArrowLeft"||k=="ArrowRight"){
+    // Новый тап в другую сторону отменяет «хвост» прежнего, иначе после
+    // быстрого вправо-влево руль ещё 140 мс тянул бы вправо.
+    const pair = {ArrowUp:"ArrowDown",ArrowDown:"ArrowUp",ArrowLeft:"ArrowRight",ArrowRight:"ArrowLeft"};
+    delete keyPulse[pair[k]];
+    keyPulse[k]=Date.now();
+  }
+  if(k=="m"||k=="M"||k=="ь"||k=="Ь")toggleMusic();
   if(g.s=="cutscene"){ e.preventDefault(); endCut(); return; }
-  if(e.key=="Escape"){e.preventDefault();togglePause();}
+  if(k=="Escape"){e.preventDefault();togglePause();}
   // P — скриншот текущего кадра (служебный режим ?day/?scene): скачивает PNG.
-  if(e.key=="p"||e.key=="P"||e.key=="з"||e.key=="З"){downloadShot();}
-  // Во время игры пробел и стрелка вверх — удар веслом; на экранах — старт.
+  if(k=="p"||k=="P"||k=="з"||k=="З"){downloadShot();}
+  // Во время игры пробел, X и OK — удар веслом; на экранах — старт.
   if(g.s=="playing"){
-    if(e.key==" "||e.key=="x"||e.key=="X"||e.key=="ч"||e.key=="Ч"){e.preventDefault();paddleStrike();}
-    if(e.key=="ArrowUp"||e.key=="ArrowDown")e.preventDefault();
-  } else if(e.key==" "||e.key=="Enter"){
+    if((k==" "||k=="x"||k=="X"||k=="ч"||k=="Ч"||k=="Enter")&&!was){e.preventDefault();paddleStrike();}
+    // Крестовина и OK на телевизоре не должны листать страницу и нажимать
+    // кнопку, оставшуюся в фокусе от меню.
+    if(k=="ArrowUp"||k=="ArrowDown"||k=="ArrowLeft"||k=="ArrowRight"||k=="Enter")e.preventDefault();
+  } else if(k==" "||k=="Enter"){
     if(g.s=="finish"){
       // Enter/пробел на экране результата = кнопка «Дальше». Раньше Enter
       // здесь был мёртвой клавишей, и результат без введённого имени просто
@@ -5646,10 +5702,33 @@ addEventListener("keydown",e=>{
       nextDay();
     } else hs();
   }
-});
-addEventListener("keyup",e=>{keys[e.key]=false;});
-// Потеря фокуса (Alt+Tab, другое окно) — клавиши не должны «залипать».
-addEventListener("blur",()=>{for(const k in keys)keys[k]=false;});
+}
+function onKeyUp(e){keys[keyName(e)]=false;}
+addEventListener("keydown",onKeyDown);
+addEventListener("keyup",onKeyUp);
+let mapExitUntil = 0, mapExitSeq = 0, winFocused = true;
+function releaseHeldInput(){
+  for(const k in keys)keys[k]=false;
+  for(const k in keyPulse)delete keyPulse[k];
+  g.mSpeed = null; g.btnFwd = false; g.btnBack = false;
+}
+// Потеря фокуса (Alt+Tab, другое окно) — клавиши не должны «залипать»,
+// а заплыв — идти вслепую. Возврат в игру — только осознанно, из паузы.
+function onWindowBlur(){
+  winFocused = false;
+  releaseHeldInput();
+  if (g.s === "playing") togglePause();
+}
+function onWindowFocus(){ winFocused = true; }
+addEventListener("blur",onWindowBlur);
+addEventListener("focus",onWindowFocus);
+// Скрытая вкладка: браузер душит таймеры, а игрок этого не видит.
+function onVisibilityChange(){
+  if (typeof document === "undefined" || document.visibilityState !== "hidden") return;
+  releaseHeldInput();
+  if (g.s === "playing") togglePause();
+}
+if (typeof document !== "undefined" && document.addEventListener) document.addEventListener("visibilitychange", onVisibilityChange);
 /* ===== Геймпад, пульт эмулятора и меню с клавиатуры ===== */
 // Меню листается стрелками / крестовиной / стиком, OK — Enter, пробел, Z или кнопка A,
 // «назад» — Esc, Backspace, X или кнопка B. В заплыве: стик или крестовина — руль,
@@ -5717,7 +5796,12 @@ function menuOk(){
   if (!menuActive){ menuActive = true; menuIdx = 0; menuPaint(list, 0); return true; }
   const cur = list[Math.min(menuIdx, list.length - 1)];
   if (cur && cur.click) cur.click();
-  menuActive = false;                                // экран сменится — фокус начнётся заново
+  // Если экран остался тем же (например, «К МАРШРУТУ» просит подтверждение),
+  // фокус остаётся на кнопке — второй OK должен подтвердить выход.
+  const after = menuButtons();
+  const at = after.indexOf(cur);
+  if (at >= 0){ menuActive = true; menuIdx = at; menuPaint(after, at); }
+  else menuActive = false;
   return true;
 }
 function menuBack(){
@@ -5731,7 +5815,7 @@ function menuBack(){
 }
 // Клавиша в меню. true — обработана (дальше игра её не трогает).
 function menuKey(e){
-  const a = menuKeyAction(e.key);
+  const a = menuKeyAction(keyName(e));
   if (!a) return false;
   if (a.move){ if (menuMove(a.move)){ e.preventDefault(); return true; } return false; }
   if (a.ok){
@@ -5919,10 +6003,15 @@ const PAUSE_HOLD = 200;   // мс удержания, после которых 
 function pauseGate(pointerType, holdMs){
   return pointerType === "mouse" || holdMs >= PAUSE_HOLD;
 }
-let pauseHoldT = 0, pausePointer = null;
+let pauseHoldT = 0, pausePointer = null, pauseClickAt = 0;
 document.getElementById("pauseBtn").addEventListener("pointerdown", e => {
   pauseHoldT = Date.now(); pausePointer = e.pointerId;
-  if (e.pointerType === "mouse") togglePause();
+  if (e.pointerType === "mouse"){
+    // double-click не должен успеть поставить и сразу снять паузу
+    if (Date.now() - pauseClickAt < 350) return;
+    pauseClickAt = Date.now();
+    togglePause();
+  }
 });
 document.getElementById("pauseBtn").addEventListener("pointerup", e => {
   if (e.pointerId !== pausePointer) return;
@@ -5935,7 +6024,27 @@ document.getElementById("pauseMusicBtn").addEventListener("click",()=>{
   toggleMusic();
   document.getElementById("pauseMusicBtn").textContent = musicOn ? "МУЗЫКА: ВКЛ" : "МУЗЫКА: ВЫКЛ";
 });
-document.getElementById("pauseMapBtn").addEventListener("click",()=>{ if (g.custom){ showEditor(); return; } g.s="map";showMap();});
+// Уход с дистанции стоит всего захода, поэтому спрашиваем второй раз:
+// первый клик меняет надпись, второй в течение 4 секунд выходит.
+function resetMapExit(){
+  mapExitSeq++;
+  mapExitUntil = 0;
+  const b = document.getElementById("pauseMapBtn");
+  if (b) b.textContent = "К МАРШРУТУ";
+}
+function requestMapExit(){
+  if (g.custom){ showEditor(); return; }
+  if (g.s === "paused" && g.dist > 20 && Date.now() > mapExitUntil){
+    mapExitUntil = Date.now() + 4000;
+    const seq = ++mapExitSeq;
+    document.getElementById("pauseMapBtn").textContent = "ТОЧНО ВЫЙТИ?";
+    setTimeout(() => { if (seq === mapExitSeq) resetMapExit(); }, 4000);
+    return;
+  }
+  resetMapExit();
+  g.s="map";showMap();
+}
+document.getElementById("pauseMapBtn").addEventListener("click",requestMapExit);
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(confirm("Сбросить весь поход?")){resetSave();showMap();}
 });
@@ -7155,26 +7264,133 @@ const SAVE_KEY = "kayak_campaign";
 // при старте дня, а поход должен переживать и это, и перезагрузку страницы.
 // Версия схемы сохранения. Без неё любое изменение структуры дней молча
 // ломало бы чужой прогресс.
-const SAVE_VERSION = 1;
+const SAVE_BAK = SAVE_KEY + ".bak";
+const SAVE_VERSION = 2;
 const SAVE_DEFAULT = { v:SAVE_VERSION, day:0, stars:{}, wallet:0, gear:[], diary:[], failPaid:[],
-                       best:{}, name:"", board:{}, music:true, seen:{}, pid:"" };
+                       best:{}, name:"", board:{}, music:true, seen:{}, pid:"", regatta:{} };
+let saveProblem = false;
 let save = loadSave();
 musicOn = save.music !== false;
 
-function loadSave(){
+function freshSave(){ return JSON.parse(JSON.stringify(SAVE_DEFAULT)); }
+function saveNum(v, def, max){
+  const n = Number(v);
+  return isFinite(n) && n >= 0 ? Math.min(max, Math.floor(n)) : def;
+}
+function numMap(v, max){
+  const out = {};
+  if (!v || typeof v !== "object" || Array.isArray(v)) return out;
+  for (const k in v){
+    const n = Number(v[k]);
+    if (isFinite(n) && n >= 0) out[k] = Math.min(max, Math.floor(n));
+  }
+  return out;
+}
+function boolMap(v){
+  const out = {};
+  if (!v || typeof v !== "object" || Array.isArray(v)) return out;
+  for (const k in v) if (v[k] === true) out[k] = true;
+  return out;
+}
+// Таблица рекордов: битые строки не должны ронять экран «Рекорды».
+function cleanBoard(v){
+  const out = {};
+  if (!v || typeof v !== "object" || Array.isArray(v)) return out;
+  for (const d in v){
+    if (!Array.isArray(v[d])) continue;
+    const rows = [];
+    for (const r of v[d]){
+      if (!r || typeof r !== "object") continue;
+      const score = Number(r.score);
+      if (!isFinite(score)) continue;
+      rows.push(Object.assign({}, r, {
+        name: String(r.name || "Без имени").slice(0, 24),
+        score: Math.max(0, Math.floor(score)),
+      }));
+    }
+    out[d] = rows;
+  }
+  return out;
+}
+// Старое сохранение не выбрасываем: недостающие поля берём из схемы,
+// известные — сохраняем, незнакомые (будущие) — тоже. Иначе смена версии
+// стирала весь поход, а новое поле regatta исчезало при загрузке.
+function mergeSave(v){
+  const s = freshSave();
+  if (!v || typeof v !== "object" || Array.isArray(v)) return s;
+  for (const k in v) if (k !== "v" && !Object.prototype.hasOwnProperty.call(s, k)) s[k] = v[k];
+  for (const k in s) if (k !== "v" && v[k] !== undefined) s[k] = v[k];
+  s.v = SAVE_VERSION;
+  s.wallet = saveNum(s.wallet, 0, 1e12);
+  s.day = saveNum(s.day, 0, 3650);
+  s.stars = numMap(s.stars, 3);
+  s.best = numMap(s.best, 1e12);
+  s.seen = boolMap(s.seen);
+  s.board = cleanBoard(s.board);
+  s.regatta = numMap(s.regatta, 99);
+  for (const k of ["gear","diary","failPaid"]) if (!Array.isArray(s[k])) s[k] = [];
+  s.gear = s.gear.filter(x => typeof x === "string");
+  s.diary = s.diary.filter(x => isFinite(Number(x)));
+  s.failPaid = s.failPaid.filter(x => isFinite(Number(x)));
+  s.name = String(s.name || "").slice(0, 24);
+  s.pid = String(s.pid || "");
+  s.music = s.music !== false;
+  return s;
+}
+// Сохранение, у которого нет ни версии, ни одного знакомого поля, — мусор.
+// Такой файл не должен затирать хорошую .bak-копию при загрузке.
+function isSaveShape(v){
+  return !!v && typeof v === "object" && !Array.isArray(v) &&
+    typeof v.v === "number" && isFinite(v.v) &&
+    (v.day !== undefined || v.wallet !== undefined || v.stars !== undefined || v.gear !== undefined);
+}
+function readSave(key){
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return JSON.parse(JSON.stringify(SAVE_DEFAULT));
-    const v = JSON.parse(raw);
-    const fresh = JSON.parse(JSON.stringify(SAVE_DEFAULT));
-    // Сохранение от несовместимой версии не читаем: лучше начать заново,
-    // чем ловить необъяснимые сбои на чужой структуре.
-    if ((v.v || 0) !== SAVE_VERSION) return fresh;
-    return Object.assign(fresh, v);
-  } catch(e){ return JSON.parse(JSON.stringify(SAVE_DEFAULT)); }
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e){ return null; }
+}
+function loadSave(){
+  const main = readSave(SAVE_KEY);
+  if (isSaveShape(main)){
+    // Копия на случай, если следующая запись оборвётся или файл побьётся.
+    try { localStorage.setItem(SAVE_BAK, JSON.stringify(main)); } catch(e){}
+    return mergeSave(main);
+  }
+  const bak = readSave(SAVE_BAK);
+  if (isSaveShape(bak)) return mergeSave(bak);
+  return freshSave();
+}
+function showSaveProblem(){
+  if (typeof document === "undefined" || !document.getElementById) return;
+  const el = document.getElementById("saveWarn");
+  if (el && el.classList) el.classList.remove("hidden");
+}
+function hideSaveProblem(){
+  if (typeof document === "undefined" || !document.getElementById) return;
+  const el = document.getElementById("saveWarn");
+  if (el && el.classList) el.classList.add("hidden");
 }
 function commitSave(){
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e){}
+  try {
+    const raw = JSON.stringify(save);
+    let prev = null;
+    try { prev = localStorage.getItem(SAVE_KEY); } catch(e){}
+    // Сначала копия прежнего файла, потом запись нового: обрыв на середине
+    // оставляет читаемую предыдущую версию. В первой сессии копии ещё нет,
+    // поэтому после успешной записи кладём туда же новый файл.
+    if (prev){ try { localStorage.setItem(SAVE_BAK, prev); } catch(e){} }
+    localStorage.setItem(SAVE_KEY, raw);
+    if (!prev){ try { localStorage.setItem(SAVE_BAK, raw); } catch(e){} }
+    saveProblem = false;
+    hideSaveProblem();   // ошибка была временной — не пугаем вечным баннером
+    return true;
+  } catch(e){
+    saveProblem = true;
+    showSaveProblem();
+    return false;
+  }
 }
 function resetSave(){
   // Мутируем объект на месте, а не перевязываем: экспортируемая ссылка
@@ -9071,7 +9287,7 @@ function fightStep(){
 function fightIntro(){
   if (g.fightShown) return;
   g.fightShown = true;
-  explain("fighter", "ЗЛОЙ ГРЕБЕЦ — красная лодка. Подплывёшь борт о борт — замахнётся веслом. Ударь в ответ (пробел или двойной тап) в миг замаха — это парирование");
+  explain("fighter", "ЗЛОЙ ГРЕБЕЦ — красная лодка. Подплывёшь борт о борт — замахнётся веслом. Ударь в ответ (пробел, OK или двойной тап) в миг замаха — это парирование");
 }
 // Ватага: n злых гребцов друг за другом по реке на расстоянии PACK_GAP, так что
 // все они попадают в один экран, и по ширине русла вразнобой.
@@ -9389,6 +9605,8 @@ function damage(){
 
 // Потеря попытки: экран «Продолжить» с обратным отсчётом, как на приставках.
 function loseAttempt(){
+  releaseHeldInput();
+  document.getElementById("pauseBtn").classList.add("hidden");
   g.bc = null;                        // после переворота погоня не продолжается
   g.lives -= 1;
   g.livesLost++;
@@ -9719,6 +9937,8 @@ function applyDebugScene(){
 }
 
 function togglePause(){
+  releaseHeldInput();
+  resetMapExit();
   if (g.s === "playing"){
     sfx("pause");
     g.s = "paused";
@@ -9770,7 +9990,26 @@ function gmO(){
   return;
 }
 
+function pageVisible(){
+  if (!winFocused) return false;
+  return typeof document === "undefined" || !document.visibilityState || document.visibilityState !== "hidden";
+}
+// Таймер «ПРОДОЛЖИТЬ?» истёк, игрок отошёл. Попытка уже списана, поэтому
+// не заканчиваем день, а возвращаем в игру с одним сердцем и передышкой.
+function resumeAfterTimeout(){
+  releaseHeldInput();
+  document.getElementById("continueScreen").classList.add("hidden");
+  document.getElementById("pauseBtn").classList.remove("hidden");
+  g.s = "playing";
+  g.hp = 1;
+  g.inv = INV_FRAMES * 2;
+  g.sp = Math.max(1.8, g.sp*0.7);
+  g.obs = g.obs.filter(o => Math.abs(o.wy - g.scroll) > 200);
+  popText("АВТОПРОДОЛЖЕНИЕ", "#ffd54f");
+}
 function resumeRun(){
+  releaseHeldInput();
+  document.getElementById("pauseBtn").classList.remove("hidden");
   document.getElementById("continueScreen").classList.add("hidden");
   g.s = "playing";
   g.hp = maxHp();
@@ -10067,9 +10306,13 @@ function upd(){
   if(g.s=="arrive"){ updArrive(); return; }
   if(g.s=="continue"){
     g.frame++;
-    g.contT--;
-    document.getElementById("contCount").textContent = Math.max(0, Math.ceil(g.contT/60));
-    if(g.contT<=0){ document.getElementById("continueScreen").classList.add("hidden"); sfx("over"); gmO(); }
+    // Скрытая вкладка не должна «съедать» попытку: таймер идёт только на глазах.
+    if (pageVisible()){
+      g.contT--;
+      document.getElementById("contCount").textContent = Math.max(0, Math.ceil(g.contT/60));
+      // Ноль — это не конец дня: попытка уже списана, возвращаем в игру.
+      if(g.contT<=0){ resumeAfterTimeout(); return; }
+    }
     return;
   }
   if(g.s!="playing")return;g.frame++;
@@ -10166,8 +10409,8 @@ function upd(){
   if (g.frame % (g.breadT > 0 ? 9 : 14) === 0)
     spPt(screenXOf(g.t,g.pwy) + (Math.sin(g.frame*0.3)>0?26:-26), g.py + 6, "#dff0fa", 3);
   let input = 0;
-  if (keys["ArrowLeft"] || keys["a"] || keys["A"] || keys["ф"] || keys["Ф"]) input = -1;
-  if (keys["ArrowRight"] || keys["d"] || keys["D"] || keys["в"] || keys["В"]) input = 1;
+  if (keyHeld("ArrowLeft") || keys["a"] || keys["A"] || keys["ф"] || keys["Ф"]) input = -1;
+  if (keyHeld("ArrowRight") || keys["d"] || keys["D"] || keys["в"] || keys["В"]) input = 1;
   if (!input && gpState.steer) input = gpState.steer;     // геймпад: стик даёт плавный руль
   if (mt !== null){
     const px = screenXOf(g.t, g.pwy);
@@ -10178,7 +10421,7 @@ function upd(){
   // и всё проходится само. Если игрок так и не тронул управление, подсказываем.
   if (level().day === 1 && !g.movedOnce){
     if (input !== 0 || rowInput() !== 0) g.movedOnce = true;
-    else if (++g.idleT === 420) g.hint = { text:"ЛОДКОЙ НУЖНО УПРАВЛЯТЬ: СТРЕЛКИ — РУЛЬ, ВВЕРХ — ГРЕБИ. НА ТЕЛЕФОНЕ — ВЕДИ ПАЛЕЦ", life: 320 };
+    else if (++g.idleT === 420) g.hint = { text:"ЛОДКОЙ НУЖНО УПРАВЛЯТЬ: СТРЕЛКИ ИЛИ КРУЖОК — РУЛЬ, ВВЕРХ — ГРЕБИ, OK — УДАР", life: 320 };
   }
   const sr=(level().dens||0.016)*g.df*(g.rRocks||1);if(!g.custom && Math.random()<sr)spOb();
   bargeHorn();
@@ -10243,7 +10486,7 @@ function upd(){
         const alongside=Math.abs(o.wy-g.pwy)<75 && lat<reach;
         if(o.swingT<0 && alongside && g.inv<=0 && g.whiskyT<=0 && !g.yacht){
           o.swingT=SWING_FRAMES; sfx("swing");
-          if(!g.taughtParry){ g.taughtParry=true; popText("ПРОБЕЛ — ВЕСЛОМ!","#ff5252"); }
+          if(!g.taughtParry){ g.taughtParry=true; popText("ПРОБЕЛ ИЛИ OK — ВЕСЛОМ!","#ff5252"); }
         }
         if(o.swingT>=0){
           o.swingT--;
@@ -10812,7 +11055,8 @@ function panelRightHtml(){
         ["axe","ТОПОР — двойной тап: бросить"],["sun","СОЛНЦЕ — дорожка, где проплыть"],
         ["motor","МОТОР — в гонке 5 с быстрее"],["trap","ПОДЛЯНКА — в гонке коряга за корму"]]
         .map(([n, t]) => "<div class='bn'><canvas data-ic='" + n + "' width='24' height='24'></canvas><span>" + t + "</span></div>").join("") + "</div>";
-  h += "<div class='sp'><h3>УПРАВЛЕНИЕ</h3><div>← → руль · ↑ гребок · ↓ табанить</div><div>пробел / X удар · Esc пауза · M музыка</div>" +
+  h += "<div class='sp'><h3>УПРАВЛЕНИЕ</h3><div>← → руль · ↑ гребок · ↓ табанить</div><div>пробел / X / OK удар · Esc пауза · M музыка</div>" +
+       "<div>пульт ТВ: кружок руль · OK удар</div>" +
        "<div>геймпад: стик руль · A гребок · B удар · Start пауза</div></div>";
   return h;
 }
@@ -12587,10 +12831,11 @@ globalThis.__KAYAK__ = { G: g, W, H, roadHitsBox, setTitleMenuTop, spriteSize, s
   upd, DEEP_SETS, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fogWarn, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
+  SAVE_VERSION, SAVE_DEFAULT, mergeSave, showSaveProblem, saveProblem: () => saveProblem, requestMapExit, onWindowBlur, onWindowFocus, onVisibilityChange, pageVisible, resumeAfterTimeout,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
   campaignSum, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, toShore, ashoreStep, RUSH_FRAMES, ASHORE_FRAMES, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp };
+  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp, keyName, keyHeld, onKeyDown, onKeyUp };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined" && new URLSearchParams(location.search).get("split") === "1") splitBoot();
 else if (typeof __KAYAK_TEST__ === "undefined" && SEAT){ seatBoot(); lp(); }
