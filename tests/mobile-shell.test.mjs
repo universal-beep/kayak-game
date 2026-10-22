@@ -46,6 +46,10 @@ test("E2: поле по центру, ввод на весь экран, без 
   assert.match(css, /#ui \{[^}]*position:fixed[^}]*height:var\(--vvh,100%\)/);
   assert.match(css, /touch-action:none/);
   assert.match(html, /viewport-fit=cover/);
+  assert.match(html, /id="touchLayer"/);
+  assert.match(css, /#touchLayer \{[^}]*inset:0[^}]*touch-action:none/);
+  assert.match(src, /bindTouch\(document\.getElementById\("touchLayer"\)\)/);
+  assert.match(src, /getElementById\(id\)[\s\S]*?touchLayer/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(css, /@media \(pointer:coarse\)[^{]*\{[^}]*\.side[^}]*display:none/);
 });
