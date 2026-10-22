@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Сплав на байдарке</title>
 <style>
 /* Шрифт вшит в файл: игра открывается двойным кликом и работает офлайн.
@@ -21,7 +21,7 @@
 html,body { width:100%;height:100%;background:#1a1a2e;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none; }
 canvas { display:block;margin:0 auto; }
 #bgCanvas { position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:0;margin:0;image-rendering:pixelated; }
-#game { position:relative;z-index:1;image-rendering:pixelated;image-rendering:crisp-edges; }
+#game { position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;z-index:1;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none; }
 #ui { z-index:2; }
 .side { position:fixed;top:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:8px;padding:12px 10px;overflow:hidden;pointer-events:none;font-family:"Press Start 2P",monospace;font-size:8px;line-height:1.8;color:#cfe8f5; }
 .side .sp { background:rgba(8,16,26,0.80);border:2px solid #2c5f86;border-radius:6px;padding:9px 10px; }
@@ -32,7 +32,7 @@ canvas { display:block;margin:0 auto; }
 .side .rt u { text-decoration:none;color:#33424d; } .side .rt span:last-child { font-family:sans-serif;font-size:10px;color:#ffd54f; }
 .side .bn { display:flex;align-items:center;gap:7px;margin:3px 0; } .side .bn canvas { flex:none;margin:0;image-rendering:pixelated; }
 .side .brow { padding:2px 3px;line-height:1.7; } .side .board { width:auto;max-width:none; }
-#ui { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none; }
+#ui { position:fixed;top:var(--vvt,0px);left:0;right:0;height:var(--vvh,100%);display:flex;align-items:center;justify-content:center;pointer-events:none;touch-action:none; }
 #mapScreen,#finishScreen,#failScreen,#diaryScreen,#campScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.96);pointer-events:all;padding:16px;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 .maph { font-family:"Press Start 2P",monospace;font-size:16px;color:#4fc3f7;margin-bottom:10px;letter-spacing:3px; }
 .finh { font-family:"Press Start 2P",monospace;font-size:20px;color:#7fd67f;margin-bottom:6px; }
@@ -116,6 +116,8 @@ canvas { display:block;margin:0 auto; }
 #startScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 16px 28px;background:transparent;pointer-events:all;overflow-y:auto;touch-action:pan-y; }
 #startScreen .menu { display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:18px; }
 #startScreen .menu .btn { min-width:200px; }
+#startScreen .startTools { display:flex;gap:6px;justify-content:center;margin-top:2px; }
+#startScreen .startTools .btn { min-width:0;margin-top:0; }
 #startScreen #startBtn { font-size:14px;animation:startPulse 1.6s steps(2) infinite; }
 @keyframes startPulse { 50% { background:#7fd8ff; } }
 #startScreen .ctrl { background:rgba(4,10,20,0.55);padding:8px 12px;border-radius:4px; }
@@ -123,13 +125,49 @@ canvas { display:block;margin:0 auto; }
 #startScreen .key { color:#ffe27a; }
 @media (max-height:700px) { #startScreen { padding-bottom:12px; } #startScreen .menu { margin-bottom:4px; } #startScreen .ctrl { display:none; } }
 .hidden { display:none !important; }
-#pauseBtn { position:absolute;top:40%;right:6px;width:42px;height:42px;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:14px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
+#pauseBtn { position:absolute;top:calc(40% + env(safe-area-inset-top));right:calc(6px + env(safe-area-inset-right));width:44px;height:44px;padding:0;background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;font-size:14px;color:#fff;cursor:pointer;pointer-events:all;z-index:5;user-select:none; }
 #tutSkip { position:absolute;bottom:12px;left:50%;transform:translateX(-50%);padding:8px 12px;background:rgba(0,0,0,0.55);border:2px solid #4fc3f7;border-radius:6px;font-family:"Press Start 2P",monospace;font-size:8px;color:#fff;cursor:pointer;pointer-events:all;z-index:6;user-select:none; }
 #pauseScreen { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;background:rgba(4,10,20,0.92);pointer-events:all;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch; }
 #mHint { position:absolute;top:32%;left:50%;transform:translateX(-50%);background:rgba(4,10,20,0.82);border:2px solid #4fc3f7;border-radius:8px;padding:10px 14px;font-family:"Press Start 2P",monospace;font-size:8px;color:#cfd8c5;line-height:2;text-align:center;z-index:6;pointer-events:none;opacity:1;transition:opacity .8s; }
 #mHint b { color:#4fc3f7;font-weight:normal; }
 #mHint.hide { opacity:0; }
 @media (min-width:769px) and (hover:hover) { #mHint { display:none; } }
+
+/* E1. Кнопка удара: только на тач-устройствах, палец не закрывает реку. */
+#strikeBtn { display:none;position:fixed;right:calc(14px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:64px;height:64px;padding:0;background:rgba(8,16,26,0.78);border:2px solid #ffd54f;border-radius:50%;font-family:"Press Start 2P",monospace;font-size:10px;color:#ffd54f;z-index:4;pointer-events:all;touch-action:none;-webkit-tap-highlight-color:transparent; }
+@media (pointer:coarse) { #strikeBtn:not(.hidden) { display:flex;align-items:center;justify-content:center; } }
+
+/* E2. Безопасные зоны и боковые панели только там, где есть мышь. */
+#startScreen,#pauseScreen,#finishScreen,#failScreen,#mapScreen,#diaryScreen,#campScreen,#endScreen,#recordsScreen,#editScreen,#raceScreen,#customEnd,#continueScreen { padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:calc(16px + env(safe-area-inset-bottom));padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right)); }
+@media (pointer:coarse) { .side { display:none !important; } #startScreen .ctrl { display:none; } }
+
+/* E2. Ландшафт: сначала просим повернуть, потом отдаём меню 60/40. */
+#rotateHint { display:none;position:fixed;inset:0;z-index:80;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(4,10,20,0.97);padding:calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));text-align:center;pointer-events:all; }
+#rotateHint .rh { font-family:"Press Start 2P",monospace;font-size:16px;color:#4fc3f7;letter-spacing:2px;line-height:1.7; }
+#rotateHint p { font-family:"Press Start 2P",monospace;font-size:12px;color:#cfd8c5;line-height:1.9;max-width:32em; }
+@media (orientation:landscape) and (pointer:coarse) {
+  body:not(.landscape-ok) #rotateHint { display:flex; }
+  #startScreen .menu { width:60vw;max-width:none; }
+  #startScreen .menu .btn { width:100%;min-width:0; }
+}
+
+/* E3. Телефон: читаемый кегль и никакого autozoom в поле имени. */
+@media (max-width:768px), (pointer:coarse) {
+  #startScreen p,#startScreen .ctrl,.wallet,.totals,.dayrow,.goal,.diary,.boardtitle,.board,.finrun,.vol,.edrow,.gitem,.gitem .gn,.gitem .gnote,.score,#continueScreen .dist,#saveWarn,#campToast,#mHint,#tutSkip,.place { font-size:clamp(12px,3.4vw,14px); }
+  .btn { font-size:clamp(12px,3.6vw,14px); }
+  .btn.small { font-size:clamp(12px,3.2vw,13px); }
+  .gitem button,.edpal button { font-size:clamp(12px,3.2vw,13px); }
+  .diary { font-size:clamp(12px,3.4vw,14px); }
+  .regtab { font-size:clamp(12px,3.4vw,14px); }
+  #finName,.namerow input { font-size:16px;width:150px; }
+}
+
+/* E4. Меньше движения — без пульсации старта и без анимаций прокрутки. */
+@media (prefers-reduced-motion: reduce) {
+  #startScreen #startBtn { animation:none; }
+  * { scroll-behavior:auto; }
+}
+.srOnly { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
 </style>
 </head>
 <body>
@@ -140,11 +178,13 @@ canvas { display:block;margin:0 auto; }
       <button class="btn small" id="startRaceBtn">ГОНКА</button>
       <button class="btn small" id="startEditBtn">СВОЙ УРОВЕНЬ</button>
       <button class="btn small ghost" id="startBoardBtn">РЕКОРДЫ</button>
+      <div class="startTools">
+        <button class="btn small ghost" id="startHelpBtn">?</button>
+        <button class="btn small ghost" id="startMuteBtn">ЗВУК: ВКЛ</button>
+      </div>
     </div>
     <div class="ctrl">
       <p id="startCtrlLine">Руль — стрелки или палец · вперёд — ↑ · удар — пробел / двойной тап</p>
-      <button class="btn small ghost" id="startHelpBtn">?</button>
-      <button class="btn small ghost" id="startMuteBtn">ЗВУК: ВКЛ</button>
     </div>
   </div>
   <div id="pauseScreen" class="hidden">
@@ -204,7 +244,7 @@ canvas { display:block;margin:0 auto; }
     <div class="score">В рюкзак: <span id="finWallet">0</span></div>
     <div class="goal" id="finGoal"></div>
     <div class="namerow" id="finNameRow">
-      <input id="finName" maxlength="12" placeholder="ИМЯ" autocomplete="off">
+      <input id="finName" maxlength="12" placeholder="ИМЯ" autocomplete="off" enterkeyhint="done" autocapitalize="characters" spellcheck="false">
       <button class="btn small" id="saveNameBtn">ИМЯ</button>
     </div>
     <div class="finrun" id="finRun"></div>
@@ -314,8 +354,15 @@ canvas { display:block;margin:0 auto; }
   <div><b>ДВОЙНОЙ ТАП</b> — УДАР ВЕСЛОМ</div>
 </div>
 <div id="saveWarn" class="hidden">НЕ УДАЛОСЬ СОХРАНИТЬ ПРОГРЕСС.<br>ЗАКРОЙТЕ ЛИШНИЕ ВКЛАДКИ ИЛИ ВЫЙДИТЕ ИЗ ПРИВАТНОГО РЕЖИМА.</div>
-<div id="pauseBtn" class="hidden">II</div>
+<div id="liveStatus" class="srOnly" role="status" aria-live="polite"></div>
+<button type="button" id="pauseBtn" class="hidden" aria-label="Пауза">II</button>
+<button type="button" id="strikeBtn" class="hidden" aria-label="Удар веслом">УДАР</button>
 <div id="tutSkip" class="hidden">Я УМЕЮ</div>
+<div id="rotateHint" role="dialog" aria-label="Поверните телефон">
+  <div class="rh">ПОВЕРНИТЕ ТЕЛЕФОН</div>
+  <p>Игра рассчитана на вертикальный экран: так видно всю реку и удобнее грести.</p>
+  <button type="button" class="btn small ghost" id="rotateOk">ИГРАТЬ ТАК</button>
+</div>
 <canvas id="bgCanvas"></canvas>
 <canvas id="game"></canvas>
 <aside id="panelL" class="side hidden"></aside>
@@ -358,6 +405,10 @@ const g={weeds:[],waves:[],s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:
 // умолчанию её выключает системная настройка «меньше движения».
 function prefersReducedMotion(){
   return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+// Тач-экран: боковые панели и подсказки прячем по типу указателя, а не по высоте.
+function coarsePointer(){
+  return typeof matchMedia === "function" && matchMedia("(pointer:coarse)").matches;
 }
 let shakeOn = !prefersReducedMotion();
 function toggleShake(){
@@ -3482,6 +3533,12 @@ function musicTick(){
 
 // Короткие звуковые сигналы на том же контексте, что и музыка.
 // Не зависят от выключения музыки: это обратная связь, а не фон.
+// E4. Текстовая дублировка ключевых событий для скринридера и игры без звука.
+function announce(text){
+  if(typeof document==="undefined"||!document.getElementById) return;
+  const el=document.getElementById("liveStatus");
+  if(el) el.textContent=text;
+}
 function sfx(kind){
   g.sfxLast = kind;                     // для проб: какой звук прозвучал последним
   if (muted || !actx) return;
@@ -5600,7 +5657,7 @@ function paddleStrike(){
     // rower_flip), дрейфует FLIP_FRAMES кадров и тонет.
     o.flipT = FLIP_FRAMES; o.swingT = -1; o.aggro = false;
     const pts = parried ? 75 : 40;
-    addBonus(pts); g.shake = 9; g.shakeDir = Math.sign(g.t - o.t) || 1; g.parries++; sfx("parry");
+    addBonus(pts); g.shake = 9; g.shakeDir = Math.sign(g.t - o.t) || 1; g.parries++; announce(parried ? "Парирование." : "Удар веслом."); sfx("parry");
     if (parried){ g.freeze = 4; g.squash = 2; }
     popText((parried ? "ПАРИРОВАЛ +" : "ВРЕЗАЛ ПЕРВЫМ +") + award(pts), "#ffd54f");
     // Перевернувшийся соперник роняет своё снаряжение.
@@ -6024,24 +6081,54 @@ function speedFromScreenY(my){
   if (my >= H*0.62) return -1;
   return 0;
 }
+// E1. Зоны считаем от лодки, а не от верха экрана: рука остаётся внизу и
+// не закрывает реку. Выше лодки на 90 px — вперёд, ниже — табань.
+function speedFromBoat(my, by){
+  const y = Number(by);
+  if (!Number.isFinite(y)) return 0;
+  if (my <= y - 90) return 1;
+  if (my >= y + 90) return -1;
+  return 0;
+}
+// Один активный указатель: второй палец не должен рвать гребок и тап.
+let activePointer=null;
+function pointerDown(id){
+  if(activePointer!==null) return false;
+  activePointer=id;
+  return true;
+}
+function pointerUp(id){
+  if(activePointer===null||id!==activePointer) return false;
+  activePointer=null;
+  return true;
+}
 let tapX=0,tapY=0,tapT=0,tapMoved=false,tapSeqT=0,mDown=false;
 // Мышь и тач гребут одним кодом: указатель в логических координатах канваса.
 // Отдельные функции, чтобы руление было тестируемым (и не зависело от события).
-function ptrClientPos(ev){
+function ptrClientPos(ev, touch){
   const r=c.getBoundingClientRect();
-  return { x:(ev.clientX||ev.touches[0].clientX-r.left)*(W/(r.width||W)),
-           y:(ev.clientY||ev.touches[0].clientY-r.top)*(H/(r.height||H)) };
+  const t=touch||(ev.touches&&ev.touches[0])||(ev.changedTouches&&ev.changedTouches[0]);
+  const clientX=ev.clientX!=null?ev.clientX:(t&&t.clientX)||0;
+  const clientY=ev.clientY!=null?ev.clientY:(t&&t.clientY)||0;
+  return { x:(clientX-r.left)*(W/(r.width||W)),
+           y:(clientY-r.top)*(H/(r.height||H)) };
 }
+function touchWithId(list,id){
+  if(!list) return null;
+  for(let i=0;i<list.length;i++) if(list[i].identifier===id) return list[i];
+  return null;
+}
+function boatScreenY(){ return Number.isFinite(g.py)?g.py:PY; }
 function ptrStart(x,y){
   mt=x;
   tapX=x;tapY=y;tapT=Date.now();tapMoved=false;
   if(g.s=="cutscene"){endCut();return;}
   if(g.s=="start"||g.s=="over"||g.s=="continue"){hs();return;}
-  if(g.s=="playing")g.mSpeed=speedFromScreenY(y);
+  if(g.s=="playing")g.mSpeed=speedFromBoat(y,boatScreenY());
 }
 function ptrMove(x,y){
   mt=x;
-  if(g.s=="playing")g.mSpeed=speedFromScreenY(y);
+  if(g.s=="playing")g.mSpeed=speedFromBoat(y,boatScreenY());
   // Указатель поехал — это руление, а не тап: серия двойного тапа прерывается.
   if(Math.abs(x-tapX)>12||Math.abs(y-tapY)>12){tapMoved=true;tapSeqT=0;}
 }
@@ -6058,18 +6145,70 @@ function ptrEnd(x,y){
   }
   mt=null;
 }
-c.addEventListener("touchstart",e=>{e.preventDefault();const p=ptrClientPos(e);ptrStart(p.x,p.y);},{passive:false});
-c.addEventListener("touchmove",e=>{e.preventDefault();const p=ptrClientPos(e);ptrMove(p.x,p.y);},{passive:false});
-c.addEventListener("touchend",e=>{e.preventDefault();ptrEnd(tapX,tapY);},{passive:false});
-c.addEventListener("mousedown",e=>{if(e.button!==0)return;e.preventDefault();mDown=true;const p=ptrClientPos(e);ptrStart(p.x,p.y);});
-c.addEventListener("mousemove",e=>{if(!mDown)return;e.preventDefault();const p=ptrClientPos(e);ptrMove(p.x,p.y);});
-c.addEventListener("mouseup",e=>{if(e.button!==0)return;e.preventDefault();mDown=false;const p=ptrClientPos(e);ptrEnd(p.x,p.y);});
+c.addEventListener("touchstart",e=>{
+  e.preventDefault();
+  const t=e.changedTouches&&e.changedTouches[0];
+  if(!t||!pointerDown(t.identifier)) return;
+  const p=ptrClientPos(e,t);ptrStart(p.x,p.y);
+},{passive:false});
+c.addEventListener("touchmove",e=>{
+  e.preventDefault();
+  const t=touchWithId(e.touches,activePointer);
+  if(!t) return;
+  const p=ptrClientPos(e,t);ptrMove(p.x,p.y);
+},{passive:false});
+c.addEventListener("touchend",e=>{
+  e.preventDefault();
+  const t=(e.changedTouches&&(touchWithId(e.changedTouches,activePointer)||e.changedTouches[0]));
+  if(!t||t.identifier!==activePointer) return;
+  ptrEnd(tapX,tapY);
+  pointerUp(t.identifier);
+},{passive:false});
+c.addEventListener("touchcancel",e=>{
+  e.preventDefault();
+  const t=(e.changedTouches&&(touchWithId(e.changedTouches,activePointer)||e.changedTouches[0]));
+  if(t&&t.identifier!==activePointer) return;
+  ptrEnd(tapX,tapY);
+  pointerUp(activePointer);
+},{passive:false});
+c.addEventListener("mousedown",e=>{if(e.button!==0)return;e.preventDefault();if(!pointerDown("mouse"))return;mDown=true;const p=ptrClientPos(e);ptrStart(p.x,p.y);});
+c.addEventListener("mousemove",e=>{if(!mDown||activePointer!=="mouse")return;e.preventDefault();const p=ptrClientPos(e);ptrMove(p.x,p.y);});
+c.addEventListener("mouseup",e=>{if(e.button!==0||activePointer!=="mouse")return;e.preventDefault();mDown=false;pointerUp("mouse");const p=ptrClientPos(e);ptrEnd(p.x,p.y);});
 // Обрыв жеста: палец «унесло» (touchcancel), систему утащила жест (pointercancel),
 // мышь уехала за канвас. Без этих обработчиков руль залипал в последнем
 // направлении — лодка «сама рулила», пока снова не коснёшься экрана.
-c.addEventListener("touchcancel",e=>{e.preventDefault();ptrEnd(tapX,tapY);},{passive:false});
-c.addEventListener("pointercancel",()=>{ptrEnd(tapX,tapY);});
-c.addEventListener("mouseleave",()=>{if(mDown){mDown=false;ptrEnd(tapX,tapY);}});
+c.addEventListener("pointercancel",()=>{ptrEnd(tapX,tapY);pointerUp(activePointer);});
+c.addEventListener("mouseleave",()=>{if(mDown){mDown=false;ptrEnd(tapX,tapY);pointerUp("mouse");}});
+// E1/E4. Кнопка удара и подсказка поворота. Кнопка видна только в игре,
+// чтобы не перекрывать меню и экраны результатов.
+document.getElementById("strikeBtn").addEventListener("click",e=>{e.preventDefault();paddleStrike();});
+document.getElementById("rotateOk").addEventListener("click",()=>{
+  if(document.body&&document.body.classList) document.body.classList.add("landscape-ok");
+});
+let touchCtlOn=null;
+function updateTouchControls(){
+  if(typeof document==="undefined"||!document.getElementById) return;
+  const b=document.getElementById("strikeBtn");
+  if(!b||!b.classList) return;
+  const on=g.s==="playing";
+  if(touchCtlOn===on) return;
+  touchCtlOn=on;
+  b.classList[on?"remove":"add"]("hidden");
+}
+// E3. Клавиатура на телефоне уменьшает visual viewport: держим UI в нём,
+// иначе поле имени уезжает под клавиатуру.
+function syncVisualViewport(){
+  if(typeof window==="undefined"||!window.visualViewport) return;
+  const vv=window.visualViewport;
+  if(!(vv.height>0)||!document.documentElement||!document.documentElement.style) return;
+  document.documentElement.style.setProperty("--vvh",vv.height+"px");
+  document.documentElement.style.setProperty("--vvt",(vv.offsetTop||0)+"px");
+}
+if(typeof window!=="undefined"&&window.visualViewport){
+  window.visualViewport.addEventListener("resize",syncVisualViewport);
+  window.visualViewport.addEventListener("scroll",syncVisualViewport);
+  syncVisualViewport();
+}
 // Обучающий оверлей для мобильной версии — что какой тап делает.
 // showMobileHint(false) прячет его сразу (используется при старте катсцены).
 function showMobileHint(show){
@@ -7998,6 +8137,7 @@ function finishLevel(){
   commitSave();
 
   g.s = "finish";
+  announce("Финиш. День пройден.");
   sfx("clean");
   sfx("bell");
   showFinish(L, stars);
@@ -8017,6 +8157,7 @@ function failLevel(){
   if (!paidToday) save.failPaid.push(L.day);
   commitSave();
   g.s = "fail";
+  announce("Провал. Попытки кончились.");
   showFail(L, total, credit);
 }
 
@@ -9917,6 +10058,7 @@ function noteHit(info){
   const name = OB_NAME[info.type] || "УДАР";
   g.hitLog.push({ name, at: Math.round(g.dist) });
   if (g.hitLog.length > 3) g.hitLog.shift();
+  announce(name + ". Удар.");
   if (!info.silent && OB_NAME[info.type]) popText(name + "!", "#ff5252");
 }
 
@@ -9924,7 +10066,7 @@ function damage(info){
   const fk = forkAt(g.pwy);
   if (fk) fk.hit = true;                                  // удар в развилке снимает чистый бонус
   if (g.inv > 0 || g.whiskyT > 0 || g.yacht) return;       // яхта не боится никого, кроме баржи
-  if (g.sh){ g.sh = false; g.shake = 8; g.shakeDir = Math.sign(g.t - ((info && info.t) || 0)) || 1; g.freeze = 4; g.squash = 2; sfx("hit"); popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
+  if (g.sh){ g.sh = false; g.shake = 8; g.shakeDir = Math.sign(g.t - ((info && info.t) || 0)) || 1; g.freeze = 4; g.squash = 2; announce("Щит разбит."); sfx("hit"); popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
   noteHit(info);
   g.hp -= 1;
   g.inv = INV_FRAMES;
@@ -10770,13 +10912,13 @@ function bargeHorn(){
     if (o.intro && !o.warned){
       const ahead = o.wy - g.pwy;
       if (ahead > 0 && ahead <= 400){
-        o.warned = true; o.horned = true; sfx("horn");
+        o.warned = true; o.horned = true; announce("Гудок баржи впереди."); sfx("horn");
         if (!save.seen) save.seen = {};
         if (!save.seen.barge){ save.seen.barge = 1; commitSave(); }
       }
       continue;
     }
-    if (screenYOf(o.wy) + (o.visHalfY || 40) >= 0){ o.horned = true; sfx("horn"); }
+    if (screenYOf(o.wy) + (o.visHalfY || 40) >= 0){ o.horned = true; announce("Гудок баржи."); sfx("horn"); }
   }
 }
 function setAudio(a){ actx = a; sfxBus = null; toneOut = null; for (const k in _sndBuf) delete _sndBuf[k]; for (const k in _sndWait) delete _sndWait[k]; }
@@ -10849,6 +10991,7 @@ function logStep(o, flow){
 }
 
 function upd(){
+  updateTouchControls();
   if(g.s=="cutscene"){ updCut(); return; }
   if(g.s=="countdown"){ g.frame++; if (--g.cdT <= 0){ g.s = "playing"; sfx("bonus"); } return; }
   if(g.s=="arrive"){ updArrive(); return; }
@@ -11478,7 +11621,7 @@ var sideW = 0, sideScale = 1, panelsOn = false;
 function layoutSides(cssW, cssH, full){
   if (typeof document === "undefined") return;
   const lay = full ? { side:0, panels:false, s:1 } : sideLayout(innerWidth, innerHeight, W, H);
-  sideW = lay.side; sideScale = lay.s; panelsOn = lay.panels;
+  sideW = lay.side; sideScale = lay.s; panelsOn = lay.panels && !coarsePointer();
   const bg = document.getElementById("bgCanvas"), ui = document.getElementById("ui");
   if (bg){ bg.width = innerWidth; bg.height = innerHeight; }
   if (ui && ui.style){ ui.style.left = sideW + "px"; ui.style.right = sideW + "px"; }
@@ -13408,7 +13551,7 @@ globalThis.__KAYAK__ = { G: g, W, H, canvasBacking, dpr:() => dpr, viewW:() => v
   repeatHint, backFromDiary, rowMul, strokeLift, shakeOffset, toggleShake, pixelScale, award, tempoAt, tempoTick, spawnRate, bargeIntroTick, drwBargeWarn,
   campaignSum, scoreNow, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, toShore, ashoreStep, RUSH_FRAMES, ASHORE_FRAMES, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
-  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp, keyName, keyHeld, onKeyDown, onKeyUp };
+  ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, speedFromBoat, pointerDown, pointerUp, activePointer:()=>activePointer, coarsePointer, announce, syncVisualViewport, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp, keyName, keyHeld, onKeyDown, onKeyUp };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined" && new URLSearchParams(location.search).get("split") === "1") splitBoot();
 else if (typeof __KAYAK_TEST__ === "undefined" && SEAT){ seatBoot(); lp(); }

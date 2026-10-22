@@ -27,6 +27,15 @@ test("шрифт интерфейса не мельче 8px (пиксельны�
   for (const m of css.matchAll(/font-size:([\d.]+)px/g)) assert.ok(+m[1] >= 8, m[0]);
 });
 
+test("на телефоне текст не мельче 12px", () => {
+  const at = css.indexOf("/* E3.");
+  assert.ok(at >= 0, "нет мобильного блока E3");
+  const block = css.slice(at, css.indexOf("}", at) + 1);
+  const sizes = [...block.matchAll(/(\d+(?:\.\d+)?)px/g)].map(m => +m[1]);
+  assert.ok(sizes.length > 0, "в мобильном блоке нет размеров");
+  for (const px of sizes) assert.ok(px >= 12, "мелкий кегль: " + px + "px");
+});
+
 test("в кнопках лагеря нет символов, которых нет во встроенном шрифте", () => {
   const camp = html.slice(html.indexOf("function showCamp"), html.indexOf("function leaveCamp"));
   assert.ok(!/[★✓]/.test(camp.match(/b\.textContent[^\n]*/)[0]));
