@@ -69,6 +69,13 @@
 https://claude.ai/artifact/Dp7fuctjq7HrecmAX9wHMp); `node tools/game-book.mjs`
 → книга игры (https://claude.ai/artifact/DmTCnTZa77afHYkZecKdEe).
 
+## Контекст
+- Одна сессия — одна просьба (R…) или один этап. Между несвязанными — `/clear`; вход —
+  `docs/requests.json` (нужная запись) и верх журнала (`head -80 _ЖУРНАЛ_ИЗМЕНЕНИЙ.md`).
+- `index.html` больше 1 МБ — не читать целиком: искать `grep -n`, читать кусками.
+- Журнал > ~400 строк → старые записи в `_ЖУРНАЛ_АРХИВ.md`.
+- При сжатии сохраняй: номер просьбы, её сторожа, изменённые места, итог `node tools/guard.mjs`.
+
 ## Не трогать
 
 `promo/`, `tools/promo-*.mjs`, «Заставка.bat» и записи журнала о ролике —
