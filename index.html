@@ -5216,6 +5216,10 @@ const KAYAK_R = 16;   // радиус столкновения байдарки
 const ROW_FWD = 0.45, ROW_BACK = 0.40;
 const STAM_MAX = 100, STAM_DRAIN = 0.55, STAM_REGEN = 0.30;
 
+// Темп гребли: вперёд — больше очков за всё, назад — меньше, но безопаснее.
+// Скорость мира не меняется: это множитель счёта, а не течения.
+function rowMul(){ return g.rowing > 0 ? 1.25 : g.rowing < 0 ? 0.80 : 1; }
+
 function rowInput(){
   let f = 0;
   if (keyHeld("ArrowUp")   || keys["w"] || keys["W"] || keys["ц"] || keys["Ц"] || keys["z"] || keys["Z"] || keys["я"] || keys["Я"] || g.btnFwd || gpState.fwd)  f += 1;
@@ -7735,8 +7739,8 @@ function drwHUD(){
     cx.fillRect(bx, by, bw*k, 7);
     cx.font = "8px " + F; cx.fillStyle = "#9aa9b2";
     cx.fillText("СИЛЫ", bx, by - 4);
-    if (g.rowing > 0){ cx.fillStyle = "#7fd67f"; cx.fillText("РАЗГОН", bx + 40, by - 4); }
-    if (g.rowing < 0){ cx.fillStyle = "#4fc3f7"; cx.fillText("ТАБАНЮ", bx + 40, by - 4); }
+    if (g.rowing > 0){ cx.fillStyle = "#7fd67f"; cx.fillText("ТЕМП ×1.25", bx + 40, by - 4); }
+    if (g.rowing < 0){ cx.fillStyle = "#4fc3f7"; cx.fillText("ТЕМП ×0.8", bx + 40, by - 4); }
   }
   // Сердца опущены ниже: в правом верхнем углу висит кнопка паузы,
   // и раньше она их перекрывала — особенно четвёртое от сухпайка.
@@ -9689,9 +9693,9 @@ const INV_FRAMES = 90, BREAD_FRAMES = 480, WHISKY_FRAMES = 360, AXE_RANGE = 420,
 // Виски обещало двойные очки — а множителя в коде не было вовсе.
 // Теперь все начисления идут через эти две функции.
 function scoreMul(){ return g.whiskyT > 0 ? 2 : 1; }
-// Число, которое реально зачислится под виски: поп-апы обязаны показывать
-// его, а не базовое — иначе экран врёт игроку про награду.
-function award(n){ return Math.round(n * scoreMul()); }
+// Число, которое реально зачислится под виски и темп: поп-апы обязаны
+// показывать его, а не базовое — иначе экран врёт игроку про награду.
+function award(n){ return Math.round(n * scoreMul() * rowMul()); }
 function addScore(n){ g.sc  += award(n); }
 function addBonus(n){ g.bsc += award(n); }
 
@@ -13203,7 +13207,7 @@ globalThis.__KAYAK__ = { G: g, W, H, roadHitsBox, setTitleMenuTop, spriteSize, s
   SAVE_VERSION, SAVE_DEFAULT, mergeSave, showSaveProblem, saveProblem: () => saveProblem, requestMapExit, onWindowBlur, onWindowFocus, onVisibilityChange, pageVisible, resumeAfterTimeout,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
   tutActive, tutTick, tutAction, tutRefresh, skipTutorial, finishTutorial, tutBegin, spawnAllowed, TUT_LEN,
-  repeatHint, backFromDiary, tempoAt, tempoTick, spawnRate, bargeIntroTick, drwBargeWarn,
+  repeatHint, backFromDiary, rowMul, award, tempoAt, tempoTick, spawnRate, bargeIntroTick, drwBargeWarn,
   campaignSum, scoreNow, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, toShore, ashoreStep, RUSH_FRAMES, ASHORE_FRAMES, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp, keyName, keyHeld, onKeyDown, onKeyUp };
