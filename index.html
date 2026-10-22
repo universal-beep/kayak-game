@@ -21,7 +21,7 @@
 html,body { width:100%;height:100%;background:#1a1a2e;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none; }
 canvas { display:block;margin:0 auto; }
 #bgCanvas { position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:0;margin:0;image-rendering:pixelated; }
-#game { position:relative;z-index:1; }
+#game { position:relative;z-index:1;image-rendering:pixelated;image-rendering:crisp-edges; }
 #ui { z-index:2; }
 .side { position:fixed;top:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:8px;padding:12px 10px;overflow:hidden;pointer-events:none;font-family:"Press Start 2P",monospace;font-size:8px;line-height:1.8;color:#cfe8f5; }
 .side .sp { background:rgba(8,16,26,0.80);border:2px solid #2c5f86;border-radius:6px;padding:9px 10px; }
@@ -44,6 +44,8 @@ canvas { display:block;margin:0 auto; }
 .dayrow.cur { border-color:#4fc3f7;color:#fff; }
 .dayrow .st { color:#ffd54f;letter-spacing:1px;font-family:sans-serif;font-size:12px; }
 .maprow { display:flex;gap:8px;flex-wrap:wrap;justify-content:center; }
+.vol { display:flex;align-items:center;gap:10px;font-family:"Press Start 2P",monospace;font-size:8px;color:#cfd8c5;margin-top:10px;pointer-events:all; }
+.vol input { width:120px;accent-color:#4fc3f7; }
 .btn { font-family:"Press Start 2P",monospace;font-size:11px;letter-spacing:1px;padding:12px 18px;background:#4fc3f7;color:#12202e;border:2px solid #4fc3f7;cursor:pointer;pointer-events:all;box-shadow:0 4px 0 #0d47a1; }
 .btn:hover { filter:brightness(1.12); }
 .btn:active { transform:translateY(2px);box-shadow:0 2px 0 #0d47a1; }
@@ -142,6 +144,7 @@ canvas { display:block;margin:0 auto; }
     <div class="ctrl">
       <p id="startCtrlLine">Руль — стрелки или палец · вперёд — ↑ · удар — пробел / двойной тап</p>
       <button class="btn small ghost" id="startHelpBtn">?</button>
+      <button class="btn small ghost" id="startMuteBtn">ЗВУК: ВКЛ</button>
     </div>
   </div>
   <div id="pauseScreen" class="hidden">
@@ -153,8 +156,11 @@ canvas { display:block;margin:0 auto; }
       <button class="btn small ghost" id="pauseHintBtn">ПОДСКАЗКА</button>
       <button class="btn small ghost" id="pauseHelpBtn">ПОМОЩЬ</button>
       <button class="btn small ghost" id="pauseMusicBtn">МУЗЫКА</button>
+      <button class="btn small ghost" id="pauseMuteBtn">ЗВУК: ВКЛ</button>
+      <button class="btn small ghost" id="pauseShakeBtn">ТРЯСКА: ВКЛ</button>
       <button class="btn small ghost" id="pauseMapBtn">К МАРШРУТУ</button>
     </div>
+    <label class="vol">ГРОМКОСТЬ ЗВУКОВ <input id="sfxVol" type="range" min="0" max="100" step="10" value="70"></label>
   </div>
   <div id="endScreen" class="hidden">
     <h1 class="finh">ПОХОД ПРОЙДЕН</h1>
@@ -317,13 +323,62 @@ canvas { display:block;margin:0 auto; }
 <script>
 const c=document.getElementById("game"); let cx=c.getContext("2d"); const gameCx=cx;
 cx.imageSmoothingEnabled=false;
-const W=420,H=720;c.width=W;c.height=H;
-let cutFull=false;   // канвас на весь экран, пока идёт катсцена
-function rs(){if(cutFull){c.width=innerWidth;c.height=innerHeight;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px";if(typeof layoutSides==="function")layoutSides(innerWidth,innerHeight,true);return;}const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);c.width=W;c.height=H;c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";if(typeof layoutSides==="function")layoutSides(Math.floor(W*s),Math.floor(H*s),false);}
+const W=420,H=720;
+let viewW=W, viewH=H, dpr=1, cutFull=false;
+function canvasBacking(w, h, k){
+  k = Math.max(1, Math.min(3, Number(k) || 1));
+  return { w: Math.round(w*k), h: Math.round(h*k), dpr:k };
+}
+function rs(){
+  const kd = (typeof devicePixelRatio === "number" && devicePixelRatio) || 1;
+  dpr = canvasBacking(1, 1, kd).dpr;
+  if (cutFull){
+    viewW = innerWidth; viewH = innerHeight;
+    const b = canvasBacking(viewW, viewH, dpr);
+    c.width = b.w; c.height = b.h;
+    c.style.width = viewW+"px"; c.style.height = viewH+"px";
+    cx.imageSmoothingEnabled = false; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if(typeof layoutSides==="function")layoutSides(viewW,viewH,true);
+    return;
+  }
+  viewW = W; viewH = H;
+  const mw=innerWidth,mh=innerHeight,s=Math.min(mw/W,mh/H);
+  const b = canvasBacking(W, H, dpr);
+  c.width = b.w; c.height = b.h;
+  c.style.width=Math.floor(W*s)+"px";c.style.height=Math.floor(H*s)+"px";
+  cx.imageSmoothingEnabled = false; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if(typeof layoutSides==="function")layoutSides(Math.floor(W*s),Math.floor(H*s),false);
+}
 rs();addEventListener("resize",rs);
 const F="\"Press Start 2P\",monospace";
-const g={weeds:[],waves:[],s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,convoy:0,strikeT:0,taughtParry:false,vestUsed:false,bridgeCinema:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,lastHit:null,hitLog:[],df:1,pa:0,
-  t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,breadT:0,whiskyT:0,pops:[],wake:[]};
+const g={weeds:[],waves:[],s:"start",sp:2.5,dist:0,sc:0,bsc:0,obs:[],bns:[],pts:[],bev:[],sm:false,st:0,sh:false,ned:30,cleanRun:false,wasRapid:false,lives:3,contT:0,day:0,pendingScore:0,cut:null,hint:null,stam:100,rowing:0,rowActive:0,rowCd:0,rowSide:1,strokes:0,freeze:0,squash:0,py:0,pwy:0,btnFwd:false,btnBack:false,mSpeed:null,_mhT:0,forks:[],bridges_:[],signT:0,tapeWy:-1,arriveT:0,landSide:1,combo:0,comboT:0,maxCombo:0,passed:0,convoy:0,strikeT:0,taughtParry:false,vestUsed:false,bridgeCinema:false,bonuses:0,parries:0,bridges:0,cleanRapids:0,shallowsHit:0,livesLost:0,rWidth:1,rBend:1,rRocks:1,frame:0,lastHit:null,hitLog:[],df:1,pa:0,
+  t:0,vt:0,scroll:0,segs:[],hp:3,inv:0,shake:0,shakeT:0,shakeDir:1,breadT:0,whiskyT:0,pops:[],wake:[]};
+
+// Тряска — направленный детерминированный сдвиг, без Math.random. По
+// умолчанию её выключает системная настройка «меньше движения».
+function prefersReducedMotion(){
+  return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+let shakeOn = !prefersReducedMotion();
+function toggleShake(){
+  shakeOn = !shakeOn;
+  const b = document.getElementById("pauseShakeBtn");
+  if (b) b.textContent = "ТРЯСКА: " + (shakeOn ? "ВКЛ" : "ВЫКЛ");
+}
+function updateMuteButtons(){
+  const txt = "ЗВУК: " + (muted ? "ВЫКЛ" : "ВКЛ");
+  for (const id of ["startMuteBtn", "pauseMuteBtn"]){
+    const b = document.getElementById(id);
+    if (b) b.textContent = txt;
+  }
+}
+// t — номер кадра, amount — сила события (0…20), dir — ±1.
+function shakeOffset(t, amount, dir){
+  const k = Math.min(1, Math.max(0, (amount || 0)/20));
+  if (!shakeOn || k <= 0) return { x:0, y:0 };
+  const a = k*k*16, s = dir === -1 ? -1 : 1;
+  return { x: Math.sin(t*1.7)*a*s, y: Math.sin(t*2.3 + 1.1)*a*0.5 };
+}
 
 /* ===== 2. Палитра, карты спрайтов, пре-рендер ===== */
 const SCALE = 3;
@@ -2203,65 +2258,65 @@ const SPR = {
     "..kKKKKKk......kKKKKKk...........",
     "..kKKKKKk......kKKKKKk...........",
     "...kkkkk........kkkkk............"]},
-  fisher_car:{map:["..................................kkk.......",
-    "................................kkkkkkk.....",
-    "...............................kkkssskkk....",
-    "..............................kkdSSSSSdkk...",
-    "...............................kkOtttkkk....",
-    "...kkkkkkkkkkkkk...............kkOttKtkk.k..",
-    "..kwwwwwwwwwwwwwk..............kkktTTkkkkkk.",
-    "..kWiiiiiWiiiiiWWk............kkFFFFFkkkkOkk",
-    "..kWiiiiiWiiiifffWk...........kkFvvvvvvvtOkk",
-    ".kWWIIIIIWIIIfffIIWkkkk.......kkFvvvVVVVtkk.",
-    ".kWWWWWWWWWwwwwwwwwwwwwkk.....kkFvvvVkkkkk..",
-    "kwwwwwwwwwGwwwwwwwwwwwwwwk....kkFvvvVkkkk...",
-    "krWWWWWWWWGWWWWWWWWWWWWWWuk...kkkzzzzzzzkk..",
-    "kWWWKKKKWWGWWWWWWWWKKKKWWWk..kkzzzzzzZZZkk..",
-    "kjjKKggKKjjjjjjjjjKKggKKjjjk.kkjkkkkjkkZZkk.",
-    ".kkKKggKKkkkkkkkkkKKggKKkkk..kkkjjjjkkkgKkk.",
-    "..kKKggKKk.......kKKggKKk....kkkkjjkkkkKKKkk",
-    "...kKKKKk.........kKKKKk......kjjkkjjkkkkkk.",
-    "....kkkk...........kkkk.......kjkkkkjk.kkk..",
-    "...............................k....k......."]},
-  fisher_bike:{map:["........................kkk.......",
-    "......................kkkkkkk.....",
-    ".....................kkkssskkk....",
-    "....................kkdSSSSSdkk...",
-    ".....................kkOtttkkk....",
-    ".....................kkOttKtkk.k..",
-    "..............kkk....kkktTTkkkkkk.",
-    "......kkk....kKKKk..kkFFFFFkkkkOkk",
-    ".....kKKKkkkkkjkk...kkFvvvvvvvtOkk",
-    "...kkkkrrrrrrrjkk...kkFvvvVVVVtkk.",
-    "..kKKKkrkkkkkrrKKkk.kkFvvvVkkkkk..",
-    ".kKkkkrkrk.krrKrkKKkkkFvvvVkkkk...",
-    "kKk.krrKrkkrrKkrkkKkkkkzzzzzzzkk..",
-    "kKk.krkKrrrkKkkrrkkKkWWZZZZZZZkk..",
-    "kKkkjrrrrjkkKk.krkkKkggggggkkZZkk.",
-    "kKk.kkkKkjjkkKk.kkKkkGjjjgkkkgKkk.",
-    ".kKkkkKk.kjkkKKkkKKkkGjjjgkkkKKKkk",
-    "..kKKKk...kjkkkKKkk.kkkkkkk.kkkkk.",
-    "...kkk.....k...kk....kkkkk...kkk.."]},
+  fisher_car:{map:["..................................KKK.......",
+    "................................KKKKKKK.....",
+    "...............................KKKKKKKKK....",
+    "..............................KKKKKKKKKKK...",
+    "...............................KKOtttKKK....",
+    "...KKKKKKKKKKKKK...............KKOttKtKK.K..",
+    "..KWWWWWWWWWWWWWK..............KKKtttKKKKKK.",
+    "..KWKKKKKWKKKKKWWK............KKvvvvvKKKKOKK",
+    "..KWKKKKKWKKKKKKKWK...........KKvvvvvvvvtOKK",
+    ".KWWKKKKKWKKKKKKKKWKKKK.......KKvvvvvvvvtKK.",
+    ".KWWWWWWWWWWWWWWWWWWWWWKK.....KKvvvvvKKKKK..",
+    "KWWWWWWWWWKWWWWWWWWWWWWWWK....KKvvvvvKKKK...",
+    "KKWWWWWWWWKWWWWWWWWWWWWWWKK...KKKzzzzzzzKK..",
+    "KWWWKKKKWWKWWWWWWWWKKKKWWWK..KKzzzzzzzzzKK..",
+    "KKKKKKKKKKKKKKKKKKKKKKKKKKKK.KKKKKKKKKKzzKK.",
+    ".KKKKKKKKKKKKKKKKKKKKKKKKKK..KKKKKKKKKKKKKK.",
+    "..KKKKKKKK.......KKKKKKKK....KKKKKKKKKKKKKKK",
+    "...KKKKKK.........KKKKKK......KKKKKKKKKKKKK.",
+    "....KKKK...........KKKK.......KKKKKKKK.KKK..",
+    "...............................K....K......."]},
+  fisher_bike:{map:["........................KKK.......",
+    "......................KKKKKKK.....",
+    ".....................KKKKKKKKK....",
+    "....................KKKKKKKKKKK...",
+    ".....................KKOtttKKK....",
+    ".....................KKOttKtKK.K..",
+    "..............KKK....KKKtttKKKKKK.",
+    "......KKK....KKKKK..KKvvvvvKKKKOKK",
+    ".....KKKKKKKKKKKK...KKvvvvvvvvtOKK",
+    "...KKKKrrrrrrrKKK...KKvvvvvvvvtKK.",
+    "..KKKKKrKKKKKrrKKKK.KKvvvvvKKKKK..",
+    ".KKKKKrKrK.KrrKrKKKKKKvvvvvKKKK...",
+    "KKK.KrrKrKKrrKKrKKKKKKKzzzzzzzKK..",
+    "KKK.KrKKrrrKKKKrrKKKKKKzzzzzzzKK..",
+    "KKKKKrrrrKKKKK.KrKKKKKKKKKKKKzzKK.",
+    "KKK.KKKKKKKKKKK.KKKKKKKKKKKKKKKKK.",
+    ".KKKKKKK.KKKKKKKKKKKKKKKKKKKKKKKKK",
+    "..KKKKK...KKKKKKKKK.KKKKKKK.KKKKK.",
+    "...KKK.....K...KK....KKKKK...KKK.."]},
   // Рыбак (28.09.2026): сидит в профиль на перевёрнутом ведре лицом к воде —
   // панама, оливковая куртка, резиновые сапоги, в руках комель удочки (саму
   // удочку, леску и клёв рисует код). Для правого берега — fisher_l.
-  fisher:{map:["....kkk......",
-    "..kkssskk....",
-    ".kdSSSSSdk...",
-    "..kOtttkk....",
-    "..kOttKtk....",
-    "..kktTTk...k.",
-    ".kFFFFFkkkkOk",
-    ".kFvvvvvvvtOk",
-    ".kFvvvVVVVtk.",
-    ".kFvvvVkkkk..",
-    ".kFvvvVkkk...",
-    ".kkzzzzzzzk..",
-    "kWWZZZZZZZk..",
-    "kggggggkkZZk.",
-    "kGjjjgk.kgKk.",
-    "kGjjjgk.kKKKk",
-    ".kkkkk...kkk."],noOutline:true},
+  fisher:{map:["....KKK......",
+    "..KKSSSKK....",
+    ".KSSSSSSSK...",
+    "..KOtttKK....",
+    "..KOttKtK....",
+    "..KKtttK...K.",
+    ".KvvvvvKKKKOK",
+    ".KvvvvvvvvtOK",
+    ".KvvvvvvvvtK.",
+    ".KvvvvvKKKK..",
+    ".KvvvvvKKK...",
+    ".KKzzzzzzzK..",
+    "KvvzzzzzzzK..",
+    "KKKKKKKKKzzK.",
+    "KKKKKKK.KKKK.",
+    "KKKKKKK.KKKKK",
+    ".KKKKK...KKK."],noOutline:true},
   // Палатка широкая и низкая — узкий высокий треугольник читался как конус.
   // Тёмная полоса по центру — вход, он и делает силуэт узнаваемым.
   // Палатка: конёк по гребню, откинутый полог с тёмным нутром,
@@ -3218,6 +3273,12 @@ function wearName(name){
   return L && L.rain && SPR[name + "_rain"] ? name + "_rain" : name;
 }
 function cutWear(sc, name){ return sc.rain && SPR[name + "_rain"] ? name + "_rain" : name; }
+// Пиксель спрайта на экране — целое число точек (1/3, 2/3 или 1 от ×3).
+// Дробные 0,55/0,9 давали «миксели» в катсценах и лагере.
+function pixelScale(k){
+  const px = Math.max(1, Math.round((Number(k) || 1) * SCALE));
+  return px / SCALE;
+}
 function drawSprite(name, x, y, variant){
   const spr = SPR[wearName(name)] || SPR[name];
   if (!spr) return;
@@ -3311,7 +3372,7 @@ function playSample(kind){
     try {
       const src = actx.createBufferSource(), amp = actx.createGain();
       src.buffer = buf; amp.gain.value = 0.5;   // вровень со звоном бонуса
-      src.connect(amp); amp.connect(actx.destination); src.start(actx.currentTime);
+      src.connect(amp); amp.connect(sfxOut() || actx.destination); src.start(actx.currentTime);
     } catch (e) { /* молча */ }
   };
   return decodeSample(kind, play);
@@ -3322,7 +3383,7 @@ function playSample(kind){
 // фильтр, который раскрывается; две форманты гласной «у» (300 и 850 Гц) и
 // капля шума дыхания. Прежний вариант (низкие 150→105 Гц через узкую полосу)
 // звучал как «пук».
-function mooTone(){
+function mooTone(dest){
   const t = actx.currentTime, D = 1.6;
   const o = actx.createOscillator(), o2 = actx.createOscillator(), lfo = actx.createOscillator(), dep = actx.createGain();
   o.type = "sawtooth"; o2.type = "square";
@@ -3351,7 +3412,7 @@ function mooTone(){
   const nb = actx.createBuffer(1, Math.floor(actx.sampleRate*D), actx.sampleRate), nd = nb.getChannelData(0);
   for (let i = 0; i < nd.length; i++) nd[i] = (Math.random()*2 - 1)*0.06;
   const ns = actx.createBufferSource(); ns.buffer = nb; ns.connect(f1);
-  amp.connect(actx.destination);
+  amp.connect(dest || actx.destination);
   for (const x of [o, o2, lfo]){ x.start(t); x.stop(t + D + 0.05); }
   ns.start(t);
 }
@@ -3362,13 +3423,38 @@ function tone(freq, at, dur, type, vol){
   amp.gain.setValueAtTime(0.0001, at);
   amp.gain.exponentialRampToValueAtTime(vol, at + 0.012);
   amp.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  o.connect(amp); amp.connect(actx.destination);
+  o.connect(amp); amp.connect(toneOut || actx.destination);
   o.start(at); o.stop(at + dur + 0.02);
 }
 
 var seatMute = false;                    // правая половина «вдвоём на одном экране» — без звука
+let muted = false, sfxVol = 0.7, sfxBus = null, toneOut = null;
+function sfxOut(){
+  if (!actx) return null;
+  if (!sfxBus){
+    sfxBus = actx.createGain();
+    sfxBus.gain.value = sfxVol;
+    sfxBus.connect(actx.destination);
+  }
+  return sfxBus;
+}
+function setSfxVol(v){
+  sfxVol = Math.max(0, Math.min(1, +v || 0));
+  if (sfxBus) sfxBus.gain.value = sfxVol;
+  return sfxVol;
+}
+function setMuted(v){
+  muted = !!v;
+  if (actx){
+    if (muted && actx.suspend) actx.suspend();
+    if (!muted && actx.resume) actx.resume();
+  }
+  updateMuteButtons();
+  return muted;
+}
+function toggleMute(){ return setMuted(!muted); }
 function startMusic(){
-  if (seatMute || actx || typeof AudioContext === "undefined") return;
+  if (muted || seatMute || actx || typeof AudioContext === "undefined") return;
   actx = new AudioContext();
   preloadSounds();
   mNext = actx.currentTime + 0.05;
@@ -3398,9 +3484,15 @@ function musicTick(){
 // Не зависят от выключения музыки: это обратная связь, а не фон.
 function sfx(kind){
   g.sfxLast = kind;                     // для проб: какой звук прозвучал последним
-  if (!actx) return;
+  if (muted || !actx) return;
+  const prev = toneOut;
+  toneOut = sfxOut();
+  try { sfxInner(kind); } finally { toneOut = prev; }
+}
+function sfxInner(kind){
   if (kind.startsWith("voice_")){ playSample(kind); return; }   // голос — только свой файл
-  if (kind === "moo"){ if (!playSample(kind)) mooTone(); return; }
+  if (kind === "moo"){ if (!playSample(kind)) mooTone(toneOut); return; }
+  if (kind === "click"){ tone(620, actx.currentTime, 0.045, "square", 0.05); return; }
   if (kind === "wind"){                  // порыв: шум нарастает и спадает
     const t0 = actx.currentTime, D = 3.3, len = Math.floor(actx.sampleRate*D);
     const b = actx.createBuffer(1, len, actx.sampleRate), d = b.getChannelData(0);
@@ -3410,7 +3502,7 @@ function sfx(kind){
     src.buffer = b; f.type = "bandpass"; f.Q.value = 0.7;
     f.frequency.setValueAtTime(300, t0); f.frequency.linearRampToValueAtTime(900, t0 + D/2); f.frequency.linearRampToValueAtTime(350, t0 + D);
     amp.gain.setValueAtTime(0.0001, t0); amp.gain.exponentialRampToValueAtTime(0.25, t0 + D/2); amp.gain.exponentialRampToValueAtTime(0.0001, t0 + D);
-    src.connect(f); f.connect(amp); amp.connect(actx.destination); src.start(t0);
+    src.connect(f); f.connect(amp); amp.connect(toneOut || actx.destination); src.start(t0);
     return;
   }
   if (kind === "chop"){                  // «хрясь»: топор входит в дерево
@@ -3419,8 +3511,18 @@ function sfx(kind){
     for (let i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.exp(-i/(len*0.12));
     const src = actx.createBufferSource(), bp = actx.createBiquadFilter(), amp = actx.createGain();
     src.buffer = b; bp.type = "bandpass"; bp.frequency.value = 700; bp.Q.value = 1.2; amp.gain.value = 0.45;
-    src.connect(bp); bp.connect(amp); amp.connect(actx.destination); src.start(t0);
+    src.connect(bp); bp.connect(amp); amp.connect(toneOut || actx.destination); src.start(t0);
     tone(110, t0, 0.12, "triangle", 0.14);
+    return;
+  }
+  if (kind === "paddle"){                // гребок: короткий всплеск под лопастью
+    const t0 = actx.currentTime, len = Math.floor(actx.sampleRate*0.11);
+    const b = actx.createBuffer(1, len, actx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.exp(-i/(len*0.16));
+    const src = actx.createBufferSource(), bp = actx.createBiquadFilter(), amp = actx.createGain();
+    src.buffer = b; bp.type = "bandpass"; bp.frequency.value = 1250; bp.Q.value = 0.8; amp.gain.value = 0.20;
+    src.connect(bp); bp.connect(amp); amp.connect(toneOut || actx.destination); src.start(t0);
+    tone(150, t0, 0.06, "sine", 0.055);
     return;
   }
   if (kind === "slap"){                  // шлепок весла: короткий шлёп по воде и лодке
@@ -3429,7 +3531,7 @@ function sfx(kind){
     for (let i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.exp(-i/(len*0.18));
     const src = actx.createBufferSource(), bp = actx.createBiquadFilter(), amp = actx.createGain();
     src.buffer = b; bp.type = "bandpass"; bp.frequency.value = 1800; bp.Q.value = 0.9; amp.gain.value = 0.35;
-    src.connect(bp); bp.connect(amp); amp.connect(actx.destination); src.start(t0);
+    src.connect(bp); bp.connect(amp); amp.connect(toneOut || actx.destination); src.start(t0);
     tone(170, t0, 0.07, "sine", 0.12);
     return;
   }
@@ -3501,7 +3603,7 @@ function sfx(kind){
       o.frequency.linearRampToValueAtTime(hz*0.88, t + 2.4);   // уходит — тон ниже
       o.connect(f); o.start(t); o.stop(t + 2.45);
     }
-    f.connect(amp); amp.connect(actx.destination);
+    f.connect(amp); amp.connect(toneOut || actx.destination);
   } else if (kind === "horn"){
     // Гудок баржи: две расстроенные «пилы» (90 и 93 Гц дают биение, как у
     // настоящего тифона) через мягкий фильтр; тянется 2,5 с и затихает.
@@ -3517,7 +3619,7 @@ function sfx(kind){
       o.type = "sawtooth"; o.frequency.setValueAtTime(hz, t);
       o.connect(f); o.start(t); o.stop(t + 3.5);
     }
-    f.connect(amp); amp.connect(actx.destination);
+    f.connect(amp); amp.connect(toneOut || actx.destination);
   } else if (kind === "bell"){
     // Причал/финиш: чистый колокол поверх аккорда.
     [880, 1174, 1568].forEach((f, i) => tone(f, t + i*0.10, 0.5, "sine", 0.05));
@@ -3539,7 +3641,7 @@ function birdTone(f1, f2, dur, at, vol){
   amp.gain.setValueAtTime(0.0001, at);
   amp.gain.exponentialRampToValueAtTime(vol, at + 0.015);
   amp.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  o.connect(amp); amp.connect(actx.destination);
+  o.connect(amp); amp.connect(toneOut || actx.destination);
   o.start(at); o.stop(at + dur + 0.02);
 }
 function birdsTick(){
@@ -4421,7 +4523,7 @@ function rainNoise(dur){
   amp.gain.exponentialRampToValueAtTime(0.3, t0 + 0.8);
   amp.gain.setValueAtTime(0.3, t0 + Math.max(1, dur - 1));
   amp.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  src.connect(hp); hp.connect(lpf); lpf.connect(amp); amp.connect(actx.destination);
+  src.connect(hp); hp.connect(lpf); lpf.connect(amp); amp.connect(toneOut || actx.destination);
   src.start(t0); src.stop(t0 + dur + 0.1);
   _cutSrc.push(src);
 }
@@ -4438,7 +4540,7 @@ function cutPlay(key, when, id){
     try {
       const src = actx.createBufferSource(), amp = actx.createGain();
       src.buffer = buf; amp.gain.value = 0.9;
-      src.connect(amp); amp.connect(actx.destination);
+      src.connect(amp); amp.connect(toneOut || actx.destination);
       const now = actx.currentTime;
       if (when >= now) src.start(when); else src.start(now, Math.min(now - when, buf.duration || 0));
       _cutSrc.push(src);
@@ -4714,7 +4816,7 @@ function drwStationBg(sc, s, xf, yf, cw, ch){
 
 function drwCut(){
   const sc = CUTS[g.cut.name];
-  const cw = c.width, ch = c.height;
+  const cw = viewW, ch = viewH;
   const { s, xf, yf } = cutScr(cw, ch);
   // Камера мульта (sc.cam): наезд на точку и отъезд на весь кадр, плавно.
   const cam = cutCam(sc, g.cut.t, cw, ch, s);
@@ -4849,7 +4951,8 @@ function drwCut(){
     if (!spr || !spr.img || st.al <= 0.01) continue;
     cx.save(); cx.globalAlpha = st.al;
     const img = spr.imgs && spr.imgs[st.var] ? spr.imgs[st.var] : spr.img;
-    const w = img.width*st.scl*s, h = img.height*st.scl*s;
+    const scl = pixelScale(st.scl);
+    const w = img.width*scl*s, h = img.height*scl*s;
     if (xf(st.x) + w/2 < -cw || xf(st.x) - w/2 > 2*cw){ cx.restore(); continue; }   // далеко за экраном (запас на камеру/отражение)
     // Тень-эллипс под опорой — только если фигура стоит на земле/перроне
     // (yf(st.y) ≥ gy). Летящие птицы и дальние силуэты тень не получают:
@@ -5218,10 +5321,15 @@ const KAYAK_R = 16;   // радиус столкновения байдарки
 // и табанить, но разгон стоит сил, а торможение — очков.
 const ROW_FWD = 0.45, ROW_BACK = 0.40;
 const STAM_MAX = 100, STAM_DRAIN = 0.55, STAM_REGEN = 0.30;
+// Гребок — событие, а не непрерывное вращение весла: активная фаза 3 кадра,
+// между гребками пауза. Вперёд гребём чаще, назад — реже и спокойнее.
+const STROKE_FRAMES = 3, STROKE_PERIOD = 17, STROKE_PERIOD_BACK = 23;
+const STROKE_BOB = 0.05;                 // ±5 % высоты лодки на активном гребке
 
 // Темп гребли: вперёд — больше очков за всё, назад — меньше, но безопаснее.
 // Скорость мира не меняется: это множитель счёта, а не течения.
 function rowMul(){ return g.rowing > 0 ? 1.25 : g.rowing < 0 ? 0.80 : 1; }
+function strokeLift(){ return g.rowActive > 0 ? g.rowSide * STROKE_BOB : 0; }
 
 function rowInput(){
   let f = 0;
@@ -5255,6 +5363,23 @@ function rowStep(step){
   if (g.pwy > g.scroll + maxLead) g.pwy = g.scroll + maxLead;
   if (g.pwy < g.scroll - maxLag)  g.pwy = g.scroll - maxLag;
   g.py = playerY();
+
+  const cadence = g.rowing > 0 ? STROKE_PERIOD : g.rowing < 0 ? STROKE_PERIOD_BACK : 0;
+  if (cadence){
+    if (g.rowCd > 0) g.rowCd--;
+    if (g.rowCd <= 0){
+      g.rowSide = -(g.rowSide || 1);
+      g.rowActive = STROKE_FRAMES;
+      g.rowCd = cadence;
+      g.strokes = (g.strokes || 0) + 1;
+      sfx("paddle");
+      spPt(screenXOf(g.t, g.pwy) + g.rowSide*20, g.py + 5, "#dff0fa", 4);
+    }
+  } else {
+    g.rowActive = 0;
+    g.rowCd = 0;
+  }
+  if (g.rowActive > 0) g.rowActive--;
 }
 
 function tickStamina(){
@@ -5475,7 +5600,8 @@ function paddleStrike(){
     // rower_flip), дрейфует FLIP_FRAMES кадров и тонет.
     o.flipT = FLIP_FRAMES; o.swingT = -1; o.aggro = false;
     const pts = parried ? 75 : 40;
-    addBonus(pts); g.shake = 9; g.parries++; sfx("parry");
+    addBonus(pts); g.shake = 9; g.shakeDir = Math.sign(g.t - o.t) || 1; g.parries++; sfx("parry");
+    if (parried){ g.freeze = 4; g.squash = 2; }
     popText((parried ? "ПАРИРОВАЛ +" : "ВРЕЗАЛ ПЕРВЫМ +") + award(pts), "#ffd54f");
     // Перевернувшийся соперник роняет своё снаряжение.
     const kind = ["bread","whisky","medkit","axe","sun"][Math.floor(Math.random()*5)];
@@ -6044,6 +6170,14 @@ document.getElementById("pauseMusicBtn").addEventListener("click",()=>{
   toggleMusic();
   document.getElementById("pauseMusicBtn").textContent = musicOn ? "МУЗЫКА: ВКЛ" : "МУЗЫКА: ВЫКЛ";
 });
+document.getElementById("pauseShakeBtn").addEventListener("click", toggleShake);
+document.getElementById("startMuteBtn").addEventListener("click", ()=>toggleMute());
+document.getElementById("pauseMuteBtn").addEventListener("click", ()=>toggleMute());
+document.getElementById("sfxVol").addEventListener("input", e=>setSfxVol(e.target.value/100));
+document.addEventListener("click", e=>{
+  if (e.target && e.target.closest && e.target.closest("button")) sfx("click");
+});
+updateMuteButtons();
 // Уход с дистанции стоит всего захода, поэтому спрашиваем второй раз:
 // первый клик меняет надпись, второй в течение 4 секунд выходит.
 function resetMapExit(){
@@ -6567,8 +6701,16 @@ function drwKy(){
   }
   const name = leanOf(g.vt);
   const sz = spriteSize(name);
+  const ky = y + sz.h * strokeLift();
   drawShadow(x, y + sz.h/2 - 4, sz.w);
-  drawSprite(name, x, y);
+  const squash = g.squash > 0;
+  if (squash){
+    cx.save();
+    cx.translate(x, ky + sz.h/2);
+    cx.scale(1.08, 0.86);
+    cx.translate(-x, -(ky + sz.h/2));
+  }
+  drawSprite(name, x, ky);
   if (g.mazai && !g.mazai.done){        // Мазай: зелёное кольцо вокруг лодки
     cx.strokeStyle = "rgba(127,214,127," + (0.45 + Math.sin(g.frame*0.12)*0.2) + ")"; cx.lineWidth = 3;
     cx.beginPath(); cx.ellipse(x, y, 36, 30, 0, 0, Math.PI*2); cx.stroke();
@@ -6576,22 +6718,24 @@ function drwKy(){
   if (g.strikeT > 0){
     // Взмах: весло взлетает над головой и обрушивается в сторону соперника.
     const k = 1 - g.strikeT/12, s = g.strikeSide || 1;
-    drwFightPaddle(paddleAt(x, y - 6, s, 110 - 130*Math.min(1, (k + 0.16))**2, 1), 0.3);
-    drwFightPaddle(paddleAt(x, y - 6, s, 110 - 130*k*k, 1));
+    drwFightPaddle(paddleAt(x, ky - 6, s, 110 - 130*Math.min(1, (k + 0.16))**2, 1), 0.3);
+    drwFightPaddle(paddleAt(x, ky - 6, s, 110 - 130*k*k, 1));
   } else {
-    drwPaddle(x, y, g.frame * (g.rowing > 0 ? 11 : g.rowing < 0 ? 3 : 6));
+    drwPaddle(x, ky, g.rowActive > 0 ? g.rowSide : 0, g.rowSide);
   }
   if (g.sh){
     cx.strokeStyle = "rgba(79,195,247," + (0.35 + Math.sin(g.frame*0.1)*0.15) + ")";
     cx.lineWidth = 4;
     cx.beginPath(); cx.ellipse(x, y, 34, 28, 0, 0, Math.PI*2); cx.stroke();
   }
+  if (squash) cx.restore();
 }
 
 // Весло рисуется отдельно от корпуса, потому что оно анимируется:
 // гребок уходит то влево, то вправо.
-function drwPaddle(x, y, phase){
-  const dir = Math.sin(phase*0.05) > 0 ? 1 : -1;
+function drwPaddle(x, y, phase, dirOverride){
+  const dir = dirOverride === 1 || dirOverride === -1
+    ? dirOverride : (Math.sin(phase*0.05) > 0 ? 1 : -1);
   for (let i = -9; i <= 9; i++){
     const px = x + i*SCALE, py = y + Math.round(i*0.45*dir)*SCALE;
     const blade = Math.abs(i) >= 7;
@@ -7970,16 +8114,17 @@ function drwCampArt(){
   k.fillStyle = "#1d3324"; k.fillRect(0,84,300,36);
   const put = (name,x,y,sc) => {
     const spr = SPR[name]; if (!spr || !spr.img) return;
+    sc = pixelScale(sc);
     const w = spr.img.width*sc, h = spr.img.height*sc;
     k.drawImage(spr.img, Math.round(x-w/2), Math.round(y-h), w, h);
   };
-  put("tent", 70, 96, 0.55);
-  put("tent", 232, 94, 0.45);
+  put("tent", 70, 96, 0.667);
+  put("tent", 232, 94, 0.333);
   const fl = 0.85 + Math.sin(campFrame*0.35)*0.12;
   k.save(); k.translate(150,96); k.scale(1,fl); k.translate(-150,-96);
-  put("fire", 150, 96, 0.9); k.restore();
-  put("sitter", 118, 98, 0.7);
-  put("person", 182, 98, 0.7);
+  put("fire", 150, 96, 1); k.restore();       // костёр: ×3, а не дробные ×2,7
+  put("sitter", 118, 98, 0.667);
+  put("person", 182, 98, 0.667);
   for (let i=0;i<3;i++){
     const t=(campFrame*1.1+i*40)%70;
     k.fillStyle = "rgba(255,"+(150+i*30)+",60,"+(1-t/70).toFixed(2)+")";
@@ -9779,11 +9924,13 @@ function damage(info){
   const fk = forkAt(g.pwy);
   if (fk) fk.hit = true;                                  // удар в развилке снимает чистый бонус
   if (g.inv > 0 || g.whiskyT > 0 || g.yacht) return;       // яхта не боится никого, кроме баржи
-  if (g.sh){ g.sh = false; g.shake = 8; sfx("hit"); popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
+  if (g.sh){ g.sh = false; g.shake = 8; g.shakeDir = Math.sign(g.t - ((info && info.t) || 0)) || 1; g.freeze = 4; g.squash = 2; sfx("hit"); popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
   noteHit(info);
   g.hp -= 1;
   g.inv = INV_FRAMES;
   g.shake = 14;
+  g.shakeDir = Math.sign(g.t - ((info && info.t) || 0)) || 1;
+  g.freeze = 4; g.squash = 2;
   g.combo = 0; g.comboT = 0;
   // Без гермомешка удар сбивает активные эффекты.
   if (!hasGear("drybag")){ g.breadT = 0; g.whiskyT = 0; }
@@ -9827,9 +9974,11 @@ function crush(info){
   noteHit(info);
   g.sh = false;
   g.hp = 0;
+  g.freeze = 4; g.squash = 2;
   g.combo = 0; g.comboT = 0;
   if (!hasGear("drybag")){ g.breadT = 0; g.whiskyT = 0; }
   g.shake = 20;
+  g.shakeDir = Math.sign(g.t || 1) || 1;
   if (rapidBlend(g.scroll) > 0.5) g.cleanRun = false;
   g.t = 0; g.vt = 0;
   g.sp = Math.max(1.8, g.sp*0.5);
@@ -10161,6 +10310,8 @@ function togglePause(){
     document.getElementById("pauseGoal").innerHTML =
       "до финиша: " + Math.max(0, Math.round(L.len - g.dist)) + " м<br>" +
       "цель: " + L.goalText;
+    document.getElementById("pauseShakeBtn").textContent = "ТРЯСКА: " + (shakeOn ? "ВКЛ" : "ВЫКЛ");
+    updateMuteButtons();
     document.getElementById("pauseScreen").classList.remove("hidden");
   } else if (g.s === "paused"){
     document.getElementById("pauseScreen").classList.add("hidden");
@@ -10332,7 +10483,7 @@ function sg(){
   document.getElementById("pauseBtn").classList.remove("hidden");
   g.s="playing";g.sp=2.5;g.dist=0;g.sc=0;g.bsc=0;g.obs=[];g.bns=[];g.pts=[];g.bev=[];g.ashore=[];
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;g.lastHit=null;g.hitLog=[];
-  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.convoy=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.breadT=0;g.whiskyT=0;g.sunT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
+  g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.rowActive=0;g.rowCd=0;g.rowSide=1;g.strokes=0;g.freeze=0;g.squash=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.convoy=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.shakeT=0;g.shakeDir=1;g.breadT=0;g.whiskyT=0;g.sunT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
   g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.mazai=null;g.yacht=false;g.mazaiPlaced=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;g.packZones=[];g.tempo={restT:0,lull:false,lullBonus:false};
   ensureSegments(H*2);
   const r = river();
@@ -10628,7 +10779,7 @@ function bargeHorn(){
     if (screenYOf(o.wy) + (o.visHalfY || 40) >= 0){ o.horned = true; sfx("horn"); }
   }
 }
-function setAudio(a){ actx = a; for (const k in _sndBuf) delete _sndBuf[k]; for (const k in _sndWait) delete _sndWait[k]; }
+function setAudio(a){ actx = a; sfxBus = null; toneOut = null; for (const k in _sndBuf) delete _sndBuf[k]; for (const k in _sndWait) delete _sndWait[k]; }
 
 function bargeStep(o, flow){
   o.wy += flow*(o.slow || 1);
@@ -10712,7 +10863,10 @@ function upd(){
     }
     return;
   }
-  if(g.s!="playing")return;g.frame++;
+  if(g.s!="playing")return;
+  // Hit stop: несколько кадров мир стоит, но кадр всё равно рисуется.
+  if (g.freeze > 0){ g.freeze--; if (g.squash > 0) g.squash--; return; }
+  g.frame++; g.shakeT++;
   if(g.sm){g.st--;if(g.st<=0)g.sm=false;}
   g.df=1+g.dist/(level().len*1.6);const tgt=Math.min(6.5,2.5+g.dist/700);g.sp+=(tgt-g.sp)*0.004;
   weedDrag(tgt); dropWeeds();
@@ -10809,9 +10963,6 @@ function upd(){
   // Кильватерный след за кормой.
   g.wake.push({ t: g.t, wy: g.pwy });
   if (g.wake.length > 40) g.wake.shift();
-  // Брызги от гребка.
-  if (g.frame % (g.breadT > 0 ? 9 : 14) === 0)
-    spPt(screenXOf(g.t,g.pwy) + (Math.sin(g.frame*0.3)>0?26:-26), g.py + 6, "#dff0fa", 3);
   let input = 0;
   if (keyHeld("ArrowLeft") || keys["a"] || keys["A"] || keys["ф"] || keys["Ф"]) input = -1;
   if (keyHeld("ArrowRight") || keys["d"] || keys["D"] || keys["в"] || keys["В"]) input = 1;
@@ -11273,7 +11424,8 @@ function rndr(){
   if (g.s == "cutscene" && g.cut){ drwCut(); return; }
   cx.save();
   const amp = g.shake + rapidBlend(g.pwy)*2;
-  if (amp > 0.1) cx.translate((Math.random()-0.5)*amp, (Math.random()-0.5)*amp);
+  const off = shakeOffset(g.shakeT || 0, amp, g.shakeDir);
+  if (Math.abs(off.x) + Math.abs(off.y) > 0.1) cx.translate(off.x, off.y);
   drwBg();
   for(const e of g.bev)drwBev(e);
   for(const e of g.bev) if (e.dog) drwDog(e);
@@ -13242,18 +13394,18 @@ function splitBoot(){
   drawMenu();
   loop();
 }
-globalThis.__KAYAK__ = { G: g, W, H, roadHitsBox, setTitleMenuTop, spriteSize, seatPause, seatAutoContinue, SPLIT_TRACKS, splitLevel, seatParams, splitAllowed, splitRoom, splitKeyPad, splitMerge, splitStrip, setExtPad, setSeatLink, seatDeliver, seatStart, netSend, gpRead, pollGamepad, gpState, raceMapOn, drwRaceMotors, screenXOf, raceMapPoints, raceChaseText, drwRaceMap, dropTrap, raceBoatNear, botTake, botItems, raceItemsStep, MOTOR_FRAMES, TRAP_LIFE, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
+globalThis.__KAYAK__ = { G: g, W, H, canvasBacking, dpr:() => dpr, viewW:() => viewW, viewH:() => viewH, roadHitsBox, setTitleMenuTop, spriteSize, seatPause, seatAutoContinue, SPLIT_TRACKS, splitLevel, seatParams, splitAllowed, splitRoom, splitKeyPad, splitMerge, splitStrip, setExtPad, setSeatLink, seatDeliver, seatStart, netSend, gpRead, pollGamepad, gpState, raceMapOn, drwRaceMotors, screenXOf, raceMapPoints, raceChaseText, drwRaceMap, dropTrap, raceBoatNear, botTake, botItems, raceItemsStep, MOTOR_FRAMES, TRAP_LIFE, STATION, FINALE_CREW, finaleCrew, REG_LEGEND, sunPath, drwSunPath, SUN_FRAMES, hazeAlpha, raceStrike, raceHitMe, botAttack, RACE_FLIP, deepItems, deepCand, drwCycRoads, campWalkSpeed, CAMP_WALK, VILLAGE_CHURCH, toRegattaMenu, deepDecor, drwFarQueue, farChase, onCycRoad, cyclistShown, bearRoam, CYC_REACH, raceAgain, farPart, clampView, flightPos, flewOff, farScene, farBlock, nearRoad, FAR_SCENES, withView, rndrWide, REGATTA_TRACKS, BOT_STYLES, regattaLevel, startRegatta, raceRowMul, botLane, regattaStep, regattaBump, regattaStandings, regattaPlace, regattaFinish, regattaResult, regattaTableHtml, drwBots, showRegattaMenu, panelStage, roomCode, roomFrom, roomLink, netHost, netJoin, netMsg, netSmooth, drwRival, drwCountdown, showRaceMenu, showRaceHost, showRaceJoin, GHOST_STEP, RACE_WIDE, raceLevel, startRace, raceStep, raceFinishLine, ghostAt, raceGap, raceTime, raceResult, racePayload, raceIdFrom, raceLink, raceUpload, raceLoad, drwGhost, drwRaceHud, raceEndScreen, showRaceInvite, afterHitT, CUSTOM_TOOLS, CUSTOM_NAMES, CUSTOM_SHORE, CUSTOM_RIVER, customIsland, customRiver, narrowBlend, PY, popText, hintBox, bridgeWeather, deepPick, DEEP_NEAR, centerAt, centerSines, baseWidthAt, widthAt, curvAt, curvBend, secondDiff, finishGain,
   screenYOf, worldYOf, spawnWy, offScreen, screenXOf, ensureSegments, segAt,
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, DEEP_SETS, AGGRO_VARIANT, brandishing, PASS_GAP, FORK_PASS_GAP, forkPassGap, spForkRock, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fogWarn, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, DEEP_SETS, AGGRO_VARIANT, brandishing, PASS_GAP, FORK_PASS_GAP, forkPassGap, spForkRock, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fogWarn, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, uiClick:()=>sfx("click"), setAudio, toggleMute, setMuted, setSfxVol, muted:()=>muted, sfxVolume:()=>sfxVol, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   SAVE_VERSION, SAVE_DEFAULT, mergeSave, showSaveProblem, saveProblem: () => saveProblem, requestMapExit, onWindowBlur, onWindowFocus, onVisibilityChange, pageVisible, resumeAfterTimeout,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
   tutActive, tutTick, tutAction, tutRefresh, skipTutorial, finishTutorial, tutBegin, spawnAllowed, TUT_LEN,
-  repeatHint, backFromDiary, rowMul, award, tempoAt, tempoTick, spawnRate, bargeIntroTick, drwBargeWarn,
+  repeatHint, backFromDiary, rowMul, strokeLift, shakeOffset, toggleShake, pixelScale, award, tempoAt, tempoTick, spawnRate, bargeIntroTick, drwBargeWarn,
   campaignSum, scoreNow, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, toShore, ashoreStep, RUSH_FRAMES, ASHORE_FRAMES, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp, keyName, keyHeld, onKeyDown, onKeyUp };

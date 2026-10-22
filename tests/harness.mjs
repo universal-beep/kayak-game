@@ -33,7 +33,8 @@ function makeCtx() {
     save() {}, restore() {},
     fillRect() {}, clearRect() {}, strokeRect() {}, fillText() {},
     beginPath() {}, arc() {}, ellipse() {}, moveTo() {}, lineTo() {}, closePath() {}, quadraticCurveTo() {},
-    fill() {}, stroke() {}, scale() {}, translate() {}, rotate() {}, setTransform() {},
+    fill() {}, stroke() {}, scale() {}, translate() {}, rotate() {},
+    setTransform(a, b, c, d, e, f) { this.lastTransform = [a, b, c, d, e, f]; },
     drawImage(img) {
       if (!img) throw new Error("drawImage(img=undefined)");
       if (img.width === undefined && img.canvas === undefined) throw new Error("drawImage: нет width");
@@ -95,6 +96,7 @@ export function loadGame(htmlPath, opts = {}) {
     sandbox.requestAnimationFrame = () => { sandbox.__raf++; return 0; };
   }
   sandbox.window = { innerWidth: 420, innerHeight: 720, document, addEventListener: sandbox.addEventListener, AudioContext: sandbox.AudioContext, Audio: sandbox.Audio, requestAnimationFrame: sandbox.requestAnimationFrame };
+  if (opts.dpr != null){ sandbox.devicePixelRatio = opts.dpr; sandbox.window.devicePixelRatio = opts.dpr; }
 
   createContext(sandbox);
   runInContext(src, sandbox, { filename: "game.js" });
@@ -115,4 +117,9 @@ export function setupWorld(K, { wy = 1000, t = 0, rWidth = 1 } = {}) {
   K.G.obs = [];
   K.G.pts = [];
   K.G.df = 0;
+  K.G.freeze = 0;
+  K.G.squash = 0;
+  K.G.shake = 0;
+  K.G.shakeT = 0;
+  K.G.shakeDir = 1;
 }

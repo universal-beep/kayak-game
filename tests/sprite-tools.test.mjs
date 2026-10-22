@@ -9,6 +9,7 @@ import { DATA_FILE, renderDataFile } from "../tools/sprite-data.mjs";
 import { applySprite } from "../tools/sprite-apply.mjs";
 
 const data = loadSprites();
+const colorGate = JSON.parse(readFileSync(new URL("../quality-gates/sprite-colors.json", import.meta.url), "utf8"));
 
 test("tools/sprite-data.js совпадает с index.html (иначе редактор покажет старые спрайты)", () => {
   assert.equal(readFileSync(DATA_FILE, "utf8"), renderDataFile(data),
@@ -21,6 +22,22 @@ test("tools/sprite-data.js совпадает с index.html (иначе реда
 // перерисован под ×3, его надо убрать из списка, иначе тест упадёт.
 // Остались только кадры костра из мультов: мульты сознательно не трогаем.
 const MIXEL_DEBT = ["fire0", "fire1", "fire2"];
+
+// Палитровый бюджет: новые спрайты — не больше 6 цветов. Старый долг
+// зафиксирован в quality-gates/sprite-colors.json; его можно только сокращать.
+test("палитра: новые спрайты ≤" + colorGate.budget + " цветов, старые не хуже baseline", () => {
+  const counts = {};
+  for (const [n, s] of Object.entries(data.sprites))
+    counts[n] = new Set(s.map.join("").replace(/\./g, "").split("")).size;
+  const regressed = [];
+  for (const [n, c] of Object.entries(counts)){
+    const max = Object.prototype.hasOwnProperty.call(colorGate.debt, n) ? colorGate.debt[n] : colorGate.budget;
+    if (c > max) regressed.push(n + ": " + c + " > " + max);
+  }
+  assert.deepEqual(regressed, [], "палитра выросла сверх бюджета: " + regressed.join(", "));
+  const repaid = Object.keys(colorGate.debt).filter(n => counts[n] <= colorGate.budget);
+  assert.deepEqual(repaid, [], "уже в бюджете — убери из quality-gates/sprite-colors.json: " + repaid.join(", "));
+});
 
 test("один размер пикселя: новые спрайты только ×" + data.SCALE, () => {
   const off = Object.entries(data.sprites)
