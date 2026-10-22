@@ -1,24 +1,25 @@
-// Злые гребцы: в день знакомства (3-й) их много, потом по одному-два как
-// элемент реки, в финале снова ватага. Расписание встреч выполняется на деле.
+// Злые гребцы: день 3 — только развилки и коряги, бой начинается на 4-м дне.
+// Там знакомство с ватагой, потом по одному-два как элемент реки, а финал
+// (день 9) — конвой без парирований. Расписание встреч выполняется на деле.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { loadGame, setupWorld } from "./harness.mjs";
 
-test("расписание: знакомство на 3-м дне густое, середина редкая, финал снова густой", () => {
+test("расписание: день 3 без боя, знакомство на 4-м густое, финал — конвой", () => {
   const { K } = loadGame();
   const total = d => K.fightsTotal(K.LEVELS[d - 1]);
-  assert.equal(total(1), 0); assert.equal(total(2), 0);
-  assert.ok(total(3) >= 8, "знакомство: " + total(3));
-  assert.ok(total(4) >= 6, "закрепление: " + total(4));
+  assert.equal(total(1), 0); assert.equal(total(2), 0); assert.equal(total(3), 0);
+  assert.ok(total(4) >= 8, "знакомство: " + total(4));
   for (const d of [5, 6, 7, 8]) assert.ok(total(d) >= 1 && total(d) <= 3, `день ${d}: ${total(d)}`);
-  assert.ok(total(9) >= 8, "финал: " + total(9));
-  for (const d of [3, 4, 9]) for (const m of [5, 6, 7, 8]) assert.ok(total(d) > total(m), `день ${d} гуще дня ${m}`);
+  assert.equal(total(9), 0, "финал без расписания боёв");
+  for (const m of [5, 6, 7, 8]) assert.ok(total(4) > total(m), `день 4 гуще дня ${m}`);
 });
 
-test("случайная доля злых после знакомства падает, а не растёт", () => {
+test("случайная доля злых: до боя ноль, после знакомства падает", () => {
   const { K } = loadGame();
   const a = d => K.LEVELS[d - 1].aggro;
-  assert.ok(a(3) >= a(4) && a(4) > a(5));
+  assert.equal(a(3), 0, "на 3-м дне злых нет");
+  assert.ok(a(4) > a(5));
   for (const d of [5, 6, 7, 8]) assert.ok(a(d) <= 0.15, `день ${d}`);
 });
 
@@ -53,7 +54,7 @@ test("до своей доли пути встреча не выходит; од
 });
 
 test("все встречи дня выполняются и выпускают ровно столько гребцов, сколько в расписании", () => {
-  for (const d of [3, 9]) {
+  for (const d of [4, 5, 6, 7, 8]) {
     const K = day(d), L = K.LEVELS[d - 1];
     let spawned = 0, f = 0;
     const seen = new Set();
@@ -69,20 +70,22 @@ test("все встречи дня выполняются и выпускают 
 });
 
 test("первая встреча объясняется один раз", () => {
-  const K = day(3);
-  K.G.dist = K.LEVELS[2].len*0.13;
+  const K = day(4);
+  K.G.dist = K.LEVELS[3].len*0.16;
   for (let i = 0; i < 3; i++) K.fightStep();
   assert.ok(K.G.fightShown);
 });
 
 test("на своём уровне и в дни без расписания встреч нет", () => {
-  const K = day(1);
-  K.G.dist = 400; for (let i = 0; i < 50; i++) K.fightStep();
-  assert.equal(K.G.obs.length, 0);
+  for (const d of [1, 3, 9]) {
+    const K = day(d);
+    K.G.dist = 400; for (let i = 0; i < 50; i++) K.fightStep();
+    assert.equal(K.G.obs.length, 0, "день " + d);
+  }
 });
 
 test("знакомство: сначала один, потом сразу три на одном экране", () => {
-  const K = day(3), L = K.LEVELS[2];
+  const K = day(4), L = K.LEVELS[3];
   assert.equal(L.fights[0].n, 1, "первая встреча — один");
   assert.ok(!L.fights[0].pack);
   assert.equal(L.fights[1].n, 3);
@@ -103,7 +106,7 @@ test("знакомство: сначала один, потом сразу тр�
 });
 
 test("ватагу не выпускают поверх прежней: ждёт, пока уплывёт", () => {
-  const K = day(3), L = K.LEVELS[2];
+  const K = day(4), L = K.LEVELS[3];
   K.G.dist = L.len*L.fights[1].at + 1;
   K.G.fightIdx = 1;
   assert.ok(K.spPack(3));

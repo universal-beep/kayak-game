@@ -94,11 +94,11 @@ test("ватага расширяет реку и не выходит на по�
   for (const o of K.G.obs.filter(o => o.aggro)) assert.ok(o.wy >= z.a && o.wy <= z.b, "гребец в зоне");
 });
 
-test("тройки (pack) только на 3-м и 9-м днях", () => {
+test("тройки (pack) только в день знакомства с боем — 4-й", () => {
   const { K } = loadGame();
   K.LEVELS.forEach((L, i) => {
     const packs = (L.fights || []).filter(f => f.pack);
-    if (L.day === 3 || L.day === 9) assert.ok(packs.length >= 2 && packs.every(f => f.n === 3), "день " + L.day);
+    if (L.day === 4) assert.ok(packs.length >= 2 && packs.every(f => f.n === 3), "день " + L.day);
     else assert.equal(packs.length, 0, "день " + L.day);
   });
 });

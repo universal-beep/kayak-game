@@ -16,11 +16,11 @@ function day6(wy = 6000) {
 }
 const boats = K => K.G.obs.filter(o => o.type === "boat");
 
-test("катера только во второй день Тверцы (день 6)", () => {
+test("катера на Тверце (день 6) и в конвое устья (день 9)", () => {
   for (let d = 0; d < 9; d++) {
     const { K } = day6(); K.G.day = d;
     K.spBoat();
-    assert.equal(boats(K).length > 0, d === 5, "день " + (d + 1));
+    assert.equal(boats(K).length > 0, d === 5 || d === 8, "день " + (d + 1));
   }
 });
 

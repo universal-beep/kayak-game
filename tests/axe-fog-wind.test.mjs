@@ -53,9 +53,9 @@ test("без топора двойной тап — взмах веслом", ()
   assert.equal(K.G.strikeT, 12, "взмах");
 });
 
-test("туман на 8-м дне: даль скрыта, у лодки ясно; в другие дни тумана нет", () => {
+test("туман на 8-м и 9-м днях: даль скрыта, у лодки ясно; в другие дни тумана нет", () => {
   const { K } = loadGame();
-  K.LEVELS.forEach((L, d) => assert.equal(!!L.fog, d === 7, "день " + L.day));
+  K.LEVELS.forEach((L, d) => assert.equal(!!L.fog, d === 7 || d === 8, "день " + L.day));
   K.G.day = 7;
   assert.ok(K.fogAlpha(0) > 0.6, "у верхней кромки — густо");
   assert.equal(K.fogAlpha(9999), 0, "у лодки — ясно");
@@ -63,9 +63,9 @@ test("туман на 8-м дне: даль скрыта, у лодки ясно
   assert.equal(K.fogAlpha(0), 0);
 });
 
-test("встречный ветер на 6-м дне: порывами тормозит, у берега тише; в другие дни нет", () => {
+test("встречный ветер на 6-м и 9-м днях: порывами тормозит, у берега тише; в другие дни нет", () => {
   const { K } = loadGame();
-  K.LEVELS.forEach((L, d) => assert.equal(!!L.wind, d === 5, "день " + L.day));
+  K.LEVELS.forEach((L, d) => assert.equal(!!L.wind, d === 5 || d === 8, "день " + L.day));
   K.G.day = 5;
   let minC = 1, atMin = 0;
   for (let f = 0; f < 1200; f++) { const m = K.windMul(f, 0); if (m < minC) { minC = m; atMin = f; } }
