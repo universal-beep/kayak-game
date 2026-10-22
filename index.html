@@ -5130,9 +5130,12 @@ function ensureForks(untilW){
     // При half=0.26 узкий рукав выходил 51 px при ширине байдарки 63 —
     // она туда визуально не помещалась. При half=0.19 рукава 95 и 70 px:
     // байдарка проходит с запасом, а разница между рукавами сохраняется.
-    g.forks.push({ start, end: start + FORK_LEN,
-                   center: narrowLeft ? -0.12 : 0.12,
-                   half: 0.19, narrowLeft, taken:0 });
+    const fk = { start, end: start + FORK_LEN,
+                 center: narrowLeft ? -0.12 : 0.12,
+                 half: 0.19, narrowLeft, taken:0 };
+    g.forks.push(fk);
+    // В узком рукаве — один камень с щелью 42 px: риск должен быть виден.
+    spForkRock(fk);
   }
   while (g.forks.length > 6) g.forks.shift();
 }
@@ -8565,10 +8568,19 @@ function separate(o){
 }
 
 // Проход для байдарки: камень не ставится, если поперёк реки не останется
-// щели хотя бы PASS_GAP px (корпус 33 px + запас на руль).
-const PASS_GAP = 70, PASS_LOOK = 900;      // PASS_LOOK: до скольки px вниз по реке подвижные считаются «придут сюда»
-function leavesPassage(t, wy, visHalf, visHalfY){
+// щели хотя бы PASS_GAP px (корпус 33 px + запас на руль). В узком рукаве
+// развилки щель уже: 42 px оставляют риск, но байдарка проходит.
+const PASS_GAP = 70, PASS_LOOK = 900;
+const FORK_PASS_GAP = 42;
+function forkNarrowSide(fk){ return fk.narrowLeft ? -1 : 1; }
+function forkPassGap(t, wy){
+  const sh = forkShape(wy);
+  return sh && sh.h > 0.10 && Math.sign(t - sh.c) === forkNarrowSide(sh.f)
+    ? FORK_PASS_GAP : PASS_GAP;
+}
+function leavesPassage(t, wy, visHalf, visHalfY, gap){
   const vy = visHalfY || visHalf;
+  const need = gap || forkPassGap(t, wy);
   // Проверяются все строки по высоте нового камня: соседи чуть выше или ниже
   // перекрываются с ним на промежуточных строках.
   for (let y = wy - vy; y <= wy + vy; y += 6){
@@ -8593,9 +8605,34 @@ function leavesPassage(t, wy, visHalf, visHalfY){
     iv.sort((p, q) => p[0] - q[0]);
     let at = c - hw, best = 0;
     for (const [p, q] of iv){ best = Math.max(best, p - at); at = Math.max(at, q); }
-    if (Math.max(best, c + hw - at) < PASS_GAP) return false;
+    if (Math.max(best, c + hw - at) < need) return false;
   }
   return true;
+}
+// Один камень в узком рукаве развилки. Ставим его у берега, оставляя
+// проход 42 px со стороны острова; на реках, где рукав уже этого, камня нет.
+function spForkRock(fk){
+  if (fk.rock) return fk.rock;
+  const wy = fk.start + FORK_LEN*0.55;
+  const sh = forkShape(wy);
+  if (!sh || sh.h <= 0.02) return null;
+  const hw = widthAt(wy)/2, side = forkNarrowSide(fk);
+  const inner = sh.c + side*sh.h;
+  const kinds = Object.keys((RIVERS[level().river] || RIVERS[0]).stones)
+    .sort((a, b) => spriteSize(a).w - spriteSize(b).w);
+  for (const sprite of kinds){
+    const size = spriteSize(sprite);
+    const visHalf = size.w/2;
+    const t = inner + side*(visHalf + FORK_PASS_GAP)/hw;
+    if (Math.abs(t) > 0.94 || inIsland(t, wy)) continue;
+    if (!leavesPassage(t, wy, visHalf, size.h/2, FORK_PASS_GAP)) continue;
+    const o = { t, wy, type:"rock", size:18, halfPx:visHalf*0.82, sprite, vt:0,
+                visHalf, visHalfY:size.h/2, forkRock:true };
+    g.obs.push(o);
+    fk.rock = o;
+    return o;
+  }
+  return null;
 }
 function spaceFree(t, wy, visHalf){
   const hw = widthAt(wy)/2;
@@ -8706,8 +8743,8 @@ function spBn(force){
   let bt=null;
   const fk=forkAt(wy);
   for(let a=0;a<10;a++){
-    // В развилке бонусы кладём в узкий рукав: риск должен окупаться.
-    const cand = fk ? (fk.narrowLeft ? -1 : 1) * (0.55 + Math.random()*0.30)
+    // В развилке бонус кладём в случайный рукав: награда не привязана к риску.
+    const cand = fk ? (Math.random()<0.5 ? -1 : 1) * (0.55 + Math.random()*0.30)
                     : (Math.random()*2-1)*0.75;
     if(inIsland(cand,wy))continue;
     if(spaceFree(cand,wy,bVis)){bt=cand;break;}
@@ -9325,6 +9362,7 @@ function overlapsAny(o, t){
 function keepPassage(){
   if (g.custom) return;                       // в своём уровне всё стоит как нарисовано
   for (const o of g.obs.slice()){
+    if (o.forkRock) continue;                  // риск развилки не раздвигаем
     const mobile = o.type === "log" || o.type === "branch" || (o.type === "kayaker" && !(o.flipT > 0));
     const stat = o.type === "rock" || o.type === "snag" || o.type === "shallows";
     if (!mobile && !stat) continue;
@@ -9738,6 +9776,8 @@ function noteHit(info){
 }
 
 function damage(info){
+  const fk = forkAt(g.pwy);
+  if (fk) fk.hit = true;                                  // удар в развилке снимает чистый бонус
   if (g.inv > 0 || g.whiskyT > 0 || g.yacht) return;       // яхта не боится никого, кроме баржи
   if (g.sh){ g.sh = false; g.shake = 8; sfx("hit"); popText("ЩИТ РАЗБИТ","#4fc3f7"); return; }
   noteHit(info);
@@ -10939,19 +10979,24 @@ function upd(){
   for(let i=g.pts.length-1;i>=0;i--){const p=g.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.lf--;if(p.lf<=0)g.pts.splice(i,1);}
   ensureForks(g.scroll + H*3);
   ensureBridges(g.scroll + H*3);
-  // Учёт, каким рукавом пошли, и награда за узкий.
+  // Учёт, каким рукавом пошли. Награда за узкий — только после чистого выхода.
   {
     const fk = forkAt(g.pwy);
     if (fk && !fk.taken){
       const sh = forkShape(g.pwy);
       if (sh && sh.h > 0.10){
         fk.taken = (g.t < sh.c) ? -1 : 1;
-        const narrowSide = fk.narrowLeft ? -1 : 1;
-        if (fk.taken === narrowSide){
-          addBonus(120); sfx("bonus"); popText("УЗКИМ РУКАВОМ +" + award(120), "#ffd54f");
-        } else {
-          popText("ШИРОКИМ РУКАВОМ", "#9aa9b2");
-        }
+        if (fk.taken !== forkNarrowSide(fk)) popText("ШИРОКИМ РУКАВОМ", "#9aa9b2");
+      }
+    }
+    for (const f of g.forks){
+      if (!f.taken || f.rewarded || g.pwy < f.end) continue;
+      f.rewarded = true;
+      if (f.taken !== forkNarrowSide(f)) continue;
+      if (!f.hit){
+        addBonus(120); sfx("bonus"); popText("УЗКИМ РУКАВОМ +" + award(120), "#ffd54f");
+      } else {
+        popText("УЗКИМ, НО С УДАРОМ", "#ff8a65");
       }
     }
   }
@@ -11694,6 +11739,7 @@ function customRiver(items){
     const is = customIsland(it), start = itemWy(it) - 100;
     return { start, end: start + FORK_LEN, center: is.center, half: 0.19, narrowLeft: is.center < 0, taken: 0 };
   });
+  for (const fk of g.forks) spForkRock(fk);
   g.weeds = [];
   for (const it of items){
     if (it.k !== "weeds") continue;
@@ -13201,7 +13247,7 @@ globalThis.__KAYAK__ = { G: g, W, H, roadHitsBox, setTitleMenuTop, spriteSize, s
   rapidBlend, speedMulAt, stepLateral, flowMul, leanOf, ACC, VMAX, DAMP, DRIFT, TMAX, lateralBounds,
   SPR, PAL, SCALE, drwOb, drwKy, spriteSize, swapPalette, damage, apBn, bonusWeights, tickEffects,
   widerBevSide,
-  upd, DEEP_SETS, AGGRO_VARIANT, brandishing, PASS_GAP, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fogWarn, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
+  upd, DEEP_SETS, AGGRO_VARIANT, brandishing, PASS_GAP, FORK_PASS_GAP, forkPassGap, spForkRock, leavesPassage, bridgeGuard, tauntVoice, fightPhase, paddlePose, paddleAt, spBoat, boatStep, waveStep, drwWaves, chkCl, SOUNDS, playSample, preloadSounds, endCut, nightName, driveName, fogWarn, MUSIC_VOL, throwAxe, axeStep, fogAlpha, windMul, pierBoat, pierKind, nightBefore, stepShove, fisherLucky, cyclistCount, cycRoadOff, CYC_SPAN, FISHER_KINDS, fisherKind, rodAnchor, herdOf, cyclistWy, cyclistLane, villagePlan, spVillage, wearName, cutWear, FINISHES, FIN_SPAWN_M, cowsWade, morningName, CUT_SKY, rockKind, cutSources, cutCam, sandEdge, spWeed, weedSpan, weedStrands, weedDrag, dropWeeds, drwWeeds, sfx, setAudio, bargeHorn, logStep, bargeStep, aheadPush, sandBar, measureBev, placeBev, boxesOverlap, separate, pushOutOfIsland, spOb, spBn, RIVERS, LEVELS, river, level, paddleStrike, SWING_FRAMES, PARRY_WINDOW, FLIP_FRAMES, fightFrame, dayFromParam, drawOrderOf, spBev, drwBev, bankX, bankAnchor, bankVisible, BEV_POOLS, updBev,
   DEBUG_SCENES, teleportTo, sceneAt, applyDebugScene, downloadShot,
   startDay, showMap, showCamp, showCampaignEnd, showDiary, showHelp, togglePause, finishLevel, failLevel, goalMet, loadSave, commitSave, resetSave, starsOf,
   SAVE_VERSION, SAVE_DEFAULT, mergeSave, showSaveProblem, saveProblem: () => saveProblem, requestMapExit, onWindowBlur, onWindowFocus, onVisibilityChange, pageVisible, resumeAfterTimeout,
