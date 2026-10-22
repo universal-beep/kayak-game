@@ -8467,6 +8467,25 @@ function drwTutRing(){
   cx.restore();
 }
 
+// Маркер баржи: жёлтый треугольник с «!» над водой, пока баржа впереди.
+// Нужен, чтобы гудок не был единственной подсказкой.
+function drwBargeWarn(){
+  for (const o of g.obs){
+    if (o.type !== "barge") continue;
+    const ahead = o.wy - g.pwy;
+    if (ahead < 0 || ahead > 520) continue;
+    const x = screenXOf(o.t, o.wy);
+    const y = Math.max(26, screenYOf(o.wy) - 34);
+    cx.save();
+    cx.fillStyle = "#ffd54f"; cx.strokeStyle = "rgba(0,0,0,0.55)"; cx.lineWidth = 2;
+    cx.beginPath(); cx.moveTo(x, y-10); cx.lineTo(x-9, y+4); cx.lineTo(x+9, y+4);
+    cx.closePath(); cx.fill(); cx.stroke();
+    cx.fillStyle = "#12202e"; cx.font = "8px " + F; cx.textAlign = "center";
+    cx.fillText("!", x, y+2);
+    cx.restore(); cx.textAlign = "left";
+  }
+}
+
 function drwPops(){
   cx.save(); cx.font = "9px " + F; cx.textAlign = "center";
   for (const p of g.pops){
@@ -8616,6 +8635,9 @@ function spOb(){
   let r=Math.random(),c=0,ty="rock";
   for(let i=0;i<types.length;i++){c+=ws[i];if(r<c){ty=types[i];break;}}
   if (ty=="barge" && g.obs.some(o=>o.type=="barge")) return;   // не больше одной сразу
+  // До сценарной баржи случайную не выпускаем: игрок должен увидеть первую
+  // один раз и в понятной обстановке.
+  if (ty=="barge" && g.bargeIntro && !g.bargeIntro.done) return;
   if (ty=="seaweed"){ if (!forkAt(wy) && !forkAt(wy + 400)) spWeed(wy); return; }
   // В развилке препятствий нет вовсе: сам выбор прохода и есть испытание,
   // а бревно поперёк узкого рукава делало его непроходимым.
@@ -10262,6 +10284,9 @@ function sg(){
   // Снаряжение действует весь день.
   if (save.gear.indexOf("helmet") >= 0) g.sh = true;
   g.hp = maxHp();
+  // Первая баржа дня 2 — отдельный сценарный выход, один раз на сохранение.
+  g.bargeIntro = (level().barges && !(save.seen && save.seen.barge))
+    ? { at: level().len*0.12, done: false, barge: null } : null;
   // Обучение включается только при входе в день через startDay(), а не при
   // прямом sg() из инструментов и проб. Повтор — кнопкой «ОБУЧЕНИЕ» с карты.
   const wantTut = !!g.tutWanted, forceTut = !!g.tutForce;
@@ -10510,16 +10535,40 @@ function drwWaves(){
 }
 
 // Баржа гудит один раз — когда въезжает в кадр сверху.
+// Первая баржа дня 2 — сценарная: широкая вода, медленный ход, проход
+// с другой стороны и подпись. Дальше баржи спавнятся как обычно.
+function bargeIntroTick(){
+  const B = g.bargeIntro;
+  if (!B || B.done || g.custom || !level().barges) return;
+  if (g.dist < B.at) return;
+  const s = spriteSize(OB_SPRITE.barge || "barge");
+  const o = { type: "barge", t: -0.56, wy: g.pwy + 800, size: 48,
+              halfPx: s.w/2, sprite: null, vt: 0,
+              visHalf: s.w/2, visHalfY: s.h/2,
+              intro: true, slow: 0.65, warned: false, horned: false };
+  g.obs.push(o);
+  B.done = true; B.barge = o;
+  g.hint = { text: "БАРЖА ИДЁТ ПО КУРСУ — УХОДИ К БЕРЕГУ", life: 280 };
+}
 function bargeHorn(){
   for (const o of g.obs){
     if (o.type !== "barge" || o.horned) continue;
+    if (o.intro && !o.warned){
+      const ahead = o.wy - g.pwy;
+      if (ahead > 0 && ahead <= 400){
+        o.warned = true; o.horned = true; sfx("horn");
+        if (!save.seen) save.seen = {};
+        if (!save.seen.barge){ save.seen.barge = 1; commitSave(); }
+      }
+      continue;
+    }
     if (screenYOf(o.wy) + (o.visHalfY || 40) >= 0){ o.horned = true; sfx("horn"); }
   }
 }
 function setAudio(a){ actx = a; for (const k in _sndBuf) delete _sndBuf[k]; for (const k in _sndWait) delete _sndWait[k]; }
 
 function bargeStep(o, flow){
-  o.wy += flow;
+  o.wy += flow*(o.slow || 1);
   const hw = widthAt(o.wy)/2;
   o.vt = (o.vt || 0) * 0.9 + aheadPush(o, 260) * 0.0006;
   o.vt = Math.max(-0.006, Math.min(0.006, o.vt));
@@ -10710,6 +10759,7 @@ function upd(){
   }
   tutTick();
   tempoTick();
+  bargeIntroTick();
   const sr = spawnRate();
   if(!g.custom && spawnAllowed() && Math.random()<sr)spOb();
   bargeHorn();
@@ -11170,6 +11220,7 @@ function rndr(){
   drwTape();
   cx.restore();
   drwLastHit();
+  drwBargeWarn();
   drwAxeFly();drwWind();drwRain();drwForkSign();drwSign();drwHint();drwPops();drwHUD();drwRaceHud();drwCountdown();
   if (g.whiskyT > 0){
     cx.strokeStyle = "rgba(232,168,56," + (0.30 + Math.sin(g.frame*0.15)*0.08) + ")";
@@ -13125,7 +13176,7 @@ globalThis.__KAYAK__ = { G: g, W, H, roadHitsBox, setTitleMenuTop, spriteSize, s
   SAVE_VERSION, SAVE_DEFAULT, mergeSave, showSaveProblem, saveProblem: () => saveProblem, requestMapExit, onWindowBlur, onWindowFocus, onVisibilityChange, pageVisible, resumeAfterTimeout,
   showFinish, showFail, recordFinish, nextDay, pauseGate, PAUSE_HOLD,
   tutActive, tutTick, tutAction, tutRefresh, skipTutorial, finishTutorial, tutBegin, spawnAllowed, TUT_LEN,
-  repeatHint, backFromDiary, tempoAt, tempoTick, spawnRate,
+  repeatHint, backFromDiary, tempoAt, tempoTick, spawnRate, bargeIntroTick, drwBargeWarn,
   campaignSum, scoreNow, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, toShore, ashoreStep, RUSH_FRAMES, ASHORE_FRAMES, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
   GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp, keyName, keyHeld, onKeyDown, onKeyUp };
