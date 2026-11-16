@@ -226,6 +226,13 @@ canvas { display:block;margin:0 auto; }
     <div class="wallet">Рюкзак: <span id="mapWallet">0</span> &nbsp;|&nbsp; Звёзд: <span id="mapStars">0</span>/27</div>
     <div class="days" id="mapDays"></div>
     <div class="totals" id="mapTotals"></div>
+    <div class="maprow" id="challengeRow">
+      <button class="btn small ghost" id="chNone">БЕЗ ИСПЫТАНИЯ</button>
+      <button class="btn small ghost" id="chNoAxe">БЕЗ ТОПОРА</button>
+      <button class="btn small ghost" id="chOneHeart">ОДНО СЕРДЦЕ</button>
+      <button class="btn small ghost" id="chNoStrike">БЕЗ УДАРА</button>
+    </div>
+    <div class="totals" id="challengeNote"></div>
     <div class="maprow">
       <button class="btn small" id="campBtn">ЛАГЕРЬ</button>
       <button class="btn small" id="diaryBtn">ДНЕВНИК</button>
@@ -5260,8 +5267,8 @@ const LEVELS = [
     goalText:"Парировать 3 удара веслом",    aggro:0.25, fights:[{at:0.15,n:1},{at:0.38,n:3,pack:true},{at:0.62,n:3,pack:true},{at:0.85,n:1}], forks:true, snags:true, arrive:"camp", dens:0.016 },
   { day:5, river:2, place:"ДЕРЕВНЯ",            len:1000, goal:"bridges",     need:4,
     goalText:"Пройти 4 моста в пролёт",      aggro:0.12, fights:[{at:0.45,n:1}], rain:0.55, mazai:{ at:0.30, n:10 }, bridges:true, arrive:"village", dens:0.017 },
-  { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:1,
-    goalText:"Дойти, сохранив сердце",       aggro:0.10, fights:[{at:0.55,n:1}], rain:0.85, wind:1, bridges:true, boats:true, arrive:"town", dens:0.016 },
+  { day:6, river:2, place:"ТОРЖОК",             len:1000, goal:"hearts",      need:3,
+    goalText:"Дойти с полными сердцами",      aggro:0.10, fights:[{at:0.55,n:1}], rain:0.85, wind:1, bridges:true, boats:true, arrive:"town", dens:0.016 },
   { day:7, river:3, place:"ПОРОГ ПЕРВЫЙ",       len:1200, goal:"cleanrapids", need:3,
     goalText:"Пройти 3 порога чисто",        aggro:0.12, fights:[{at:0.35,n:2}], arrive:"camp",   dens:0.016 },
   { day:8, river:3, place:"КАНЬОН",             len:1200, goal:"combo",       need:20,
@@ -5626,6 +5633,12 @@ function drwAxeFly(){
 function paddleStrike(){
   if (g.s !== "playing") return;
   tutAction("strike");
+  // «Без удара»: веслом нельзя, топор остаётся единственным оружием.
+  if (challengeOn() === "nostrike" && !tutActive()){
+    if ((g.axes || 0) > 0 && !g.axeFly){ throwAxe(); return; }
+    popText("ИСПЫТАНИЕ: БЕЗ УДАРА", "#ffd54f");
+    return;
+  }
   // Гонка — по обстановке: борт о борт — веслом; кто-то впереди и есть топор —
   // топор; кто-то сзади и есть подлянка — коряга за корму.
   if (raceOf()){
@@ -5703,7 +5716,7 @@ function stepLateral(input){
   const breadOn = g.breadT > 0;
   // Под дождём грести тяжелее: вёсла скользят, руки мёрзнут.
   const wet = 1 - 0.25*(level().rain || 0);
-  g.vt += input * ACC * (breadOn ? 1.6 : 1) * (hasGear("paddle") ? 1.25 : 1) * wet;
+  g.vt += input * ACC * (breadOn ? 1.6 : 1) * (hasGear("paddle") ? PADDLE_ACC : 1) * gearAccelMul() * wet;
   // Центробежный снос: на повороте прижимает к внешнему берегу.
   // curvBend > 0 там, где ось выгибается вправо, — байдарку при этом уносит влево.
   // Кривизна берётся ТОЛЬКО от извилин: финишная рампа двигает ось, но её снос
@@ -5712,7 +5725,8 @@ function stepLateral(input){
   g.vt *= DAMP;
   // Батон поднимает и потолок скорости, а не только ускорение: иначе обе
   // скорости упираются в один и тот же VMAX и эффект пропадает на длинной гребле.
-  const vmax = VMAX * (breadOn ? 1.5 : 1);
+  const vmax = VMAX * (breadOn ? 1.5 : 1) *
+    (hasGear("paddle") ? PADDLE_SPEED : 1) * gearSpeedMul();
   if (g.vt >  vmax) g.vt =  vmax;
   if (g.vt < -vmax) g.vt = -vmax;
   g.t += g.vt;
@@ -6295,6 +6309,8 @@ document.getElementById("recNext").addEventListener("click",()=>showRecords(recT
 document.getElementById("recBack").addEventListener("click",showMap);
 document.getElementById("endMapBtn").addEventListener("click",showMap);
 document.getElementById("campBtn").addEventListener("click",showCamp);
+for (const [id, ch] of [["chNone","none"],["chNoAxe","noaxe"],["chOneHeart","oneheart"],["chNoStrike","nostrike"]])
+  document.getElementById(id).addEventListener("click", () => { setChallenge(ch); renderChallenges(); });
 // Пауза: мышь — мгновенно, тач — только удержанием. Кнопка теперь в середине
 // правого края (39..62% — полоса инерции, там гребли нет), но короткий тык
 // всё равно не должен вышибать из забега.
@@ -7603,7 +7619,8 @@ const SAVE_KEY = "kayak_campaign";
 const SAVE_BAK = SAVE_KEY + ".bak";
 const SAVE_VERSION = 2;
 const SAVE_DEFAULT = { v:SAVE_VERSION, day:0, stars:{}, wallet:0, gear:[], diary:[], failPaid:[],
-                       best:{}, name:"", board:{}, music:true, seen:{}, pid:"", regatta:{} };
+                       best:{}, name:"", board:{}, music:true, seen:{}, pid:"", regatta:{},
+                       challenge:"none", ghost:{} };
 let saveProblem = false;
 let save = loadSave();
 musicOn = save.music !== false;
@@ -7648,6 +7665,27 @@ function cleanBoard(v){
   }
   return out;
 }
+// Запись призрака кампании: пары [мировой y, t×1000] и время до ленты.
+// Битые пары и отрицательное время выбрасываем — сохранение не должно
+// ронять отрисовку чужого/старого заезда.
+function cleanGhostMap(v){
+  const out = {};
+  if (!v || typeof v !== "object" || Array.isArray(v)) return out;
+  for (const d in v){
+    const it = v[d];
+    if (!it || !Array.isArray(it.track)) continue;
+    const frames = Number(it.frames);
+    if (!isFinite(frames) || frames < 1) continue;
+    const tr = [];
+    for (let i = 0; i + 1 < it.track.length; i += 2){
+      const wy = Number(it.track[i]), t = Number(it.track[i+1]);
+      if (!isFinite(wy) || !isFinite(t)) continue;
+      tr.push(Math.round(wy), Math.round(t));
+    }
+    if (tr.length >= 4) out[d] = { frames: Math.floor(frames), track: tr.slice(-8000) };
+  }
+  return out;
+}
 // Старое сохранение не выбрасываем: недостающие поля берём из схемы,
 // известные — сохраняем, незнакомые (будущие) — тоже. Иначе смена версии
 // стирала весь поход, а новое поле regatta исчезало при загрузке.
@@ -7664,6 +7702,9 @@ function mergeSave(v){
   s.seen = boolMap(s.seen);
   s.board = cleanBoard(s.board);
   s.regatta = numMap(s.regatta, 99);
+  s.challenge = ["none","noaxe","oneheart","nostrike"].indexOf(s.challenge) >= 0
+    ? s.challenge : "none";
+  s.ghost = cleanGhostMap(s.ghost);
   for (const k of ["gear","diary","failPaid"]) if (!Array.isArray(s[k])) s[k] = [];
   s.gear = s.gear.filter(x => typeof x === "string");
   s.diary = s.diary.filter(x => isFinite(Number(x)));
@@ -7737,26 +7778,68 @@ function resetSave(){
   // Иначе музыка «возвращалась» при перезагрузке: сохранялось старое.
   musicOn = save.music !== false;
 }
-// Максимум сердец зависит от снаряжения. Раньше тройка была вбита в трёх
-// местах — лечение, отрисовка HUD и восстановление после попытки, — и
-// четвёртое сердце от сухпайка просто терялось.
-function maxHp(){ return hasGear("ration") ? 4 : 3; }
+// Испытания — добровольный модификатор дня. Множитель идёт в award(),
+// поэтому его видят и поп-апы, и финиш. В обучении и своих уровнях
+// испытание не действует: иначе «без удара» ломало бы урок.
+const CHALLENGES = {
+  none:     { name:"БЕЗ ИСПЫТАНИЯ", mul:1,    note:"Обычный поход: без множителя" },
+  noaxe:    { name:"БЕЗ ТОПОРА",    mul:1.15, note:"Топоры не берём, очки ×1,15" },
+  oneheart: { name:"ОДНО СЕРДЦЕ",   mul:1.5,  note:"Один удар — и попытка потеряна, очки ×1,5" },
+  nostrike: { name:"БЕЗ УДАРА",     mul:1.3,  note:"Веслом не бить (топор можно), очки ×1,3" }
+};
+const RANKS = [
+  { at:0,  name:"НОВИЧОК" },
+  { at:6,  name:"ТУРИСТ" },
+  { at:12, name:"ГРЕБЕЦ" },
+  { at:18, name:"СПОРТСМЕН" },
+  { at:24, name:"ИНСТРУКТОР" },
+  { at:27, name:"МАСТЕР ВОДЫ" }
+];
+const PADDLE_ACC = 1.25, PADDLE_SPEED = 1.06;
+function challengeId(){
+  const id = save.challenge;
+  return CHALLENGES[id] ? id : "none";
+}
+function setChallenge(id){
+  save.challenge = CHALLENGES[id] ? id : "none";
+  commitSave();
+}
+function challengeOn(){
+  if (g.custom || tutActive()) return "none";
+  return challengeId();
+}
+function challengeMul(){ return CHALLENGES[challengeOn()].mul; }
+function rankOf(stars){
+  const n = stars == null ? totalStars() : stars;
+  let r = RANKS[0];
+  for (const it of RANKS) if (n >= it.at) r = it;
+  return r;
+}
+
+// Максимум сердец зависит от снаряжения и испытания. Раньше тройка была
+// вбита в трёх местах — лечение, HUD и восстановление после попытки.
+function maxHp(){
+  if (challengeOn() === "oneheart") return 1;
+  return hasGear("ration") ? 4 : 3;
+}
 
 // Звёзды открывают снаряжение. Без этого они были чистой декорацией:
 // собираются, показываются на карте и ничего не дают.
 const GEAR = [
-  { id:"helmet", name:"КАСКА",           price:300, stars:0,
-    note:"Щит на старте дня — гасит первый удар" },
-  { id:"paddle", name:"ЗАПАСНОЕ ВЕСЛО",  price:450, stars:6,
-    note:"Гребок мощнее на четверть" },
-  { id:"drybag", name:"ГЕРМОМЕШОК",      price:400, stars:12,
+  { id:"helmet", name:"КАСКА",           price:600, stars:0,
+    note:"Щит на старте дня — гасит первый удар", down:"разгон −3%" },
+  { id:"paddle", name:"ЗАПАСНОЕ ВЕСЛО",  price:1000, stars:6,
+    note:"Разгон +25%, скорость +6%" },
+  { id:"drybag", name:"ГЕРМОМЕШОК",      price:1200, stars:12,
     note:"Удар не сбивает батон и виски" },
-  { id:"ration", name:"СУХПАЁК",         price:500, stars:18,
-    note:"Четвёртое сердце на старте" },
-  { id:"vest", name:"СПАСЖИЛЕТ",         price:520, stars:24,
+  { id:"ration", name:"СУХПАЁК",         price:1500, stars:18,
+    note:"Четвёртое сердце на старте", down:"скорость −2%" },
+  { id:"vest", name:"СПАСЖИЛЕТ",         price:1900, stars:24,
     note:"Раз в день спасает от опрокидывания" }
 ];
 function hasGear(id){ return save.gear.indexOf(id) >= 0; }
+function gearAccelMul(){ return hasGear("helmet") ? 0.97 : 1; }
+function gearSpeedMul(){ return hasGear("ration") ? 0.98 : 1; }
 
 function starsOf(day){ return save.stars[day] || 0; }
 
@@ -8002,6 +8085,11 @@ function drwHUD(){
   cx.font = "8px " + F;
   cx.fillStyle = "#9aa9b2";
   if (!g.custom) cx.fillText("ЛУЧШЕЕ ЗА ДЕНЬ: " + (save.best[level().day] || 0), 12, 60);
+  { const ch = challengeOn();
+    if (ch !== "none"){
+      cx.fillStyle = "#ffd54f";
+      cx.fillText(CHALLENGES[ch].name + " · ×" + CHALLENGES[ch].mul, 12, 76);
+    } }
   cx.fillStyle = "#cfe8f5";
   cx.fillText(g.custom ? (g.custom.race ? "ГОНКА · " : "СВОЙ УРОВЕНЬ · ") + river().name : "ДЕНЬ " + level().day + " · " + river().name, 12, H - 26);
   cx.fillStyle = "#9aa9b2";
@@ -8125,7 +8213,7 @@ function goalMet(){
     case "parries":     return g.parries    >= L.need;
     case "convoy":      return g.convoy     >= L.need;
     case "bridges":     return g.bridges    >= L.need;
-    case "hearts":      return g.hp         >= L.need;
+    case "hearts":      return g.hp         >= maxHp();
     case "cleanrapids": return g.cleanRapids>= L.need;
     case "combo":       return g.maxCombo   >= L.need;
   }
@@ -8135,6 +8223,7 @@ function goalMet(){
 function finishLevel(){
   document.getElementById("pauseBtn").classList.add("hidden");
   if (g.custom){ finishCustom(true); return; }   // свой уровень поход не трогает
+  closeCampaignGhost();
   const L = level();
   const total = scoreNow();
   const stars = 1 + (g.livesLost === 0 ? 1 : 0) + (goalMet() ? 1 : 0);
@@ -8188,13 +8277,23 @@ const DIARY = {
   9:"<b>Устье.</b> Осуга впадает в Тверцу. Здесь поход кончается: байдарки на прицеп, вокзал в Твери, электричка домой."
 };
 
+function renderChallenges(){
+  const cur = challengeId();
+  for (const [id, ch] of [["chNone","none"],["chNoAxe","noaxe"],["chOneHeart","oneheart"],["chNoStrike","nostrike"]]){
+    const b = document.getElementById(id);
+    if (b) b.textContent = (ch === cur ? "> " : "") + CHALLENGES[ch].name;
+  }
+  const note = document.getElementById("challengeNote");
+  if (note) note.textContent = CHALLENGES[cur].note;
+}
 function showMap(){
   hideAllScreens();
   g.s = "map";
   document.getElementById("mapWallet").textContent = save.wallet;
   document.getElementById("mapStars").textContent = totalStars();
   document.getElementById("mapTotals").textContent =
-    "Сумма похода: " + campaignSum() + " очков";
+    "Сумма похода: " + campaignSum() + " очков · " + rankOf().name;
+  renderChallenges();
   document.getElementById("musicBtn").textContent = musicOn ? "МУЗЫКА: ВКЛ" : "МУЗЫКА: ВЫКЛ";
   document.getElementById("mapTutBtn").classList[save.seen && save.seen.tutorial ? "remove" : "add"]("hidden");
   const box = document.getElementById("mapDays");
@@ -8317,9 +8416,9 @@ function showCamp(){
     const locked = st < it.stars;
     const el = document.createElement("div");
     el.className = "gitem" + (owned ? " owned" : "");
+    const desc = (owned ? "в рюкзаке — " : "") + it.note + (it.down ? " · " + it.down : "");
     el.innerHTML = "<div><div class='gn'>" + it.name + "</div><div class='gnote'>" +
-      (locked ? "нужно звёзд: " + it.stars + " · сейчас " + st
-              : (owned ? "в рюкзаке — " + it.note : it.note)) + "</div></div>";
+      (locked ? "нужно звёзд: " + it.stars + " · сейчас " + st : desc) + "</div></div>";
     const b = document.createElement("button");
     b.textContent = owned ? "В РЮКЗАКЕ" : (locked ? it.stars + " ЗВ." : it.price);
     b.disabled = owned || locked || save.wallet < it.price;
@@ -10034,7 +10133,7 @@ const INV_FRAMES = 90, BREAD_FRAMES = 480, WHISKY_FRAMES = 360, AXE_RANGE = 420,
 function scoreMul(){ return g.whiskyT > 0 ? 2 : 1; }
 // Число, которое реально зачислится под виски и темп: поп-апы обязаны
 // показывать его, а не базовое — иначе экран врёт игроку про награду.
-function award(n){ return Math.round(n * scoreMul() * rowMul()); }
+function award(n){ return Math.round(n * scoreMul() * rowMul() * challengeMul()); }
 function addScore(n){ g.sc  += award(n); }
 function addBonus(n){ g.bsc += award(n); }
 
@@ -10290,6 +10389,11 @@ function apBn(b){
       pickHare();
       break;
     case "axe": {                       // в запас: кидается двойным тапом
+      // Испытание «без топора»: бонус дня засчитан, но в запас не берём.
+      if (challengeOn() === "noaxe"){
+        addBonus(10); popText("ИСПЫТАНИЕ: БЕЗ ТОПОРА — НЕ БЕРЁМ", "#ffd54f");
+        break;
+      }
       // Раньше топор срабатывал сам и молча убирал препятствие где-то
       // впереди — игрок не видел, что и как он срубил.
       g.axes = Math.min(AXE_MAX, (g.axes || 0) + 1);
@@ -10576,6 +10680,7 @@ function tutBegin(){
 function finishTutorial(){
   if (!g.tut || g.tut.done) return;
   g.tut.done = true; g.tut.hint = null;
+  g.hp = Math.min(g.hp, maxHp());   // «одно сердце» включается после урока
   tutShowSkip(false);
   if (!save.seen) save.seen = {};
   if (!save.seen.tutorial){ save.seen.tutorial = 1; commitSave(); }
@@ -10643,6 +10748,9 @@ function sg(){
   g.sh=false;g.sm=false;g.st=0;g.ned=30;g.df=1;g.frame=0;g.lastHit=null;g.hitLog=[];
   g.t=0;g.vt=0;g.scroll=0;g.segs=[];g.hp=3;g.lives=3;g.contT=0;g.inv=0;g.forks=[];g.bridges_=[];g.villages=null;g.axes=0;g.axeFly=null;g.stam=STAM_MAX;g.rowing=0;g.rowActive=0;g.rowCd=0;g.rowSide=1;g.strokes=0;g.freeze=0;g.squash=0;g.py=PY;g.pwy=0;g.btnFwd=false;g.btnBack=false;g.mSpeed=null;g.signT=0;g.tapeWy=-1;g.arriveT=0;g.landSide=1;g.combo=0;g.comboT=0;g.maxCombo=0;g.passed=0;g.convoy=0;g.strikeT=0;g.bonuses=0;g.parries=0;g.bridges=0;g.cleanRapids=0;g.shallowsHit=0;g.livesLost=0;g.rWidth=1;g.rBend=1;g.rRocks=1;g.rGrass=null;g.rWater=null;g.shake=0;g.shakeT=0;g.shakeDir=1;g.breadT=0;g.whiskyT=0;g.sunT=0;g.pops=[];g.wake=[];g.taughtParry=false;g.vestUsed=false;g.bridgeCinema=false;g.weeds=[];g.inWeed=false;g.waves=[];g.boatNext=0;g.voiceCount=0;g.voiceLast=-1;g.voiceUntil=0;g.clash=null;g.strikeSide=1;
   g.cleanRun=false;g.wasRapid=false;g.bc=null;g.bcIdx=0;g.bearsLost=0;g.idleT=0;g.movedOnce=false;g.mazai=null;g.yacht=false;g.mazaiPlaced=false;g.fightIdx=0;g.fightLeft=0;g.fightWait=0;g.fightShown=false;g.dogDodged=0;g.packZones=[];g.tempo={restT:0,lull:false,lullBonus:false};
+  g.ghostRun = g.custom ? null : ((save.ghost && save.ghost[level().day]) || null);
+  g.runGhost = g.custom ? null : { track:[], frames:0, done:false };
+  g.finishFrame = 0;
   ensureSegments(H*2);
   const r = river();
   g.rWidth = r.width; g.rBend = r.bend; g.rRocks = r.rocks; g.rFreq = r.freq || 1;
@@ -10650,7 +10758,6 @@ function sg(){
   g.signT = 260;
   // Снаряжение действует весь день.
   if (save.gear.indexOf("helmet") >= 0) g.sh = true;
-  g.hp = maxHp();
   // Первая баржа дня 2 — отдельный сценарный выход, один раз на сохранение.
   g.bargeIntro = (level().barges && !(save.seen && save.seen.barge))
     ? { at: level().len*0.12, done: false, barge: null } : null;
@@ -10661,6 +10768,7 @@ function sg(){
   if (wantTut && level().day === 1 && !g.custom &&
       (forceTut || !(save.seen && save.seen.tutorial))) tutBegin();
   else tutShowSkip(false);
+  g.hp = maxHp();       // после tutBegin: в обучении испытание ещё не действует
 }
 function gmO(){
   failLevel();
@@ -11070,6 +11178,7 @@ function upd(){
   // Пересекли ленту — дальше игра ведёт байдарку сама.
   if (g.tapeWy > 0 && g.pwy >= g.tapeWy){
     raceFinishLine();
+    closeCampaignGhost();
     g.s = "arrive"; g.arriveT = 210; g.obs.length = 0; g.bns.length = 0;
     sfx("clean");
     return;
@@ -11150,6 +11259,7 @@ function upd(){
      Math.random() < 0.003*tempoAt(g.dist/Math.max(1, level().len))) spBn();
   spCustom();
   raceStep();
+  campaignGhostStep();
   fightStep();
   mazaiStep();
   if(g.dist>=g.ned && !(g.custom && g.custom.shore))spBev();   // в своём уровне с нарисованным берегом — только он
@@ -11716,7 +11826,7 @@ function goalProgress(L, st){
     case "parries":     return st.parries + " / " + L.need;
     case "convoy":      return "катеров: " + (st.convoy || 0) + " / " + L.need;
     case "bridges":     return st.bridges + " / " + L.need;
-    case "hearts":      return "сердец: " + st.hp;
+    case "hearts":      return "сердец: " + st.hp + " / " + maxHp();
     case "cleanrapids": return st.cleanRapids + " / " + L.need;
     case "combo":       return "лучшее комбо " + st.maxCombo + " / " + L.need;
   }
@@ -12330,6 +12440,23 @@ function raceFinishLine(){
   if (R.net) netSend({ type: "fin", frames: R.end });
   if (R.bots) regattaFinish(R);
 }
+// Свой призрак в кампании: пишем положение раз в GHOST_STEP кадров, как в
+// гонке, но храним в сохранении по номеру дня. Лучший заезд — по времени.
+function campaignGhostStep(){
+  if (g.custom || !g.runGhost || g.runGhost.done) return;
+  if (g.frame % GHOST_STEP) return;
+  g.runGhost.track.push(Math.round(g.pwy), Math.round(g.t*1000));
+}
+function closeCampaignGhost(){
+  if (g.custom || !g.runGhost || g.runGhost.done) return;
+  g.runGhost.done = true;
+  g.finishFrame = Math.max(1, g.frame || 1);
+  g.runGhost.track.push(Math.round(g.pwy), Math.round(g.t*1000));
+  if (!save.ghost || typeof save.ghost !== "object") save.ghost = {};
+  const day = level().day, old = save.ghost[day];
+  if (!old || g.finishFrame < old.frames)
+    save.ghost[day] = { frames: g.finishFrame, track: g.runGhost.track.slice() };
+}
 // Положение призрака на кадре f: точка j записана на кадре j*GHOST_STEP,
 // последняя — на финише (кадр frames). Между точками — по прямой.
 function ghostAt(gh, f){
@@ -12392,7 +12519,23 @@ async function raceLoad(id, deps){
 }
 function drwGhost(){
   const R = raceOf();
-  if (!R || g.s !== "playing" && g.s !== "arrive" && g.s !== "paused" && g.s !== "countdown") return;
+  const live = g.s === "playing" || g.s === "arrive" || g.s === "paused" || g.s === "countdown";
+  if (!live) return;
+  if (!R){
+    // Кампания: полупрозрачная лодка лучшего заезда этого дня.
+    if (g.custom || !g.ghostRun) return;
+    const p = ghostAt(g.ghostRun, g.frame), y = screenYOf(p.wy);
+    if (y < -60 || y > H + 60) return;
+    const x = screenXOf(p.t, p.wy);
+    cx.save(); cx.globalAlpha = 0.35;
+    drawSprite("kayak_center", x, y);
+    cx.restore();
+    cx.save(); cx.font = "7px " + F; cx.textAlign = "center";
+    cx.fillStyle = "rgba(0,0,0,0.5)"; cx.fillRect(x - 28, y - 42, 56, 10);
+    cx.fillStyle = "#cfe8f5"; cx.fillText("ТВОЙ РЕКОРД", x, y - 34);
+    cx.restore();
+    return;
+  }
   drwRaceItems(R);
   if (R.net){ drwRival(R.net); return; }
   if (R.bots){ drwBots(R); return; }
@@ -13566,7 +13709,10 @@ globalThis.__KAYAK__ = { G: g, W, H, canvasBacking, dpr:() => dpr, viewW:() => v
   tutActive, tutTick, tutAction, tutRefresh, skipTutorial, finishTutorial, tutBegin, spawnAllowed, TUT_LEN,
   repeatHint, backFromDiary, rowMul, strokeLift, shakeOffset, toggleShake, pixelScale, award, tempoAt, tempoTick, spawnRate, bargeIntroTick, drwBargeWarn,
   campaignSum, scoreNow, mazaiBadgeDue, placeMazaiBadge, startMazai, spHare, mazaiStep, finishMazai, pickHare, drwMazaiHud, MAZAI_FRAMES, MAZAI_NEED, MAZAI_GAP, YACHT_SPEED, ONLINE_DEFAULT_URL, onlineUrl, playerId, outboxLoad, outboxSave, outboxPush, onlinePayload, onlineFlush, onlineReport, onlineTop, onlineHtml, showOnline, onlineRename, updBev, HERON_HOPS, HERON_FLY, HERON_CYCLE, drwBev, sideLayout, layoutSides, drwSides, goalProgress, panelLeftHtml, panelRightHtml, updPanels, PANEL_MIN_SIDE, gpRead, menuKeyAction, menuStep, menuKey, menuMove, menuOk, menuBack, menuButtons, gpState, pollGamepad, GP_DEAD, drawSprite, PASS_MIN, gapFor, keepPassage, toShore, ashoreStep, RUSH_FRAMES, ASHORE_FRAMES, packBlend, PACK_WIDEN, DOG_NEAR, DOG_TELL, DOG_LEAP, DOG_SWIM, DOG_ALERT, mkDog, dogStep, drwDog, dogBusy, boatGap, fightsTotal, fightStep, spFighter, spPack, FIGHT_GAP, PACK_GAP, CUSTOM_COLS, ROW_PX, CUSTOM_START, CUSTOM_LEN, customRows, colT, itemWy, genCustom, customBlockedRow, setCell, cellOf, customLevel, placeCustom, spCustom, startCustom, finishCustom, drwEditor, edInfoText, showEditor, showStart, loadCustom, saveCustom, getCs: () => cs, BEAR_JUMP, BEAR_DIVE, BEAR_CLOSE, BEAR_ROW, BEAR_FRAMES, BEAR_GRACE, BEAR_BITE, BEAR_QUIT, bearChaseDue, startBearChase, bearStep, drwBearSwim, cleanName, boardView, runSummary, renameMe, boardHtml, mineRow, showRecords, drwTitle, rndr,
-  GEAR, hasGear, maxHp, rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
+  GEAR, hasGear, maxHp, gearAccelMul, gearSpeedMul, PADDLE_ACC, PADDLE_SPEED,
+  CHALLENGES, RANKS, challengeId, setChallenge, challengeOn, challengeMul, rankOf, totalStars, renderChallenges,
+  cleanGhostMap, campaignGhostStep, closeCampaignGhost,
+  rowStep, rowInput, tickStamina, STAM_MAX, PY_MIN, PY_MAX, playerY, crush, loseAttempt, scoreMul, addScore, addBonus, spawnCamp, forkSuppress, playCut, CUTS, CUT_LEN, forkAt, forkShape, inIsland, ensureForks, ensureBridges,
   ensureBoard, addResult, save, sg, isStrikeTap, mixHex, hsh, drwBg, doubleStrike, speedFromScreenY, speedFromBoat, pointerDown, pointerUp, activePointer:()=>activePointer, coarsePointer, announce, syncVisualViewport, rowInput, cutScr, cutState, cutFx, cutFade, drwCut, ptrStart, ptrMove, ptrEnd, award, chkBridges, NIGHT_AUDIO_ONE, nightAudioStart, nightAudioReset, simPlan, lp, keyName, keyHeld, onKeyDown, onKeyUp };
 prerenderAll();
 if (typeof __KAYAK_TEST__ === "undefined" && new URLSearchParams(location.search).get("split") === "1") splitBoot();
